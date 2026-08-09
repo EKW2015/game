@@ -3,16 +3,16 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <meta name="description" content="一个用原生 HTML5 Canvas 写的小恐龙跑酷游戏，跳过仙人掌、躲开翼龙，看你能跑多远。" />
-    <meta name="theme-color" content="#f7f7f7" />
-    <title>小恐龙快跑</title>
+    <meta name="description" content="恐龙生存竞技场：移动、捕食、战斗、进化，成为最后存活的恐龙。" />
+    <meta name="theme-color" content="#1a3d28" />
+    <title>恐龙生存竞技场</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='14' font-size='14'>🦖</text></svg>" />
     <link rel="stylesheet" href="css/style.css" />
   </head>
   <body>
     <main class="page">
       <header class="page__header">
-        <h1 class="page__title">小恐龙快跑</h1>
+        <h1 class="page__title">恐龙生存竞技场</h1>
         <div class="page__tools">
           <button id="btn-sound" class="tool" type="button" aria-pressed="false">音效：开</button>
           <button id="btn-pause" class="tool" type="button">暂停</button>
@@ -20,22 +20,30 @@
       </header>
 
       <div class="stage" id="stage">
-        <canvas id="game" class="stage__canvas" width="1200" height="400" role="img"
-          aria-label="小恐龙跑酷游戏画面"></canvas>
+        <canvas id="game" class="stage__canvas" width="1920" height="1280" role="img"
+          aria-label="恐龙生存竞技场游戏画面"></canvas>
 
         <div class="overlay" id="overlay-ready">
-          <p class="overlay__title">准备好了吗？</p>
-          <p class="overlay__hint">按 <kbd>空格</kbd> 或 <kbd>↑</kbd> 起跳开始</p>
-          <button class="overlay__button" type="button" data-action="start">开始游戏</button>
+          <p class="overlay__title">生存之战</p>
+          <p class="overlay__hint">比对手更大就能吞食它们 · 体型相近则互相撕咬</p>
+          <p class="overlay__hint">进化到传说级，成为最后一只存活的恐龙！</p>
+          <button class="overlay__button" type="button" data-action="start">开始战斗</button>
+        </div>
+
+        <div class="overlay overlay--hidden" id="overlay-win">
+          <p class="overlay__title overlay__title--win">胜利！</p>
+          <p class="overlay__score">
+            你是最后的恐龙
+            <span class="overlay__record" id="win-stats"></span>
+          </p>
+          <p class="overlay__hint">胜场 <strong id="win-count">0</strong></p>
+          <button class="overlay__button" type="button" data-action="restart">再来一局</button>
         </div>
 
         <div class="overlay overlay--hidden" id="overlay-over">
-          <p class="overlay__title">游戏结束</p>
-          <p class="overlay__score">
-            本次 <strong id="final-score">0</strong>
-            <span class="overlay__record" id="record-badge" hidden>新纪录！</span>
-          </p>
-          <p class="overlay__hint">按 <kbd>空格</kbd> 或 <kbd>R</kbd> 再来一局</p>
+          <p class="overlay__title">你被击败了</p>
+          <p class="overlay__score" id="death-stats"></p>
+          <p class="overlay__hint">被更大的恐龙吞食，或战斗中被击杀</p>
           <button class="overlay__button" type="button" data-action="restart">再来一局</button>
         </div>
 
@@ -47,19 +55,25 @@
       </div>
 
       <div class="touch" id="touch-controls" aria-hidden="true">
-        <button class="touch__button" type="button" data-hold="jump">跳跃</button>
-        <button class="touch__button" type="button" data-hold="duck">蹲下</button>
+        <div class="touch__dpad">
+          <button class="touch__btn touch__btn--up" type="button" data-hold="up" aria-label="上">↑</button>
+          <button class="touch__btn touch__btn--left" type="button" data-hold="left" aria-label="左">←</button>
+          <button class="touch__btn touch__btn--right" type="button" data-hold="right" aria-label="右">→</button>
+          <button class="touch__btn touch__btn--down" type="button" data-hold="down" aria-label="下">↓</button>
+        </div>
+        <button class="touch__bite" type="button" data-hold="bite">撕咬</button>
       </div>
 
       <section class="legend">
-        <h2 class="legend__title">操作说明</h2>
+        <h2 class="legend__title">玩法说明</h2>
         <ul class="legend__list">
-          <li><kbd>空格</kbd> / <kbd>↑</kbd> / <kbd>W</kbd> 跳跃（按住跳更高）</li>
-          <li><kbd>↓</kbd> / <kbd>S</kbd> 蹲下躲翼龙，空中按可快速落地</li>
-          <li><kbd>P</kbd> 暂停 · <kbd>M</kbd> 静音 · <kbd>R</kbd> 重开</li>
-          <li>手机上直接点屏幕跳跃，长按下方按钮蹲下</li>
+          <li><kbd>WASD</kbd> / 方向键 移动恐龙</li>
+          <li><kbd>空格</kbd> / <kbd>J</kbd> 撕咬攻击（体型相近时战斗）</li>
+          <li>体型明显大于对手时靠近即可吞食，获得体型并进化</li>
+          <li>进化阶段：幼龙 → 猎手 → 霸主 → 传说</li>
+          <li>消灭所有其他恐龙，最后一只存活即获胜</li>
         </ul>
-        <p class="legend__note">跑得越远速度越快，600 分之后会进入夜晚。最高分保存在本地浏览器里。</p>
+        <p class="legend__note">遇到比自己大的恐龙要逃跑；撕咬可以削弱对手，击杀后也能获得部分体型。</p>
       </section>
     </main>
 
@@ -67,8 +81,10 @@
       <p style="text-align: center">这个游戏需要启用 JavaScript 才能运行。</p>
     </noscript>
 
-    <script src="js/sprites.js"></script>
+    <script src="js/utils.js"></script>
     <script src="js/audio.js"></script>
+    <script src="js/dino.js"></script>
+    <script src="js/ai.js"></script>
     <script src="js/game.js"></script>
     <script src="js/main.js"></script>
   </body>

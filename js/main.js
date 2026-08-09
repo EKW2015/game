@@ -1,6 +1,3 @@
-/**
- * 把游戏和页面 UI 连起来：键盘、触屏、浮层、按钮。
- */
 (function (global) {
   'use strict';
 
@@ -9,11 +6,13 @@
 
   var overlays = {
     ready: doc.getElementById('overlay-ready'),
+    win: doc.getElementById('overlay-win'),
     over: doc.getElementById('overlay-over'),
     paused: doc.getElementById('overlay-paused')
   };
-  var finalScore = doc.getElementById('final-score');
-  var recordBadge = doc.getElementById('record-badge');
+  var winStats = doc.getElementById('win-stats');
+  var winCount = doc.getElementById('win-count');
+  var deathStats = doc.getElementById('death-stats');
   var soundButton = doc.getElementById('btn-sound');
   var pauseButton = doc.getElementById('btn-pause');
   var stage = doc.getElementById('stage');
@@ -25,11 +24,19 @@
     });
   }
 
+  function formatStats(g) {
+    var p = g.player;
+    return '阶段 ' + global.Utils.stageName(p.mass) + ' · 击杀 ' + p.kills + ' · 体型 ' + Math.round(p.mass);
+  }
+
   var game = new global.Game(canvas, {
     onState: function (state, g) {
-      if (state === 'over') {
-        finalScore.textContent = Math.floor(g.score);
-        recordBadge.hidden = !g.newRecord;
+      if (state === 'win') {
+        winStats.textContent = formatStats(g);
+        winCount.textContent = g.highWins;
+        showOverlay('win');
+      } else if (state === 'over') {
+        deathStats.textContent = formatStats(g);
         showOverlay('over');
       } else if (state === 'paused') {
         showOverlay('paused');
@@ -39,33 +46,33 @@
         showOverlay(null);
       }
       pauseButton.textContent = state === 'paused' ? '继续' : '暂停';
-      pauseButton.disabled = state === 'ready' || state === 'over';
-    },
-    onNight: function (isNight) {
-      doc.body.classList.toggle('is-night', isNight);
+      pauseButton.disabled = state === 'ready';
     }
   });
 
   showOverlay('ready');
   pauseButton.disabled = true;
 
-  // ------------------------------------------------------------ 键盘
-
-  var JUMP_KEYS = { Space: 1, ArrowUp: 1, KeyW: 1, Enter: 1 };
-  var DUCK_KEYS = { ArrowDown: 1, KeyS: 1 };
+  var MOVE_KEYS = {
+    ArrowUp: 'up', KeyW: 'up',
+    ArrowDown: 'down', KeyS: 'down',
+    ArrowLeft: 'left', KeyA: 'left',
+    ArrowRight: 'right', KeyD: 'right'
+  };
+  var BITE_KEYS = { Space: 1, KeyJ: 1 };
 
   doc.addEventListener('keydown', function (event) {
     if (event.metaKey || event.ctrlKey || event.altKey) return;
     var code = event.code;
 
-    if (JUMP_KEYS[code]) {
+    if (MOVE_KEYS[code]) {
       event.preventDefault();
-      if (!event.repeat) game.press('jump');
+      if (!event.repeat) game.press(MOVE_KEYS[code]);
       return;
     }
-    if (DUCK_KEYS[code]) {
+    if (BITE_KEYS[code]) {
       event.preventDefault();
-      game.press('duck');
+      if (!event.repeat) game.press('bite');
       return;
     }
     if (code === 'KeyP' || code === 'Escape') {
@@ -74,29 +81,15 @@
     } else if (code === 'KeyM') {
       toggleSound();
     } else if (code === 'KeyR') {
-      if (game.state === 'over' || game.state === 'playing') game.restart();
+      if (game.state === 'over' || game.state === 'win' || game.state === 'playing') {
+        game.restart();
+      }
     }
   });
 
   doc.addEventListener('keyup', function (event) {
-    if (JUMP_KEYS[event.code]) game.release('jump');
-    else if (DUCK_KEYS[event.code]) game.release('duck');
-  });
-
-  // ------------------------------------------------------------ 指针 / 触屏
-
-  stage.addEventListener('pointerdown', function (event) {
-    if (event.target.closest('button')) return;
-    event.preventDefault();
-    game.press('jump');
-  });
-
-  global.addEventListener('pointerup', function () {
-    game.release('jump');
-  });
-
-  touchControls.addEventListener('contextmenu', function (event) {
-    event.preventDefault();
+    if (MOVE_KEYS[event.code]) game.release(MOVE_KEYS[event.code]);
+    else if (BITE_KEYS[event.code]) game.release('bite');
   });
 
   Array.prototype.forEach.call(touchControls.querySelectorAll('[data-hold]'), function (button) {
@@ -105,6 +98,7 @@
       event.preventDefault();
       button.setPointerCapture(event.pointerId);
       game.press(action);
+      if (game.state === 'ready') game.setState('playing');
     });
     button.addEventListener('pointerup', function () {
       game.release(action);
@@ -114,18 +108,18 @@
     });
   });
 
-  // ------------------------------------------------------------ 浮层按钮
-
   doc.addEventListener('click', function (event) {
     var target = event.target.closest('[data-action]');
     if (!target) return;
     var action = target.getAttribute('data-action');
-    if (action === 'start') game.press('jump');
-    else if (action === 'restart') game.restart();
-    else if (action === 'resume') game.togglePause();
+    if (action === 'start') {
+      game.setState('playing');
+    } else if (action === 'restart') {
+      game.restart();
+    } else if (action === 'resume') {
+      game.togglePause();
+    }
   });
-
-  // ------------------------------------------------------------ 顶部按钮
 
   function toggleSound() {
     var muted = global.Sfx.toggle();
@@ -138,8 +132,6 @@
     game.togglePause();
   });
 
-  // ------------------------------------------------------------ 窗口事件
-
   var resizeTimer = 0;
   global.addEventListener('resize', function () {
     global.clearTimeout(resizeTimer);
@@ -149,16 +141,9 @@
   });
 
   doc.addEventListener('visibilitychange', function () {
-    if (doc.hidden) game.pause();
+    if (doc.hidden && game.state === 'playing') game.togglePause();
   });
 
-  global.addEventListener('blur', function () {
-    game.release('jump');
-    game.release('duck');
-    game.pause();
-  });
-
-  // 首帧布局完成后再量一次尺寸，避免字体加载导致的偏差
   global.requestAnimationFrame(function () {
     game.resize();
   });

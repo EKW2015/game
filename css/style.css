@@ -1,25 +1,14 @@
 :root {
-  --page-bg: #eef1f5;
-  --card-bg: #f7f7f7;
-  --ink: #3c3c46;
-  --ink-soft: #7d7d8c;
-  --line: rgba(60, 60, 70, 0.14);
-  --accent: #3c3c46;
-  --accent-ink: #f7f7f7;
-  --shadow: 0 18px 40px -24px rgba(20, 20, 35, 0.55);
+  --page-bg: #0f2418;
+  --card-bg: #1a3d28;
+  --ink: #e8f0e8;
+  --ink-soft: #9cb8a8;
+  --line: rgba(200, 230, 210, 0.16);
+  --accent: #5cd65c;
+  --accent-ink: #0f2418;
+  --win: #ffcc66;
+  --shadow: 0 18px 40px -24px rgba(0, 0, 0, 0.7);
   --radius: 14px;
-  color-scheme: light;
-}
-
-body.is-night {
-  --page-bg: #0d0d14;
-  --card-bg: #16161e;
-  --ink: #e2e2ec;
-  --ink-soft: #9a9ab0;
-  --line: rgba(226, 226, 236, 0.16);
-  --accent: #e2e2ec;
-  --accent-ink: #16161e;
-  --shadow: 0 18px 40px -24px rgba(0, 0, 0, 0.9);
   color-scheme: dark;
 }
 
@@ -44,12 +33,10 @@ body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
     "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", sans-serif;
   -webkit-font-smoothing: antialiased;
-  transition: background-color 0.6s ease, color 0.6s ease;
-  overflow-x: hidden;
 }
 
 .page {
-  width: min(920px, 100%);
+  width: min(1000px, 100%);
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -68,6 +55,7 @@ body {
   font-size: clamp(20px, 4vw, 28px);
   font-weight: 700;
   letter-spacing: 0.06em;
+  color: var(--accent);
 }
 
 .page__tools {
@@ -84,7 +72,7 @@ body {
   background: var(--card-bg);
   color: var(--ink-soft);
   cursor: pointer;
-  transition: color 0.2s ease, border-color 0.2s ease, transform 0.1s ease;
+  transition: color 0.2s ease, border-color 0.2s ease;
 }
 
 .tool:hover {
@@ -92,11 +80,10 @@ body {
   border-color: var(--ink-soft);
 }
 
-.tool:active {
-  transform: translateY(1px);
+.tool:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
-
-/* ---------------------------------------------------------------- 画布 */
 
 .stage {
   position: relative;
@@ -107,20 +94,14 @@ body {
   border: 1px solid var(--line);
   touch-action: manipulation;
   user-select: none;
-  -webkit-user-select: none;
-  -webkit-tap-highlight-color: transparent;
-  transition: background-color 0.6s ease;
 }
 
 .stage__canvas {
   display: block;
   width: 100%;
   height: auto;
-  aspect-ratio: 3 / 1;
-  cursor: pointer;
+  aspect-ratio: 3 / 2;
 }
-
-/* ---------------------------------------------------------------- 浮层 */
 
 .overlay {
   position: absolute;
@@ -133,27 +114,23 @@ body {
   padding: 16px;
   text-align: center;
   pointer-events: none;
-  background: color-mix(in srgb, var(--card-bg) 72%, transparent);
-  backdrop-filter: blur(1.5px);
-  animation: overlay-in 0.24s ease both;
+  background: rgba(10, 24, 16, 0.78);
+  backdrop-filter: blur(2px);
 }
 
 .overlay--hidden {
   display: none;
 }
 
-@keyframes overlay-in {
-  from {
-    opacity: 0;
-    transform: translateY(6px);
-  }
-}
-
 .overlay__title {
   margin: 0;
-  font-size: clamp(18px, 3.6vw, 24px);
+  font-size: clamp(20px, 4vw, 28px);
   font-weight: 700;
-  letter-spacing: 0.16em;
+  letter-spacing: 0.12em;
+}
+
+.overlay__title--win {
+  color: var(--win);
 }
 
 .overlay__hint,
@@ -161,44 +138,36 @@ body {
   margin: 0;
   font-size: 13px;
   color: var(--ink-soft);
+  max-width: 420px;
 }
 
 .overlay__score strong {
-  font-family: "Courier New", ui-monospace, monospace;
-  font-size: 20px;
   color: var(--ink);
-  margin-left: 4px;
 }
 
 .overlay__record {
-  margin-left: 8px;
-  padding: 2px 8px;
-  border-radius: 999px;
-  font-size: 11px;
-  background: var(--accent);
-  color: var(--accent-ink);
+  display: block;
+  margin-top: 6px;
+  font-size: 14px;
+  color: var(--accent);
 }
 
 .overlay__button {
   pointer-events: auto;
-  margin-top: 6px;
+  margin-top: 10px;
   font: inherit;
   font-size: 14px;
-  padding: 9px 24px;
+  padding: 10px 28px;
   border: 0;
   border-radius: 999px;
   background: var(--accent);
   color: var(--accent-ink);
+  font-weight: 600;
   cursor: pointer;
-  transition: transform 0.1s ease, opacity 0.2s ease;
 }
 
 .overlay__button:hover {
-  opacity: 0.88;
-}
-
-.overlay__button:active {
-  transform: translateY(1px);
+  filter: brightness(1.08);
 }
 
 kbd {
@@ -206,39 +175,50 @@ kbd {
   min-width: 20px;
   padding: 1px 6px;
   border: 1px solid var(--line);
-  border-bottom-width: 2px;
   border-radius: 5px;
   background: var(--card-bg);
-  font-family: inherit;
   font-size: 11px;
-  color: var(--ink);
 }
-
-/* ---------------------------------------------------------------- 触屏按钮 */
 
 .touch {
   display: none;
-  gap: 12px;
+  align-items: center;
+  gap: 16px;
 }
 
-.touch__button {
-  flex: 1;
+.touch__dpad {
+  display: grid;
+  grid-template-columns: repeat(3, 52px);
+  grid-template-rows: repeat(3, 52px);
+  gap: 4px;
+}
+
+.touch__btn {
   font: inherit;
-  font-size: 15px;
-  padding: 16px 0;
-  border-radius: 12px;
+  font-size: 18px;
   border: 1px solid var(--line);
+  border-radius: 10px;
   background: var(--card-bg);
   color: var(--ink);
   cursor: pointer;
-  user-select: none;
-  -webkit-user-select: none;
-  -webkit-tap-highlight-color: transparent;
 }
 
-.touch__button:active {
-  background: var(--accent);
-  color: var(--accent-ink);
+.touch__btn--up { grid-column: 2; grid-row: 1; }
+.touch__btn--left { grid-column: 1; grid-row: 2; }
+.touch__btn--right { grid-column: 3; grid-row: 2; }
+.touch__btn--down { grid-column: 2; grid-row: 3; }
+
+.touch__bite {
+  flex: 1;
+  font: inherit;
+  font-size: 16px;
+  font-weight: 600;
+  padding: 20px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: #c44a4a;
+  color: #fff;
+  cursor: pointer;
 }
 
 @media (pointer: coarse) {
@@ -247,22 +227,19 @@ kbd {
   }
 }
 
-/* ---------------------------------------------------------------- 说明 */
-
 .legend {
   padding: 16px 18px;
   border-radius: var(--radius);
   border: 1px solid var(--line);
   background: var(--card-bg);
-  transition: background-color 0.6s ease;
 }
 
 .legend__title {
   margin: 0 0 10px;
   font-size: 13px;
   font-weight: 600;
-  letter-spacing: 0.1em;
   color: var(--ink-soft);
+  letter-spacing: 0.1em;
 }
 
 .legend__list {
@@ -271,7 +248,7 @@ kbd {
   list-style: none;
   display: grid;
   gap: 6px;
-  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
   font-size: 13px;
 }
 
@@ -279,11 +256,4 @@ kbd {
   margin: 12px 0 0;
   font-size: 12px;
   color: var(--ink-soft);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  * {
-    animation-duration: 0.01ms !important;
-    transition-duration: 0.01ms !important;
-  }
 }

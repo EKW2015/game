@@ -1,189 +1,126 @@
 /**
- * 小恐龙快跑 —— 核心逻辑与渲染。
- *
- * 所有坐标都用 600x200 的逻辑单位表示，真实画布按设备像素比缩放，
- * 因此不同屏幕上的手感完全一致。
+ * 恐龙生存竞技场 —— 移动、捕食、战斗、进化，最后一只存活获胜。
  */
 (function (global) {
   'use strict';
 
-  var S = global.Sprites;
+  var U = global.Utils;
+  var Dino = global.Dino;
+  var AI = global.AI;
   var Sfx = global.Sfx;
 
-  // ------------------------------------------------------------ 常量
+  var ARENA_W = 960;
+  var ARENA_H = 640;
+  var INITIAL_NPC = 11;
 
-  var GAME_W = 600;
-  var GAME_H = 200;
-  var PX = 2; // 一个精灵像素 = 2 个逻辑单位
-  var GROUND_Y = 168; // 地面基线：角色底部所在的 y
-  var HORIZON_Y = 170;
-
-  var GRAVITY = 2600;
-  var JUMP_VELOCITY = -740;
-  var JUMP_CUT_VELOCITY = -280; // 提前松开跳跃键时保留的上升速度
-  var FAST_FALL_GRAVITY = 3400;
-
-  var SPEED_START = 320;
-  var SPEED_MAX = 900;
-  var SPEED_ACCEL = 7; // 每秒增加的速度
-  var SCORE_RATE = 0.03; // 每个逻辑单位的距离换算成多少分
-
-  var LARGE_CACTUS_SCORE = 60;
-  var BIRD_SCORE = 250;
-  var NIGHT_INTERVAL = 600; // 每隔多少分切换一次昼夜
-  var MILESTONE = 100;
-
-  var GROUND_PATTERN_W = 2400;
-
-  var THEME_DAY = { bg: [247, 247, 247], fg: [72, 72, 78], dim: [176, 176, 184] };
-  var THEME_NIGHT = { bg: [22, 22, 30], fg: [226, 226, 236], dim: [104, 104, 122] };
-
-  // 角色碰撞盒（相对精灵左上角的逻辑单位），拆成多块让判定更贴合形状
-  var BOX_STAND = [
-    { x: 22, y: 2, w: 18, h: 18 },
-    { x: 6, y: 24, w: 26, h: 18 },
-    { x: 12, y: 42, w: 14, h: 6 }
+  var AI_NAMES = [
+    '暴龙', '迅猛龙', '棘龙', '甲龙', '剑龙',
+    '异特龙', '镰刀龙', '三角龙', '双脊龙', '禽龙', '重爪龙', '角龙'
   ];
-  var BOX_DUCK = [
-    { x: 32, y: 2, w: 18, h: 8 },
-    { x: 4, y: 10, w: 36, h: 12 }
-  ];
-
-  var BIRD_HEIGHTS = [168, 150, 132]; // 翼龙底边可能出现的高度
-
-  // ------------------------------------------------------------ 工具
-
-  function rand(min, max) {
-    return min + Math.random() * (max - min);
-  }
-
-  function randInt(min, max) {
-    return Math.floor(rand(min, max + 1));
-  }
-
-  function pick(arr) {
-    return arr[randInt(0, arr.length - 1)];
-  }
-
-  function lerp(a, b, t) {
-    return a + (b - a) * t;
-  }
-
-  function mixColor(a, b, t) {
-    return (
-      'rgb(' +
-      Math.round(lerp(a[0], b[0], t)) +
-      ',' +
-      Math.round(lerp(a[1], b[1], t)) +
-      ',' +
-      Math.round(lerp(a[2], b[2], t)) +
-      ')'
-    );
-  }
-
-  function overlaps(a, b) {
-    return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
-  }
-
-  function pad(value, size) {
-    var s = String(value);
-    while (s.length < size) s = '0' + s;
-    return s;
-  }
-
-  // ------------------------------------------------------------ 游戏
 
   function Game(canvas, hooks) {
     this.canvas = canvas;
     this.ctx = canvas.getContext('2d');
     this.hooks = hooks || {};
-
+    this.arena = { w: ARENA_W, h: ARENA_H };
     this.scale = 1;
     this.state = 'ready';
-    this.input = { jump: false, duck: false };
+    this.input = { up: false, down: false, left: false, right: false, bite: false };
+    this.particles = [];
+    this.messages = [];
+    this.nextId = 1;
 
-    this.highScore = this.loadHighScore();
-    this.groundPattern = this.buildGroundPattern();
+    this.highWins = this.loadHighWins();
 
     this.reset();
     this.resize();
-
     this.lastTime = 0;
-    this.rafId = 0;
     this.tick = this.tick.bind(this);
-    this.rafId = requestAnimationFrame(this.tick);
+    global.requestAnimationFrame(this.tick);
   }
 
-  Game.prototype.loadHighScore = function () {
+  Game.prototype.loadHighWins = function () {
     try {
-      return parseInt(global.localStorage.getItem('dino.highScore'), 10) || 0;
-    } catch (err) {
+      return parseInt(global.localStorage.getItem('dinoSurvival.wins'), 10) || 0;
+    } catch (e) {
       return 0;
     }
   };
 
-  Game.prototype.saveHighScore = function () {
+  Game.prototype.saveHighWins = function () {
     try {
-      global.localStorage.setItem('dino.highScore', String(this.highScore));
-    } catch (err) {
-      /* 隐私模式下写入会失败，忽略即可 */
-    }
-  };
-
-  /** 地面上随机分布的小石子，做成固定长度的图案后循环滚动。 */
-  Game.prototype.buildGroundPattern = function () {
-    var marks = [];
-    for (var x = 0; x < GROUND_PATTERN_W; x += randInt(14, 46)) {
-      marks.push({
-        x: x,
-        w: randInt(2, 9) * PX,
-        y: randInt(0, 3) * PX
-      });
-    }
-    return marks;
+      global.localStorage.setItem('dinoSurvival.wins', String(this.highWins));
+    } catch (e) {}
   };
 
   Game.prototype.reset = function () {
-    this.speed = SPEED_START;
-    this.distance = 0;
-    this.score = 0;
-    this.displayScore = 0;
-    this.newRecord = false;
+    this.dinos = [];
+    this.particles = [];
+    this.messages = [];
+    this.nextId = 1;
+    this.evolveFlash = 0;
 
-    this.dino = {
-      x: 44,
-      y: GROUND_Y,
-      vy: 0,
-      onGround: true,
-      ducking: false,
-      frameTime: 0,
-      frame: 0
-    };
+    this.player = this.spawnDino({
+      isPlayer: true,
+      x: ARENA_W * 0.5,
+      y: ARENA_H * 0.5,
+      mass: 18,
+      name: '你'
+    });
 
-    this.obstacles = [];
-    this.clouds = [];
-    this.stars = [];
-    this.groundOffset = 0;
-    this.nextObstacleGap = 260;
-
-    this.night = 0;
-    this.nightTarget = 0;
-    this.moonPhase = 0;
-    this.nightsPassed = 0;
-
-    this.flashTimer = 0;
-    this.deadTimer = 0;
-
-    for (var i = 0; i < 3; i++) {
-      this.clouds.push({
-        x: rand(GAME_W * 0.3, GAME_W * 1.6),
-        y: rand(20, 78),
-        drift: rand(0.28, 0.46)
-      });
+    for (var i = 0; i < INITIAL_NPC; i++) {
+      this.spawnNpc();
     }
-    for (var j = 0; j < 14; j++) {
-      this.stars.push({ x: rand(0, GAME_W), y: rand(12, 96) });
+  };
+
+  Game.prototype.spawnDino = function (opts) {
+    var dino = new Dino({
+      id: this.nextId++,
+      isPlayer: opts.isPlayer,
+      x: opts.x,
+      y: opts.y,
+      mass: opts.mass || U.rand(12, 28),
+      angle: U.rand(0, Math.PI * 2),
+      name: opts.name || '恐龙'
+    });
+    dino.syncStats();
+    this.dinos.push(dino);
+    return dino;
+  };
+
+  Game.prototype.spawnNpc = function () {
+    var pad = 60;
+    var x, y, safe;
+    var tries = 0;
+    do {
+      x = U.rand(pad, ARENA_W - pad);
+      y = U.rand(pad, ARENA_H - pad);
+      safe = true;
+      if (this.player && this.player.alive) {
+        safe = U.dist(x, y, this.player.x, this.player.y) > 120;
+      }
+      tries++;
+    } while (!safe && tries < 20);
+
+    var mass = U.rand(14, 32);
+    if (this.player && this.player.alive && Math.random() < 0.35) {
+      mass = U.rand(this.player.mass * 0.7, this.player.mass * 1.3);
     }
+
+    return this.spawnDino({
+      x: x,
+      y: y,
+      mass: mass,
+      name: AI_NAMES[U.randInt(0, AI_NAMES.length - 1)]
+    });
+  };
+
+  Game.prototype.aliveDinos = function () {
+    var out = [];
+    for (var i = 0; i < this.dinos.length; i++) {
+      if (this.dinos[i].alive) out.push(this.dinos[i]);
+    }
+    return out;
   };
 
   Game.prototype.setState = function (state) {
@@ -192,71 +129,60 @@
     if (this.hooks.onState) this.hooks.onState(state, this);
   };
 
-  // ------------------------------------------------------------ 输入
-
   Game.prototype.press = function (action) {
-    if (action === 'jump') {
-      this.input.jump = true;
-      if (this.state === 'ready') {
-        this.setState('playing');
-        this.jump();
-      } else if (this.state === 'playing') {
-        this.jump();
-      } else if (this.state === 'over' && this.deadTimer > 0.35) {
-        this.restart();
-      }
-    } else if (action === 'duck') {
-      this.input.duck = true;
-      if (this.state === 'ready') this.setState('playing');
-    }
-  };
+    if (action === 'bite') this.input.bite = true;
+    else if (action in this.input) this.input[action] = true;
 
-  Game.prototype.release = function (action) {
-    if (action === 'jump') {
-      this.input.jump = false;
-      // 松手越早跳得越低，给玩家更细腻的控制
-      if (this.state === 'playing' && this.dino.vy < JUMP_CUT_VELOCITY) {
-        this.dino.vy = JUMP_CUT_VELOCITY;
-      }
-    } else if (action === 'duck') {
-      this.input.duck = false;
-    }
-  };
-
-  Game.prototype.jump = function () {
-    if (!this.dino.onGround) return;
-    this.dino.vy = JUMP_VELOCITY;
-    this.dino.onGround = false;
-    this.dino.ducking = false;
-    Sfx.jump();
-  };
-
-  Game.prototype.restart = function () {
-    this.reset();
-    if (this.hooks.onNight) this.hooks.onNight(false);
-    this.setState('playing');
-  };
-
-  Game.prototype.togglePause = function () {
-    if (this.state === 'playing') {
-      this.setState('paused');
-    } else if (this.state === 'paused') {
+    if (this.state === 'ready') {
+      this.setState('playing');
+    } else if (this.state === 'over' || this.state === 'win') {
+      this.reset();
       this.setState('playing');
     }
   };
 
-  Game.prototype.pause = function () {
+  Game.prototype.release = function (action) {
+    if (action === 'bite') this.input.bite = false;
+    else if (action in this.input) this.input[action] = false;
+  };
+
+  Game.prototype.restart = function () {
+    this.reset();
+    this.setState('playing');
+  };
+
+  Game.prototype.togglePause = function () {
     if (this.state === 'playing') this.setState('paused');
+    else if (this.state === 'paused') this.setState('playing');
+  };
+
+  Game.prototype.addMessage = function (text, duration) {
+    this.messages.push({ text: text, life: duration || 2.2 });
+  };
+
+  Game.prototype.addParticles = function (x, y, color, count) {
+    for (var i = 0; i < count; i++) {
+      var a = U.rand(0, Math.PI * 2);
+      var spd = U.rand(40, 180);
+      this.particles.push({
+        x: x,
+        y: y,
+        vx: Math.cos(a) * spd,
+        vy: Math.sin(a) * spd,
+        life: U.rand(0.3, 0.7),
+        color: color,
+        size: U.rand(2, 5)
+      });
+    }
   };
 
   // ------------------------------------------------------------ 主循环
 
   Game.prototype.tick = function (now) {
-    this.rafId = requestAnimationFrame(this.tick);
+    global.requestAnimationFrame(this.tick);
     if (!this.lastTime) this.lastTime = now;
     var dt = Math.min((now - this.lastTime) / 1000, 0.05);
     this.lastTime = now;
-
     this.update(dt);
     this.draw();
   };
@@ -264,234 +190,178 @@
   Game.prototype.update = function (dt) {
     if (this.state === 'paused') return;
 
-    if (this.state === 'over') {
-      this.deadTimer += dt;
-    } else if (this.state === 'playing') {
-      this.speed = Math.min(SPEED_MAX, this.speed + SPEED_ACCEL * dt);
-      this.distance += this.speed * dt;
-      this.updateScore(dt);
-      this.updateObstacles(dt);
+    if (this.evolveFlash > 0) this.evolveFlash -= dt;
+
+    for (var m = this.messages.length - 1; m >= 0; m--) {
+      this.messages[m].life -= dt;
+      if (this.messages[m].life <= 0) this.messages.splice(m, 1);
     }
 
-    if (this.state !== 'over') {
-      this.groundOffset = (this.groundOffset + this.speed * dt) % GROUND_PATTERN_W;
-      this.updateClouds(dt);
+    for (var p = this.particles.length - 1; p >= 0; p--) {
+      var part = this.particles[p];
+      part.life -= dt;
+      part.x += part.vx * dt;
+      part.y += part.vy * dt;
+      part.vx *= 0.92;
+      part.vy *= 0.92;
+      if (part.life <= 0) this.particles.splice(p, 1);
     }
 
-    this.updateDino(dt);
-    this.updateNight(dt);
+    if (this.state !== 'playing') return;
 
-    if (this.flashTimer > 0) this.flashTimer = Math.max(0, this.flashTimer - dt);
+    this.updatePlayer(dt);
+    this.updateNPCs(dt);
+    this.resolveCombat();
+    this.resolveEating();
+    this.checkEnd();
   };
 
-  Game.prototype.updateScore = function (dt) {
-    var before = Math.floor(this.score);
-    this.score += this.speed * dt * SCORE_RATE;
-    var after = Math.floor(this.score);
+  Game.prototype.updatePlayer = function (dt) {
+    var p = this.player;
+    if (!p.alive) return;
 
-    if (Math.floor(before / MILESTONE) !== Math.floor(after / MILESTONE) && after > 0) {
-      this.flashTimer = 0.7;
-      Sfx.point();
-    }
-    if (after !== before && this.hooks.onScore) this.hooks.onScore(after, this);
+    var ax = 0;
+    var ay = 0;
+    if (this.input.left) ax -= 1;
+    if (this.input.right) ax += 1;
+    if (this.input.up) ay -= 1;
+    if (this.input.down) ay += 1;
 
-    if (after > this.highScore) {
-      this.highScore = after;
-      this.newRecord = true;
+    if (ax !== 0 || ay !== 0) {
+      var len = Math.hypot(ax, ay);
+      ax /= len;
+      ay /= len;
+      var spd = p.speed();
+      p.vx += ax * spd * dt * 4;
+      p.vy += ay * spd * dt * 4;
+      p.angle = Math.atan2(ay, ax);
     }
+
+    if (this.input.bite && p.tryBite()) {
+      Sfx.bite();
+    }
+
+    p.applyFriction(dt);
+    p.updateMotion(this.arena, dt);
   };
 
-  Game.prototype.updateDino = function (dt) {
-    var dino = this.dino;
+  Game.prototype.updateNPCs = function (dt) {
+    var alive = this.aliveDinos();
+    for (var i = 0; i < this.dinos.length; i++) {
+      var d = this.dinos[i];
+      if (!d.alive || d.isPlayer) continue;
 
-    if (this.state === 'playing') {
-      if (!dino.onGround) {
-        var g = this.input.duck ? FAST_FALL_GRAVITY : GRAVITY;
-        dino.vy += g * dt;
-        dino.y += dino.vy * dt;
-        if (dino.y >= GROUND_Y) {
-          dino.y = GROUND_Y;
-          dino.vy = 0;
-          dino.onGround = true;
-        }
-      }
-      dino.ducking = dino.onGround && this.input.duck;
-    }
+      var result = AI.update(d, alive, dt);
+      if (result && result.action === 'bite') Sfx.bite();
 
-    // 跑步 / 低头的两帧循环
-    if (this.state === 'playing' || this.state === 'ready') {
-      var rate = this.state === 'ready' ? 0.18 : Math.max(0.055, 0.16 - this.speed / 9000);
-      dino.frameTime += dt;
-      while (dino.frameTime >= rate) {
-        dino.frameTime -= rate;
-        dino.frame = (dino.frame + 1) % 2;
-      }
-    }
-  };
-
-  Game.prototype.updateClouds = function (dt) {
-    for (var i = this.clouds.length - 1; i >= 0; i--) {
-      var cloud = this.clouds[i];
-      cloud.x -= this.speed * cloud.drift * dt;
-      if (cloud.x + S.cloud.w * PX < 0) this.clouds.splice(i, 1);
-    }
-    var rightMost = 0;
-    for (var j = 0; j < this.clouds.length; j++) {
-      rightMost = Math.max(rightMost, this.clouds[j].x);
-    }
-    if (this.clouds.length < 4 && rightMost < GAME_W - rand(90, 260)) {
-      this.clouds.push({
-        x: GAME_W + rand(0, 120),
-        y: rand(16, 80),
-        drift: rand(0.28, 0.46)
-      });
-    }
-
-    for (var k = 0; k < this.stars.length; k++) {
-      var star = this.stars[k];
-      star.x -= this.speed * 0.1 * dt;
-      if (star.x < -6) {
-        star.x = GAME_W + rand(0, 40);
-        star.y = rand(12, 96);
-      }
+      d.applyFriction(dt);
+      d.updateMotion(this.arena, dt);
     }
   };
 
-  Game.prototype.updateNight = function (dt) {
-    var phase = Math.floor(this.score / NIGHT_INTERVAL);
-    var wantNight = phase % 2 === 1 ? 1 : 0;
-    if (wantNight !== this.nightTarget) {
-      this.nightTarget = wantNight;
-      if (wantNight === 1) {
-        this.moonPhase = this.nightsPassed % 5;
-        this.nightsPassed++;
-      }
-      if (this.hooks.onNight) this.hooks.onNight(wantNight === 1);
-    }
-    var speedOfChange = dt / 1.6;
-    if (this.night < this.nightTarget) {
-      this.night = Math.min(this.nightTarget, this.night + speedOfChange);
-    } else if (this.night > this.nightTarget) {
-      this.night = Math.max(this.nightTarget, this.night - speedOfChange);
-    }
-  };
+  Game.prototype.resolveCombat = function () {
+    for (var i = 0; i < this.dinos.length; i++) {
+      var attacker = this.dinos[i];
+      if (!attacker.alive || attacker.biteAnim <= 0) continue;
 
-  // ------------------------------------------------------------ 障碍物
+      for (var j = 0; j < this.dinos.length; j++) {
+        var victim = this.dinos[j];
+        if (!victim.alive || victim.id === attacker.id) continue;
 
-  Game.prototype.updateObstacles = function (dt) {
-    var i;
-    for (i = this.obstacles.length - 1; i >= 0; i--) {
-      var ob = this.obstacles[i];
-      ob.x -= (this.speed + ob.extraSpeed) * dt;
-      if (ob.frames.length > 1) {
-        ob.frameTime += dt;
-        if (ob.frameTime >= ob.frameRate) {
-          ob.frameTime -= ob.frameRate;
-          ob.frame = (ob.frame + 1) % ob.frames.length;
-        }
-      }
-      if (ob.x + ob.w < -10) this.obstacles.splice(i, 1);
-    }
+        var d = U.dist(attacker.x, attacker.y, victim.x, victim.y);
+        if (d > attacker.biteReach() + victim.radius * 0.6) continue;
 
-    var right = 0;
-    for (i = 0; i < this.obstacles.length; i++) {
-      right = Math.max(right, this.obstacles[i].x + this.obstacles[i].w);
-    }
-    if (this.obstacles.length === 0 || GAME_W - right >= this.nextObstacleGap) {
-      this.spawnObstacle();
-      var base = this.speed * rand(0.66, 1.15);
-      this.nextObstacleGap = Math.max(120, base);
-    }
+        // 咬击必须在面朝方向
+        var angleToVictim = U.angleTo(attacker.x, attacker.y, victim.x, victim.y);
+        var diff = Math.abs(U.wrapAngle(angleToVictim - attacker.angle));
+        if (diff > Math.PI * 0.55) continue;
 
-    if (this.checkCollision()) this.die();
-  };
+        if (attacker.canEat(victim)) continue; // 能直接吞就不咬
 
-  Game.prototype.spawnObstacle = function () {
-    var birdChance = this.score >= BIRD_SCORE ? Math.min(0.3, 0.12 + this.score / 6000) : 0;
+        var dmg = attacker.biteDamage();
+        if (victim.radius > attacker.radius * 0.9) dmg *= 0.65;
 
-    if (Math.random() < birdChance) {
-      var bird = S.bird[0];
-      this.obstacles.push({
-        x: GAME_W + 20,
-        y: pick(BIRD_HEIGHTS) - bird.h * PX,
-        w: bird.w * PX,
-        h: bird.h * PX,
-        frames: S.bird,
-        frame: 0,
-        frameTime: 0,
-        frameRate: 0.2,
-        repeat: 1,
-        extraSpeed: pick([0, 0, this.speed * 0.18]),
-        boxes: [{ x: 6, y: 12, w: 34, h: 12 }]
-      });
-      return;
-    }
+        var killed = victim.takeDamage(dmg, attacker);
+        this.addParticles(victim.x, victim.y, '#ff6060', 4);
 
-    var useLarge = this.score >= LARGE_CACTUS_SCORE && Math.random() < 0.45;
-    var sprite = useLarge ? S.cactusLarge : S.cactusSmall;
-    var maxRepeat = useLarge ? 2 : 3;
-    var repeat = randInt(1, this.speed > 420 ? maxRepeat : Math.min(2, maxRepeat));
-    var w = sprite.w * PX * repeat;
-    var h = sprite.h * PX;
-
-    this.obstacles.push({
-      x: GAME_W + 10,
-      y: GROUND_Y - h,
-      w: w,
-      h: h,
-      frames: [sprite],
-      frame: 0,
-      frameTime: 0,
-      frameRate: 1,
-      repeat: repeat,
-      extraSpeed: 0,
-      boxes: [{ x: 4, y: 4, w: w - 8, h: h - 4 }]
-    });
-  };
-
-  Game.prototype.dinoBoxes = function () {
-    var dino = this.dino;
-    var sprite = dino.ducking ? S.dinoDuck[0] : S.dinoIdle;
-    var top = dino.y - sprite.h * PX;
-    var source = dino.ducking ? BOX_DUCK : BOX_STAND;
-    var out = [];
-    for (var i = 0; i < source.length; i++) {
-      out.push({
-        x: dino.x + source[i].x,
-        y: top + source[i].y,
-        w: source[i].w,
-        h: source[i].h
-      });
-    }
-    return out;
-  };
-
-  Game.prototype.checkCollision = function () {
-    var boxes = this.dinoBoxes();
-    for (var i = 0; i < this.obstacles.length; i++) {
-      var ob = this.obstacles[i];
-      if (ob.x > this.dino.x + 60 || ob.x + ob.w < this.dino.x - 10) continue;
-      for (var j = 0; j < ob.boxes.length; j++) {
-        var box = {
-          x: ob.x + ob.boxes[j].x,
-          y: ob.y + ob.boxes[j].y,
-          w: ob.boxes[j].w,
-          h: ob.boxes[j].h
-        };
-        for (var k = 0; k < boxes.length; k++) {
-          if (overlaps(boxes[k], box)) return true;
+        if (killed) {
+          this.killDino(victim, attacker);
         }
       }
     }
-    return false;
   };
 
-  Game.prototype.die = function () {
-    this.deadTimer = 0;
-    this.dino.ducking = false;
-    this.saveHighScore();
-    Sfx.die();
-    this.setState('over');
+  Game.prototype.resolveEating = function () {
+    for (var i = 0; i < this.dinos.length; i++) {
+      var eater = this.dinos[i];
+      if (!eater.alive) continue;
+
+      for (var j = 0; j < this.dinos.length; j++) {
+        var prey = this.dinos[j];
+        if (!prey.alive || prey.id === eater.id) continue;
+
+        var d = U.dist(eater.x, eater.y, prey.x, prey.y);
+        if (d > eater.radius + prey.radius * 0.55) continue;
+        if (!eater.canEat(prey)) continue;
+
+        var evolved = eater.absorb(prey);
+        prey.alive = false;
+        Sfx.eat();
+        this.addParticles(prey.x, prey.y, eater.colors().body, 10);
+        this.addMessage(eater.isPlayer ? '吞食 ' + prey.name + '！' : prey.name + ' 被吞食', 1.8);
+
+        if (evolved) {
+          if (eater.isPlayer) {
+            Sfx.evolve();
+            this.evolveFlash = 0.6;
+            this.addMessage('进化 → ' + U.stageName(eater.mass) + '！', 2.5);
+          }
+        }
+
+        if (eater.isPlayer) {
+          if (this.hooks.onStats) this.hooks.onStats(this);
+        }
+      }
+    }
+  };
+
+  Game.prototype.killDino = function (victim, killer) {
+    victim.alive = false;
+    this.addParticles(victim.x, victim.y, '#888', 8);
+
+    if (killer) {
+      killer.kills += 1;
+      killer.mass += victim.mass * 0.25;
+      var evolved = killer.syncStats();
+      if (killer.isPlayer && evolved) {
+        Sfx.evolve();
+        this.addMessage('进化 → ' + U.stageName(killer.mass) + '！', 2.5);
+      }
+    }
+
+    if (victim.isPlayer) {
+      Sfx.die();
+      this.setState('over');
+      this.addMessage('你被击败了…', 3);
+    }
+  };
+
+  Game.prototype.checkEnd = function () {
+    var alive = this.aliveDinos();
+    if (!this.player.alive) return;
+
+    var npcCount = 0;
+    for (var i = 0; i < alive.length; i++) {
+      if (!alive[i].isPlayer) npcCount++;
+    }
+
+    if (npcCount === 0) {
+      Sfx.win();
+      this.highWins += 1;
+      this.saveHighWins();
+      this.setState('win');
+      this.addMessage('你是最后的恐龙！胜利！', 4);
+    }
   };
 
   // ------------------------------------------------------------ 渲染
@@ -500,145 +370,103 @@
     var rect = this.canvas.getBoundingClientRect();
     var dpr = global.devicePixelRatio || 1;
     var width = Math.max(1, Math.round(rect.width * dpr));
-    var height = Math.round((width * GAME_H) / GAME_W);
+    var height = Math.round((width * ARENA_H) / ARENA_W);
 
     if (this.canvas.width !== width || this.canvas.height !== height) {
       this.canvas.width = width;
       this.canvas.height = height;
     }
-    this.scale = width / GAME_W;
-  };
-
-  Game.prototype.colors = function () {
-    return {
-      bg: mixColor(THEME_DAY.bg, THEME_NIGHT.bg, this.night),
-      fg: mixColor(THEME_DAY.fg, THEME_NIGHT.fg, this.night),
-      dim: mixColor(THEME_DAY.dim, THEME_NIGHT.dim, this.night)
-    };
+    this.scale = width / ARENA_W;
   };
 
   Game.prototype.draw = function () {
     var ctx = this.ctx;
-    var c = this.colors();
+    var w = ARENA_W;
+    var h = ARENA_H;
 
     ctx.setTransform(this.scale, 0, 0, this.scale, 0, 0);
-    ctx.fillStyle = c.bg;
-    ctx.fillRect(0, 0, GAME_W, GAME_H);
 
-    if (this.night > 0.05) this.drawSky(ctx, c);
-    this.drawClouds(ctx, c);
-    this.drawGround(ctx, c);
-    this.drawObstacles(ctx, c);
-    this.drawDino(ctx, c);
-    this.drawScore(ctx, c);
-  };
+    // 草地背景
+    ctx.fillStyle = '#2d5a3d';
+    ctx.fillRect(0, 0, w, h);
 
-  Game.prototype.drawSky = function (ctx, c) {
-    ctx.globalAlpha = Math.min(1, (this.night - 0.05) / 0.55);
-    ctx.fillStyle = c.dim;
-    for (var i = 0; i < this.stars.length; i++) {
-      S.draw(ctx, S.star, Math.round(this.stars[i].x), Math.round(this.stars[i].y), PX);
+    // 草地纹理
+    ctx.fillStyle = '#346648';
+    for (var gx = 0; gx < w; gx += 40) {
+      for (var gy = 0; gy < h; gy += 40) {
+        if ((gx + gy) % 80 === 0) {
+          ctx.fillRect(gx, gy, 20, 20);
+        }
+      }
     }
 
-    // 月亮，每个夜晚换一个月相
-    var cx = GAME_W - 90;
-    var cy = 46;
-    var r = 15;
-    ctx.fillStyle = c.fg;
-    ctx.beginPath();
-    ctx.arc(cx, cy, r, 0, Math.PI * 2);
-    ctx.fill();
+    // 边界
+    ctx.strokeStyle = '#1a3d28';
+    ctx.lineWidth = 6;
+    ctx.strokeRect(3, 3, w - 6, h - 6);
 
-    var carve = [r * 0.85, r * 1.35, null, -r * 1.35, -r * 0.85][this.moonPhase];
-    if (carve !== null) {
-      ctx.fillStyle = c.bg;
+    // 粒子
+    for (var i = 0; i < this.particles.length; i++) {
+      var p = this.particles[i];
+      ctx.globalAlpha = p.life;
+      ctx.fillStyle = p.color;
       ctx.beginPath();
-      ctx.arc(cx + carve, cy, r * 0.98, 0, Math.PI * 2);
+      ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
       ctx.fill();
     }
     ctx.globalAlpha = 1;
-  };
 
-  Game.prototype.drawClouds = function (ctx, c) {
-    ctx.fillStyle = c.dim;
-    for (var i = 0; i < this.clouds.length; i++) {
-      S.draw(ctx, S.cloud, Math.round(this.clouds[i].x), Math.round(this.clouds[i].y), PX);
+    // 恐龙（小的先画，大的后画）
+    var sorted = this.dinos.slice().sort(function (a, b) {
+      return a.radius - b.radius;
+    });
+    for (var d = 0; d < sorted.length; d++) {
+      sorted[d].draw(ctx);
+    }
+
+    if (this.evolveFlash > 0) {
+      ctx.fillStyle = 'rgba(255,255,200,' + this.evolveFlash * 0.35 + ')';
+      ctx.fillRect(0, 0, w, h);
+    }
+
+    this.drawHUD(ctx);
+
+    // 浮动消息
+    ctx.textAlign = 'center';
+    ctx.font = 'bold 16px sans-serif';
+    for (var m = 0; m < this.messages.length; m++) {
+      var msg = this.messages[m];
+      ctx.fillStyle = 'rgba(0,0,0,0.4)';
+      ctx.fillText(msg.text, w / 2 + 1, 52 + m * 22 + 1);
+      ctx.fillStyle = '#fff';
+      ctx.fillText(msg.text, w / 2, 52 + m * 22);
     }
   };
 
-  Game.prototype.drawGround = function (ctx, c) {
-    ctx.fillStyle = c.fg;
-    ctx.fillRect(0, HORIZON_Y, GAME_W, PX);
+  Game.prototype.drawHUD = function (ctx) {
+    var p = this.player;
+    if (!p) return;
 
-    ctx.fillStyle = c.dim;
-    var offset = this.groundOffset;
-    for (var pass = 0; pass < 2; pass++) {
-      var base = -offset + pass * GROUND_PATTERN_W;
-      if (base > GAME_W) continue;
-      for (var i = 0; i < this.groundPattern.length; i++) {
-        var mark = this.groundPattern[i];
-        var x = base + mark.x;
-        if (x < -mark.w || x > GAME_W) continue;
-        ctx.fillRect(Math.round(x), HORIZON_Y + PX * 2 + mark.y, mark.w, PX);
-      }
-    }
-  };
+    ctx.fillStyle = 'rgba(0,0,0,0.45)';
+    ctx.fillRect(10, 10, 200, 72);
+    ctx.fillStyle = '#e8f0e8';
+    ctx.font = '12px sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText('阶段: ' + U.stageName(p.mass), 18, 28);
+    ctx.fillText('体型: ' + Math.round(p.mass), 18, 44);
+    ctx.fillText('击杀: ' + p.kills, 18, 60);
+    ctx.fillText('存活: ' + this.aliveDinos().length, 18, 76);
 
-  Game.prototype.drawObstacles = function (ctx, c) {
-    ctx.fillStyle = c.fg;
-    for (var i = 0; i < this.obstacles.length; i++) {
-      var ob = this.obstacles[i];
-      var sprite = ob.frames[ob.frame];
-      for (var r = 0; r < ob.repeat; r++) {
-        S.draw(ctx, sprite, Math.round(ob.x) + r * sprite.w * PX, Math.round(ob.y), PX);
-      }
-    }
-  };
-
-  Game.prototype.drawDino = function (ctx, c) {
-    var dino = this.dino;
-    var sprite;
-
-    if (this.state === 'over') {
-      sprite = S.dinoDead;
-    } else if (dino.ducking) {
-      sprite = S.dinoDuck[dino.frame];
-    } else if (this.state === 'ready') {
-      sprite = S.dinoIdle;
-    } else if (!dino.onGround) {
-      sprite = S.dinoIdle;
-    } else {
-      sprite = S.dinoRun[dino.frame];
-    }
-
-    ctx.fillStyle = c.fg;
-    S.draw(ctx, sprite, dino.x, Math.round(dino.y - sprite.h * PX), PX);
-  };
-
-  Game.prototype.drawScore = function (ctx, c) {
-    var score = Math.floor(this.score);
-    // 到达整百分时分数闪烁
-    var blink = this.flashTimer > 0 && Math.floor(this.flashTimer * 8) % 2 === 0;
-
-    ctx.font = 'bold 13px "Courier New", ui-monospace, monospace';
+    // 右上角存活数
     ctx.textAlign = 'right';
-    ctx.textBaseline = 'top';
-
-    var x = GAME_W - 14;
-    if (!blink) {
-      ctx.fillStyle = c.fg;
-      ctx.fillText(pad(score, 5), x, 14);
-    }
-
-    if (this.highScore > 0) {
-      ctx.fillStyle = c.dim;
-      ctx.fillText('HI ' + pad(this.highScore, 5), x - 52, 14);
-    }
+    ctx.fillStyle = 'rgba(0,0,0,0.45)';
+    ctx.fillRect(ARENA_W - 110, 10, 100, 28);
+    ctx.fillStyle = '#ffcc66';
+    ctx.font = 'bold 13px sans-serif';
+    ctx.fillText('剩余 ' + this.aliveDinos().length + ' 只', ARENA_W - 18, 28);
   };
 
-  // ------------------------------------------------------------ 导出
-
-  Game.GAME_W = GAME_W;
-  Game.GAME_H = GAME_H;
+  Game.ARENA_W = ARENA_W;
+  Game.ARENA_H = ARENA_H;
   global.Game = Game;
 })(window);
