@@ -1,0 +1,289 @@
+:root {
+  --page-bg: #eef1f5;
+  --card-bg: #f7f7f7;
+  --ink: #3c3c46;
+  --ink-soft: #7d7d8c;
+  --line: rgba(60, 60, 70, 0.14);
+  --accent: #3c3c46;
+  --accent-ink: #f7f7f7;
+  --shadow: 0 18px 40px -24px rgba(20, 20, 35, 0.55);
+  --radius: 14px;
+  color-scheme: light;
+}
+
+body.is-night {
+  --page-bg: #0d0d14;
+  --card-bg: #16161e;
+  --ink: #e2e2ec;
+  --ink-soft: #9a9ab0;
+  --line: rgba(226, 226, 236, 0.16);
+  --accent: #e2e2ec;
+  --accent-ink: #16161e;
+  --shadow: 0 18px 40px -24px rgba(0, 0, 0, 0.9);
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 16px calc(24px + env(safe-area-inset-bottom));
+  background: var(--page-bg);
+  color: var(--ink);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+    "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", sans-serif;
+  -webkit-font-smoothing: antialiased;
+  transition: background-color 0.6s ease, color 0.6s ease;
+  overflow-x: hidden;
+}
+
+.page {
+  width: min(920px, 100%);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.page__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.page__title {
+  margin: 0;
+  font-size: clamp(20px, 4vw, 28px);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
+
+.page__tools {
+  display: flex;
+  gap: 8px;
+}
+
+.tool {
+  font: inherit;
+  font-size: 13px;
+  padding: 7px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--card-bg);
+  color: var(--ink-soft);
+  cursor: pointer;
+  transition: color 0.2s ease, border-color 0.2s ease, transform 0.1s ease;
+}
+
+.tool:hover {
+  color: var(--ink);
+  border-color: var(--ink-soft);
+}
+
+.tool:active {
+  transform: translateY(1px);
+}
+
+/* ---------------------------------------------------------------- 画布 */
+
+.stage {
+  position: relative;
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: var(--card-bg);
+  box-shadow: var(--shadow);
+  border: 1px solid var(--line);
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: background-color 0.6s ease;
+}
+
+.stage__canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 3 / 1;
+  cursor: pointer;
+}
+
+/* ---------------------------------------------------------------- 浮层 */
+
+.overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 16px;
+  text-align: center;
+  pointer-events: none;
+  background: color-mix(in srgb, var(--card-bg) 72%, transparent);
+  backdrop-filter: blur(1.5px);
+  animation: overlay-in 0.24s ease both;
+}
+
+.overlay--hidden {
+  display: none;
+}
+
+@keyframes overlay-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+.overlay__title {
+  margin: 0;
+  font-size: clamp(18px, 3.6vw, 24px);
+  font-weight: 700;
+  letter-spacing: 0.16em;
+}
+
+.overlay__hint,
+.overlay__score {
+  margin: 0;
+  font-size: 13px;
+  color: var(--ink-soft);
+}
+
+.overlay__score strong {
+  font-family: "Courier New", ui-monospace, monospace;
+  font-size: 20px;
+  color: var(--ink);
+  margin-left: 4px;
+}
+
+.overlay__record {
+  margin-left: 8px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+
+.overlay__button {
+  pointer-events: auto;
+  margin-top: 6px;
+  font: inherit;
+  font-size: 14px;
+  padding: 9px 24px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--accent-ink);
+  cursor: pointer;
+  transition: transform 0.1s ease, opacity 0.2s ease;
+}
+
+.overlay__button:hover {
+  opacity: 0.88;
+}
+
+.overlay__button:active {
+  transform: translateY(1px);
+}
+
+kbd {
+  display: inline-block;
+  min-width: 20px;
+  padding: 1px 6px;
+  border: 1px solid var(--line);
+  border-bottom-width: 2px;
+  border-radius: 5px;
+  background: var(--card-bg);
+  font-family: inherit;
+  font-size: 11px;
+  color: var(--ink);
+}
+
+/* ---------------------------------------------------------------- 触屏按钮 */
+
+.touch {
+  display: none;
+  gap: 12px;
+}
+
+.touch__button {
+  flex: 1;
+  font: inherit;
+  font-size: 15px;
+  padding: 16px 0;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: var(--card-bg);
+  color: var(--ink);
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.touch__button:active {
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+
+@media (pointer: coarse) {
+  .touch {
+    display: flex;
+  }
+}
+
+/* ---------------------------------------------------------------- 说明 */
+
+.legend {
+  padding: 16px 18px;
+  border-radius: var(--radius);
+  border: 1px solid var(--line);
+  background: var(--card-bg);
+  transition: background-color 0.6s ease;
+}
+
+.legend__title {
+  margin: 0 0 10px;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  color: var(--ink-soft);
+}
+
+.legend__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 6px;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  font-size: 13px;
+}
+
+.legend__note {
+  margin: 12px 0 0;
+  font-size: 12px;
+  color: var(--ink-soft);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
