@@ -1,5 +1,5 @@
 /**
- * 恐龙生存竞技场 —— 移动、捕食、战斗、进化，最后一只存活获胜。
+ * 恐龙生存竞技场 3D 版 —— 移动、捕食、战斗、进化，最后一只存活获胜。
  */
 (function (global) {
   'use strict';
@@ -8,6 +8,7 @@
   var Dino = global.Dino;
   var AI = global.AI;
   var Sfx = global.Sfx;
+  var Renderer3D = global.Renderer3D;
 
   var ARENA_W = 960;
   var ARENA_H = 640;
@@ -20,17 +21,17 @@
 
   function Game(canvas, hooks) {
     this.canvas = canvas;
-    this.ctx = canvas.getContext('2d');
     this.hooks = hooks || {};
     this.arena = { w: ARENA_W, h: ARENA_H };
-    this.scale = 1;
     this.state = 'ready';
     this.input = { up: false, down: false, left: false, right: false, bite: false };
     this.particles = [];
     this.messages = [];
     this.nextId = 1;
+    this.evolveFlash = 0;
 
     this.highWins = this.loadHighWins();
+    this.r3d = new Renderer3D(canvas, this.arena);
 
     this.reset();
     this.resize();
@@ -60,6 +61,14 @@
     this.nextId = 1;
     this.evolveFlash = 0;
 
+    // 清除旧 3D 模型
+    if (this.r3d) {
+      this.r3d.meshes.forEach(function (group) {
+        this.r3d.scene.remove(group);
+      }, this);
+      this.r3d.meshes.clear();
+    }
+
     this.player = this.spawnDino({
       isPlayer: true,
       x: ARENA_W * 0.5,
@@ -85,6 +94,7 @@
     });
     dino.syncStats();
     this.dinos.push(dino);
+    if (this.r3d) this.r3d.createDinoMesh(dino);
     return dino;
   };
 
@@ -176,15 +186,13 @@
     }
   };
 
-  // ------------------------------------------------------------ 主循环
-
   Game.prototype.tick = function (now) {
     global.requestAnimationFrame(this.tick);
     if (!this.lastTime) this.lastTime = now;
     var dt = Math.min((now - this.lastTime) / 1000, 0.05);
     this.lastTime = now;
     this.update(dt);
-    this.draw();
+    this.draw(dt);
   };
 
   Game.prototype.update = function (dt) {
@@ -207,13 +215,17 @@
       if (part.life <= 0) this.particles.splice(p, 1);
     }
 
-    if (this.state !== 'playing') return;
+    if (this.state !== 'playing') {
+      if (this.player) this.r3d.updateCamera(this.player, dt);
+      return;
+    }
 
     this.updatePlayer(dt);
     this.updateNPCs(dt);
     this.resolveCombat();
     this.resolveEating();
     this.checkEnd();
+    this.r3d.updateCamera(this.player, dt);
   };
 
   Game.prototype.updatePlayer = function (dt) {
@@ -271,12 +283,11 @@
         var d = U.dist(attacker.x, attacker.y, victim.x, victim.y);
         if (d > attacker.biteReach() + victim.radius * 0.6) continue;
 
-        // 咬击必须在面朝方向
         var angleToVictim = U.angleTo(attacker.x, attacker.y, victim.x, victim.y);
         var diff = Math.abs(U.wrapAngle(angleToVictim - attacker.angle));
         if (diff > Math.PI * 0.55) continue;
 
-        if (attacker.canEat(victim)) continue; // 能直接吞就不咬
+        if (attacker.canEat(victim)) continue;
 
         var dmg = attacker.biteDamage();
         if (victim.radius > attacker.radius * 0.9) dmg *= 0.65;
@@ -310,16 +321,10 @@
         this.addParticles(prey.x, prey.y, eater.colors().body, 10);
         this.addMessage(eater.isPlayer ? '吞食 ' + prey.name + '！' : prey.name + ' 被吞食', 1.8);
 
-        if (evolved) {
-          if (eater.isPlayer) {
-            Sfx.evolve();
-            this.evolveFlash = 0.6;
-            this.addMessage('进化 → ' + U.stageName(eater.mass) + '！', 2.5);
-          }
-        }
-
-        if (eater.isPlayer) {
-          if (this.hooks.onStats) this.hooks.onStats(this);
+        if (evolved && eater.isPlayer) {
+          Sfx.evolve();
+          this.evolveFlash = 0.6;
+          this.addMessage('进化 → ' + U.stageName(eater.mass) + '！', 2.5);
         }
       }
     }
@@ -327,7 +332,7 @@
 
   Game.prototype.killDino = function (victim, killer) {
     victim.alive = false;
-    this.addParticles(victim.x, victim.y, '#888', 8);
+    this.addParticles(victim.x, victim.y, '#888888', 8);
 
     if (killer) {
       killer.kills += 1;
@@ -364,106 +369,24 @@
     }
   };
 
-  // ------------------------------------------------------------ 渲染
-
   Game.prototype.resize = function () {
     var rect = this.canvas.getBoundingClientRect();
-    var dpr = global.devicePixelRatio || 1;
+    var dpr = Math.min(global.devicePixelRatio || 1, 2);
     var width = Math.max(1, Math.round(rect.width * dpr));
     var height = Math.round((width * ARENA_H) / ARENA_W);
-
-    if (this.canvas.width !== width || this.canvas.height !== height) {
-      this.canvas.width = width;
-      this.canvas.height = height;
-    }
-    this.scale = width / ARENA_W;
+    this.r3d.resize(width, height);
   };
 
-  Game.prototype.draw = function () {
-    var ctx = this.ctx;
-    var w = ARENA_W;
-    var h = ARENA_H;
-
-    ctx.setTransform(this.scale, 0, 0, this.scale, 0, 0);
-
-    // 草地背景
-    ctx.fillStyle = '#2d5a3d';
-    ctx.fillRect(0, 0, w, h);
-
-    // 草地纹理
-    ctx.fillStyle = '#346648';
-    for (var gx = 0; gx < w; gx += 40) {
-      for (var gy = 0; gy < h; gy += 40) {
-        if ((gx + gy) % 80 === 0) {
-          ctx.fillRect(gx, gy, 20, 20);
-        }
-      }
+  Game.prototype.draw = function (dt) {
+    for (var i = 0; i < this.dinos.length; i++) {
+      this.r3d.updateDinoMesh(this.dinos[i]);
     }
+    this.r3d.syncParticles(this.particles);
+    this.r3d.render();
 
-    // 边界
-    ctx.strokeStyle = '#1a3d28';
-    ctx.lineWidth = 6;
-    ctx.strokeRect(3, 3, w - 6, h - 6);
-
-    // 粒子
-    for (var i = 0; i < this.particles.length; i++) {
-      var p = this.particles[i];
-      ctx.globalAlpha = p.life;
-      ctx.fillStyle = p.color;
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-      ctx.fill();
+    if (this.hooks.onHud) {
+      this.hooks.onHud(this);
     }
-    ctx.globalAlpha = 1;
-
-    // 恐龙（小的先画，大的后画）
-    var sorted = this.dinos.slice().sort(function (a, b) {
-      return a.radius - b.radius;
-    });
-    for (var d = 0; d < sorted.length; d++) {
-      sorted[d].draw(ctx);
-    }
-
-    if (this.evolveFlash > 0) {
-      ctx.fillStyle = 'rgba(255,255,200,' + this.evolveFlash * 0.35 + ')';
-      ctx.fillRect(0, 0, w, h);
-    }
-
-    this.drawHUD(ctx);
-
-    // 浮动消息
-    ctx.textAlign = 'center';
-    ctx.font = 'bold 16px sans-serif';
-    for (var m = 0; m < this.messages.length; m++) {
-      var msg = this.messages[m];
-      ctx.fillStyle = 'rgba(0,0,0,0.4)';
-      ctx.fillText(msg.text, w / 2 + 1, 52 + m * 22 + 1);
-      ctx.fillStyle = '#fff';
-      ctx.fillText(msg.text, w / 2, 52 + m * 22);
-    }
-  };
-
-  Game.prototype.drawHUD = function (ctx) {
-    var p = this.player;
-    if (!p) return;
-
-    ctx.fillStyle = 'rgba(0,0,0,0.45)';
-    ctx.fillRect(10, 10, 200, 72);
-    ctx.fillStyle = '#e8f0e8';
-    ctx.font = '12px sans-serif';
-    ctx.textAlign = 'left';
-    ctx.fillText('阶段: ' + U.stageName(p.mass), 18, 28);
-    ctx.fillText('体型: ' + Math.round(p.mass), 18, 44);
-    ctx.fillText('击杀: ' + p.kills, 18, 60);
-    ctx.fillText('存活: ' + this.aliveDinos().length, 18, 76);
-
-    // 右上角存活数
-    ctx.textAlign = 'right';
-    ctx.fillStyle = 'rgba(0,0,0,0.45)';
-    ctx.fillRect(ARENA_W - 110, 10, 100, 28);
-    ctx.fillStyle = '#ffcc66';
-    ctx.font = 'bold 13px sans-serif';
-    ctx.fillText('剩余 ' + this.aliveDinos().length + ' 只', ARENA_W - 18, 28);
   };
 
   Game.ARENA_W = ARENA_W;

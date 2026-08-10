@@ -1,10 +1,13 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
-<head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<title>恐龙生存竞技场</title>
-<style>:root {
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="description" content="3D 恐龙生存竞技场：移动、捕食、战斗、进化，成为最后存活的恐龙。" />
+    <meta name="theme-color" content="#1a3d28" />
+    <title>恐龙生存竞技场 3D</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='14' font-size='14'>🦖</text></svg>" />
+    <style>:root {
   --page-bg: #0f2418;
   --card-bg: #1a3d28;
   --ink: #e8f0e8;
@@ -107,6 +110,67 @@ body {
   width: 100%;
   height: auto;
   aspect-ratio: 3 / 2;
+  background: #87b8e8;
+}
+
+.badge-3d {
+  display: inline-block;
+  font-size: 0.45em;
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: linear-gradient(135deg, #5cd65c, #3a9ad9);
+  color: #0f2418;
+  vertical-align: middle;
+  letter-spacing: 0.05em;
+}
+
+.hud {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  padding: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.hud__panel {
+  background: rgba(0, 0, 0, 0.5);
+  color: #e8f0e8;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  line-height: 1.7;
+}
+
+.hud__panel strong {
+  color: #5cd65c;
+}
+
+.hud__remain {
+  background: rgba(0, 0, 0, 0.5);
+  color: #ffcc66;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.toast {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -80px);
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+  padding: 8px 18px;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 600;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  pointer-events: none;
+  white-space: nowrap;
 }
 
 .overlay {
@@ -264,58 +328,82 @@ kbd {
   color: var(--ink-soft);
 }
 </style>
-</head>
-<body>
-<main class="page">
-<header class="page__header">
-<h1 class="page__title">恐龙生存竞技场</h1>
-<div class="page__tools">
-<button id="btn-sound" class="tool" type="button">音效：开</button>
-<button id="btn-pause" class="tool" type="button">暂停</button>
-</div>
-</header>
-<div class="stage" id="stage">
-<canvas id="game" class="stage__canvas" width="1920" height="1280"></canvas>
-<div class="overlay" id="overlay-ready">
-<p class="overlay__title">生存之战</p>
-<p class="overlay__hint">点下面按钮开始 · 方向键移动 · 空格攻击</p>
-<button class="overlay__button" type="button" data-action="start">开始战斗</button>
-</div>
-<div class="overlay overlay--hidden" id="overlay-win">
-<p class="overlay__title overlay__title--win">胜利！</p>
-<p class="overlay__score">你是最后的恐龙 <span class="overlay__record" id="win-stats"></span></p>
-<p class="overlay__hint">胜场 <strong id="win-count">0</strong></p>
-<button class="overlay__button" type="button" data-action="restart">再来一局</button>
-</div>
-<div class="overlay overlay--hidden" id="overlay-over">
-<p class="overlay__title">你被击败了</p>
-<p class="overlay__score" id="death-stats"></p>
-<button class="overlay__button" type="button" data-action="restart">再来一局</button>
-</div>
-<div class="overlay overlay--hidden" id="overlay-paused">
-<p class="overlay__title">已暂停</p>
-<button class="overlay__button" type="button" data-action="resume">继续游戏</button>
-</div>
-</div>
-<div class="touch" id="touch-controls">
-<div class="touch__dpad">
-<button class="touch__btn touch__btn--up" type="button" data-hold="up">↑</button>
-<button class="touch__btn touch__btn--left" type="button" data-hold="left">←</button>
-<button class="touch__btn touch__btn--right" type="button" data-hold="right">→</button>
-<button class="touch__btn touch__btn--down" type="button" data-hold="down">↓</button>
-</div>
-<button class="touch__bite" type="button" data-hold="bite">撕咬</button>
-</div>
-<section class="legend">
-<h2 class="legend__title">怎么玩</h2>
-<ul class="legend__list">
-<li>方向键 或 WASD 移动</li>
-<li>空格 攻击</li>
-<li>比对方大 → 靠近就能吃</li>
-<li>吃掉所有恐龙就赢了</li>
-</ul>
-</section>
-</main>
+  </head>
+  <body>
+    <main class="page">
+      <header class="page__header">
+        <h1 class="page__title">恐龙生存竞技场 <span class="badge-3d">3D</span></h1>
+        <div class="page__tools">
+          <button id="btn-sound" class="tool" type="button" aria-pressed="false">音效：开</button>
+          <button id="btn-pause" class="tool" type="button">暂停</button>
+        </div>
+      </header>
+
+      <div class="stage" id="stage">
+        <canvas id="game" class="stage__canvas" role="img" aria-label="3D 恐龙生存竞技场"></canvas>
+
+        <div class="hud" id="hud">
+          <div class="hud__panel">
+            <div>阶段: <strong id="hud-stage">幼龙</strong></div>
+            <div>体型: <strong id="hud-mass">18</strong></div>
+            <div>击杀: <strong id="hud-kills">0</strong></div>
+          </div>
+          <div class="hud__remain">剩余 <strong id="hud-alive">12</strong> 只</div>
+        </div>
+
+        <div class="toast" id="toast"></div>
+
+        <div class="overlay" id="overlay-ready">
+          <p class="overlay__title">3D 生存之战</p>
+          <p class="overlay__hint">第三人称 3D 视角 · 比对手更大就能吞食</p>
+          <p class="overlay__hint">进化到传说级，成为最后一只存活的恐龙！</p>
+          <button class="overlay__button" type="button" data-action="start">开始战斗</button>
+        </div>
+
+        <div class="overlay overlay--hidden" id="overlay-win">
+          <p class="overlay__title overlay__title--win">胜利！</p>
+          <p class="overlay__score">
+            你是最后的恐龙
+            <span class="overlay__record" id="win-stats"></span>
+          </p>
+          <p class="overlay__hint">胜场 <strong id="win-count">0</strong></p>
+          <button class="overlay__button" type="button" data-action="restart">再来一局</button>
+        </div>
+
+        <div class="overlay overlay--hidden" id="overlay-over">
+          <p class="overlay__title">你被击败了</p>
+          <p class="overlay__score" id="death-stats"></p>
+          <button class="overlay__button" type="button" data-action="restart">再来一局</button>
+        </div>
+
+        <div class="overlay overlay--hidden" id="overlay-paused">
+          <p class="overlay__title">已暂停</p>
+          <button class="overlay__button" type="button" data-action="resume">继续游戏</button>
+        </div>
+      </div>
+
+      <div class="touch" id="touch-controls" aria-hidden="true">
+        <div class="touch__dpad">
+          <button class="touch__btn touch__btn--up" type="button" data-hold="up">↑</button>
+          <button class="touch__btn touch__btn--left" type="button" data-hold="left">←</button>
+          <button class="touch__btn touch__btn--right" type="button" data-hold="right">→</button>
+          <button class="touch__btn touch__btn--down" type="button" data-hold="down">↓</button>
+        </div>
+        <button class="touch__bite" type="button" data-hold="bite">撕咬</button>
+      </div>
+
+      <section class="legend">
+        <h2 class="legend__title">怎么玩</h2>
+        <ul class="legend__list">
+          <li><kbd>WASD</kbd> / 方向键 移动</li>
+          <li><kbd>空格</kbd> / <kbd>J</kbd> 撕咬攻击</li>
+          <li>比对方大 → 靠近就能吞食 → 进化变大</li>
+          <li>消灭所有恐龙，最后一只存活即获胜</li>
+        </ul>
+      </section>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
 <script>(function (global) {
   'use strict';
 
@@ -767,7 +855,373 @@ kbd {
 })(window);
 
 /**
- * 恐龙生存竞技场 —— 移动、捕食、战斗、进化，最后一只存活获胜。
+ * Three.js 3D 渲染：场景、相机、恐龙模型、粒子。
+ */
+(function (global) {
+  'use strict';
+
+  var U = global.Utils;
+
+  function Renderer3D(canvas, arena) {
+    this.arena = arena;
+    this.meshes = new Map();
+    this.particleMeshes = [];
+
+    this.scene = new THREE.Scene();
+    this.scene.background = new THREE.Color(0x87b8e8);
+    this.scene.fog = new THREE.Fog(0x87b8e8, 400, 1400);
+
+    this.camera = new THREE.PerspectiveCamera(55, arena.w / arena.h, 1, 3000);
+    this.camera.position.set(arena.w * 0.5, 420, arena.h * 0.5 + 380);
+
+    this.renderer = new THREE.WebGLRenderer({
+      canvas: canvas,
+      antialias: true,
+      alpha: false
+    });
+    this.renderer.setPixelRatio(Math.min(global.devicePixelRatio || 1, 2));
+    this.renderer.shadowMap.enabled = true;
+    this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+    this.setupLights();
+    this.setupGround();
+    this.setupDecor();
+  }
+
+  Renderer3D.prototype.setupLights = function () {
+    var ambient = new THREE.AmbientLight(0xffffff, 0.55);
+    this.scene.add(ambient);
+
+    var sun = new THREE.DirectionalLight(0xfff4d6, 1.1);
+    sun.position.set(300, 600, 200);
+    sun.castShadow = true;
+    sun.shadow.mapSize.set(2048, 2048);
+    sun.shadow.camera.near = 100;
+    sun.shadow.camera.far = 1600;
+    sun.shadow.camera.left = -600;
+    sun.shadow.camera.right = 600;
+    sun.shadow.camera.top = 600;
+    sun.shadow.camera.bottom = -600;
+    this.scene.add(sun);
+
+    var fill = new THREE.DirectionalLight(0x9ec8ff, 0.35);
+    fill.position.set(-200, 300, -300);
+    this.scene.add(fill);
+  };
+
+  Renderer3D.prototype.setupGround = function () {
+    var w = this.arena.w;
+    var h = this.arena.h;
+
+    var groundGeo = new THREE.PlaneGeometry(w + 40, h + 40, 32, 24);
+    var groundMat = new THREE.MeshStandardMaterial({
+      color: 0x3d7a4a,
+      roughness: 0.92,
+      metalness: 0.02
+    });
+    var ground = new THREE.Mesh(groundGeo, groundMat);
+    ground.rotation.x = -Math.PI / 2;
+    ground.position.set(w * 0.5, 0, h * 0.5);
+    ground.receiveShadow = true;
+    this.scene.add(ground);
+
+    // 边界墙（低围栏）
+    var wallMat = new THREE.MeshStandardMaterial({ color: 0x2a5235, roughness: 1 });
+    var wallH = 18;
+    var wallT = 8;
+    this.addWall(w * 0.5, wallH * 0.5, -wallT * 0.5, w + 40, wallH, wallT, wallMat);
+    this.addWall(w * 0.5, wallH * 0.5, h + wallT * 0.5, w + 40, wallH, wallT, wallMat);
+    this.addWall(-wallT * 0.5, wallH * 0.5, h * 0.5, wallT, wallH, h + 40, wallMat);
+    this.addWall(w + wallT * 0.5, wallH * 0.5, h * 0.5, wallT, wallH, h + 40, wallMat);
+  };
+
+  Renderer3D.prototype.addWall = function (x, y, z, w, h, d, mat) {
+    var mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
+    mesh.position.set(x, y, z);
+    mesh.castShadow = true;
+    mesh.receiveShadow = true;
+    this.scene.add(mesh);
+  };
+
+  Renderer3D.prototype.setupDecor = function () {
+    var w = this.arena.w;
+    var h = this.arena.h;
+    var treeMat = new THREE.MeshStandardMaterial({ color: 0x2d5a3d });
+    var trunkMat = new THREE.MeshStandardMaterial({ color: 0x5a3d1a });
+
+    for (var i = 0; i < 16; i++) {
+      var tx = U.rand(40, w - 40);
+      var tz = U.rand(40, h - 40);
+      if (Math.hypot(tx - w * 0.5, tz - h * 0.5) < 100) continue;
+
+      var trunk = new THREE.Mesh(new THREE.CylinderGeometry(3, 4, 14, 6), trunkMat);
+      trunk.position.set(tx, 7, tz);
+      trunk.castShadow = true;
+      this.scene.add(trunk);
+
+      var crown = new THREE.Mesh(new THREE.ConeGeometry(U.rand(10, 16), U.rand(18, 26), 7), treeMat);
+      crown.position.set(tx, 22, tz);
+      crown.castShadow = true;
+      this.scene.add(crown);
+    }
+
+    var rockMat = new THREE.MeshStandardMaterial({ color: 0x6a6a72, roughness: 0.95 });
+    for (var j = 0; j < 10; j++) {
+      var rx = U.rand(30, w - 30);
+      var rz = U.rand(30, h - 30);
+      var rock = new THREE.Mesh(
+        new THREE.DodecahedronGeometry(U.rand(6, 12), 0),
+        rockMat
+      );
+      rock.position.set(rx, 4, rz);
+      rock.rotation.set(U.rand(0, 1), U.rand(0, 3), U.rand(0, 1));
+      rock.castShadow = true;
+      this.scene.add(rock);
+    }
+  };
+
+  Renderer3D.prototype.hexColor = function (hex) {
+    return parseInt(hex.replace('#', ''), 16);
+  };
+
+  Renderer3D.prototype.createDinoMesh = function (dino) {
+    var group = new THREE.Group();
+    var c = dino.colors();
+    var bodyColor = this.hexColor(c.body);
+    var bellyColor = this.hexColor(c.belly);
+
+    var bodyMat = new THREE.MeshStandardMaterial({
+      color: bodyColor,
+      roughness: 0.65,
+      metalness: 0.05
+    });
+    var bellyMat = new THREE.MeshStandardMaterial({
+      color: bellyColor,
+      roughness: 0.7
+    });
+
+    // 身体
+    var body = new THREE.Mesh(new THREE.CapsuleGeometry(1, 1.6, 4, 10), bodyMat);
+    body.rotation.z = Math.PI / 2;
+    body.castShadow = true;
+    group.add(body);
+    group.userData.body = body;
+
+    // 肚子
+    var belly = new THREE.Mesh(new THREE.SphereGeometry(0.85, 10, 8), bellyMat);
+    belly.position.set(0, -0.35, 0);
+    belly.scale.set(1.1, 0.5, 0.9);
+    belly.castShadow = true;
+    group.add(belly);
+
+    // 头
+    var head = new THREE.Mesh(new THREE.SphereGeometry(0.55, 10, 10), bodyMat);
+    head.position.set(1.35, 0.15, 0);
+    head.castShadow = true;
+    group.add(head);
+    group.userData.head = head;
+
+    // 嘴
+    var jaw = new THREE.Mesh(
+      new THREE.BoxGeometry(0.45, 0.18, 0.35),
+      new THREE.MeshStandardMaterial({ color: this.hexColor(c.eye) })
+    );
+    jaw.position.set(1.75, 0, 0);
+    group.add(jaw);
+    group.userData.jaw = jaw;
+
+    // 眼睛
+    var eyeWhite = new THREE.Mesh(
+      new THREE.SphereGeometry(0.12, 8, 8),
+      new THREE.MeshStandardMaterial({ color: 0xffffff })
+    );
+    eyeWhite.position.set(1.5, 0.28, 0.22);
+    group.add(eyeWhite);
+    var eye = new THREE.Mesh(
+      new THREE.SphereGeometry(0.06, 6, 6),
+      new THREE.MeshStandardMaterial({ color: this.hexColor(c.eye) })
+    );
+    eye.position.set(1.55, 0.28, 0.28);
+    group.add(eye);
+
+    // 尾巴
+    var tail = new THREE.Mesh(new THREE.ConeGeometry(0.35, 1.4, 6), bodyMat);
+    tail.rotation.z = Math.PI / 2;
+    tail.position.set(-1.3, 0.1, 0);
+    tail.castShadow = true;
+    group.add(tail);
+
+    // 四条腿
+    var legGeo = new THREE.BoxGeometry(0.28, 0.55, 0.28);
+    var legs = [
+      [0.45, -0.55, 0.45],
+      [0.45, -0.55, -0.45],
+      [-0.35, -0.55, 0.4],
+      [-0.35, -0.55, -0.4]
+    ];
+    group.userData.legs = [];
+    for (var i = 0; i < legs.length; i++) {
+      var leg = new THREE.Mesh(legGeo, bodyMat);
+      leg.position.set(legs[i][0], legs[i][1], legs[i][2]);
+      leg.castShadow = true;
+      group.add(leg);
+      group.userData.legs.push(leg);
+    }
+
+    // 玩家光环
+    if (dino.isPlayer) {
+      var ring = new THREE.Mesh(
+        new THREE.RingGeometry(1.1, 1.35, 24),
+        new THREE.MeshBasicMaterial({ color: 0x5cd65c, transparent: true, opacity: 0.55, side: THREE.DoubleSide })
+      );
+      ring.rotation.x = -Math.PI / 2;
+      ring.position.y = 0.05;
+      group.add(ring);
+      group.userData.ring = ring;
+    }
+
+    // 血条（精灵 billboard）
+    var hpBg = new THREE.Mesh(
+      new THREE.PlaneGeometry(2.2, 0.22),
+      new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.45 })
+    );
+    hpBg.position.y = 2.2;
+    group.add(hpBg);
+    group.userData.hpBg = hpBg;
+
+    var hpFill = new THREE.Mesh(
+      new THREE.PlaneGeometry(2.2, 0.22),
+      new THREE.MeshBasicMaterial({
+        color: dino.isPlayer ? 0x5cd65c : 0xe06060,
+        transparent: true,
+        opacity: 0.9
+      })
+    );
+    hpFill.position.set(0, 2.2, 0.01);
+    group.add(hpFill);
+    group.userData.hpFill = hpFill;
+
+    this.scene.add(group);
+    this.meshes.set(dino.id, group);
+    return group;
+  };
+
+  Renderer3D.prototype.updateDinoMesh = function (dino) {
+    var group = this.meshes.get(dino.id);
+    if (!group) {
+      group = this.createDinoMesh(dino);
+    }
+
+    if (!dino.alive) {
+      group.visible = false;
+      return;
+    }
+    group.visible = true;
+
+    var scale = dino.radius / 14;
+    group.scale.setScalar(scale);
+    group.position.set(dino.x, 0, dino.y);
+    group.rotation.y = -dino.angle + Math.PI / 2;
+
+    // 撕咬动画
+    var bite = dino.biteAnim > 0 ? dino.biteAnim / 0.18 : 0;
+    if (group.userData.jaw) {
+      group.userData.jaw.position.x = 1.75 + bite * 0.35;
+    }
+    if (group.userData.head) {
+      group.userData.head.position.x = 1.35 + bite * 0.15;
+    }
+
+    // 跑步摆腿
+    if (group.userData.legs && Math.hypot(dino.vx, dino.vy) > 20) {
+      var t = Date.now() * 0.012;
+      group.userData.legs[0].position.y = -0.55 + Math.sin(t) * 0.12;
+      group.userData.legs[1].position.y = -0.55 + Math.sin(t + Math.PI) * 0.12;
+      group.userData.legs[2].position.y = -0.55 + Math.sin(t + Math.PI) * 0.12;
+      group.userData.legs[3].position.y = -0.55 + Math.sin(t) * 0.12;
+    }
+
+    // 血条
+    var showHp = dino.isPlayer || dino.hp < dino.maxHp;
+    group.userData.hpBg.visible = showHp;
+    group.userData.hpFill.visible = showHp;
+    if (showHp) {
+      var ratio = dino.hp / dino.maxHp;
+      group.userData.hpFill.scale.x = Math.max(0.01, ratio);
+      group.userData.hpFill.position.x = -(1 - ratio) * 1.1 * scale;
+      group.userData.hpBg.lookAt(this.camera.position);
+      group.userData.hpFill.lookAt(this.camera.position);
+    }
+  };
+
+  Renderer3D.prototype.removeDinoMesh = function (dinoId) {
+    var group = this.meshes.get(dinoId);
+    if (group) {
+      this.scene.remove(group);
+      this.meshes.delete(dinoId);
+    }
+  };
+
+  Renderer3D.prototype.syncParticles = function (particles) {
+    while (this.particleMeshes.length > particles.length) {
+      var extra = this.particleMeshes.pop();
+      this.scene.remove(extra);
+    }
+    while (this.particleMeshes.length < particles.length) {
+      var mesh = new THREE.Mesh(
+        new THREE.SphereGeometry(1, 6, 6),
+        new THREE.MeshBasicMaterial({ color: 0xffffff })
+      );
+      this.scene.add(mesh);
+      this.particleMeshes.push(mesh);
+    }
+    for (var i = 0; i < particles.length; i++) {
+      var p = particles[i];
+      var m = this.particleMeshes[i];
+      m.position.set(p.x, 8 + p.size * 2, p.y);
+      m.scale.setScalar(p.size * p.life * 2);
+      m.material.color.set(p.color);
+      m.material.opacity = p.life;
+      m.material.transparent = true;
+      m.visible = p.life > 0;
+    }
+  };
+
+  Renderer3D.prototype.updateCamera = function (player, dt) {
+    if (!player || !player.alive) return;
+
+    var targetX = player.x;
+    var targetZ = player.y;
+    var dist = 280 + player.radius * 1.2;
+    var height = 220 + player.radius * 0.8;
+
+    var idealX = targetX - Math.sin(player.angle) * dist * 0.3;
+    var idealZ = targetZ - Math.cos(player.angle) * dist;
+    var idealY = height;
+
+    var lerp = 1 - Math.pow(0.001, dt);
+    this.camera.position.x += (idealX - this.camera.position.x) * lerp;
+    this.camera.position.y += (idealY - this.camera.position.y) * lerp;
+    this.camera.position.z += (idealZ - this.camera.position.z) * lerp;
+
+    this.camera.lookAt(targetX, player.radius * 0.3 + 8, targetZ);
+  };
+
+  Renderer3D.prototype.resize = function (width, height) {
+    this.renderer.setSize(width, height, false);
+    this.camera.aspect = width / height;
+    this.camera.updateProjectionMatrix();
+  };
+
+  Renderer3D.prototype.render = function () {
+    this.renderer.render(this.scene, this.camera);
+  };
+
+  global.Renderer3D = Renderer3D;
+})(window);
+
+/**
+ * 恐龙生存竞技场 3D 版 —— 移动、捕食、战斗、进化，最后一只存活获胜。
  */
 (function (global) {
   'use strict';
@@ -776,6 +1230,7 @@ kbd {
   var Dino = global.Dino;
   var AI = global.AI;
   var Sfx = global.Sfx;
+  var Renderer3D = global.Renderer3D;
 
   var ARENA_W = 960;
   var ARENA_H = 640;
@@ -788,17 +1243,17 @@ kbd {
 
   function Game(canvas, hooks) {
     this.canvas = canvas;
-    this.ctx = canvas.getContext('2d');
     this.hooks = hooks || {};
     this.arena = { w: ARENA_W, h: ARENA_H };
-    this.scale = 1;
     this.state = 'ready';
     this.input = { up: false, down: false, left: false, right: false, bite: false };
     this.particles = [];
     this.messages = [];
     this.nextId = 1;
+    this.evolveFlash = 0;
 
     this.highWins = this.loadHighWins();
+    this.r3d = new Renderer3D(canvas, this.arena);
 
     this.reset();
     this.resize();
@@ -828,6 +1283,14 @@ kbd {
     this.nextId = 1;
     this.evolveFlash = 0;
 
+    // 清除旧 3D 模型
+    if (this.r3d) {
+      this.r3d.meshes.forEach(function (group) {
+        this.r3d.scene.remove(group);
+      }, this);
+      this.r3d.meshes.clear();
+    }
+
     this.player = this.spawnDino({
       isPlayer: true,
       x: ARENA_W * 0.5,
@@ -853,6 +1316,7 @@ kbd {
     });
     dino.syncStats();
     this.dinos.push(dino);
+    if (this.r3d) this.r3d.createDinoMesh(dino);
     return dino;
   };
 
@@ -944,15 +1408,13 @@ kbd {
     }
   };
 
-  // ------------------------------------------------------------ 主循环
-
   Game.prototype.tick = function (now) {
     global.requestAnimationFrame(this.tick);
     if (!this.lastTime) this.lastTime = now;
     var dt = Math.min((now - this.lastTime) / 1000, 0.05);
     this.lastTime = now;
     this.update(dt);
-    this.draw();
+    this.draw(dt);
   };
 
   Game.prototype.update = function (dt) {
@@ -975,13 +1437,17 @@ kbd {
       if (part.life <= 0) this.particles.splice(p, 1);
     }
 
-    if (this.state !== 'playing') return;
+    if (this.state !== 'playing') {
+      if (this.player) this.r3d.updateCamera(this.player, dt);
+      return;
+    }
 
     this.updatePlayer(dt);
     this.updateNPCs(dt);
     this.resolveCombat();
     this.resolveEating();
     this.checkEnd();
+    this.r3d.updateCamera(this.player, dt);
   };
 
   Game.prototype.updatePlayer = function (dt) {
@@ -1039,12 +1505,11 @@ kbd {
         var d = U.dist(attacker.x, attacker.y, victim.x, victim.y);
         if (d > attacker.biteReach() + victim.radius * 0.6) continue;
 
-        // 咬击必须在面朝方向
         var angleToVictim = U.angleTo(attacker.x, attacker.y, victim.x, victim.y);
         var diff = Math.abs(U.wrapAngle(angleToVictim - attacker.angle));
         if (diff > Math.PI * 0.55) continue;
 
-        if (attacker.canEat(victim)) continue; // 能直接吞就不咬
+        if (attacker.canEat(victim)) continue;
 
         var dmg = attacker.biteDamage();
         if (victim.radius > attacker.radius * 0.9) dmg *= 0.65;
@@ -1078,16 +1543,10 @@ kbd {
         this.addParticles(prey.x, prey.y, eater.colors().body, 10);
         this.addMessage(eater.isPlayer ? '吞食 ' + prey.name + '！' : prey.name + ' 被吞食', 1.8);
 
-        if (evolved) {
-          if (eater.isPlayer) {
-            Sfx.evolve();
-            this.evolveFlash = 0.6;
-            this.addMessage('进化 → ' + U.stageName(eater.mass) + '！', 2.5);
-          }
-        }
-
-        if (eater.isPlayer) {
-          if (this.hooks.onStats) this.hooks.onStats(this);
+        if (evolved && eater.isPlayer) {
+          Sfx.evolve();
+          this.evolveFlash = 0.6;
+          this.addMessage('进化 → ' + U.stageName(eater.mass) + '！', 2.5);
         }
       }
     }
@@ -1095,7 +1554,7 @@ kbd {
 
   Game.prototype.killDino = function (victim, killer) {
     victim.alive = false;
-    this.addParticles(victim.x, victim.y, '#888', 8);
+    this.addParticles(victim.x, victim.y, '#888888', 8);
 
     if (killer) {
       killer.kills += 1;
@@ -1132,106 +1591,24 @@ kbd {
     }
   };
 
-  // ------------------------------------------------------------ 渲染
-
   Game.prototype.resize = function () {
     var rect = this.canvas.getBoundingClientRect();
-    var dpr = global.devicePixelRatio || 1;
+    var dpr = Math.min(global.devicePixelRatio || 1, 2);
     var width = Math.max(1, Math.round(rect.width * dpr));
     var height = Math.round((width * ARENA_H) / ARENA_W);
-
-    if (this.canvas.width !== width || this.canvas.height !== height) {
-      this.canvas.width = width;
-      this.canvas.height = height;
-    }
-    this.scale = width / ARENA_W;
+    this.r3d.resize(width, height);
   };
 
-  Game.prototype.draw = function () {
-    var ctx = this.ctx;
-    var w = ARENA_W;
-    var h = ARENA_H;
-
-    ctx.setTransform(this.scale, 0, 0, this.scale, 0, 0);
-
-    // 草地背景
-    ctx.fillStyle = '#2d5a3d';
-    ctx.fillRect(0, 0, w, h);
-
-    // 草地纹理
-    ctx.fillStyle = '#346648';
-    for (var gx = 0; gx < w; gx += 40) {
-      for (var gy = 0; gy < h; gy += 40) {
-        if ((gx + gy) % 80 === 0) {
-          ctx.fillRect(gx, gy, 20, 20);
-        }
-      }
+  Game.prototype.draw = function (dt) {
+    for (var i = 0; i < this.dinos.length; i++) {
+      this.r3d.updateDinoMesh(this.dinos[i]);
     }
+    this.r3d.syncParticles(this.particles);
+    this.r3d.render();
 
-    // 边界
-    ctx.strokeStyle = '#1a3d28';
-    ctx.lineWidth = 6;
-    ctx.strokeRect(3, 3, w - 6, h - 6);
-
-    // 粒子
-    for (var i = 0; i < this.particles.length; i++) {
-      var p = this.particles[i];
-      ctx.globalAlpha = p.life;
-      ctx.fillStyle = p.color;
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-      ctx.fill();
+    if (this.hooks.onHud) {
+      this.hooks.onHud(this);
     }
-    ctx.globalAlpha = 1;
-
-    // 恐龙（小的先画，大的后画）
-    var sorted = this.dinos.slice().sort(function (a, b) {
-      return a.radius - b.radius;
-    });
-    for (var d = 0; d < sorted.length; d++) {
-      sorted[d].draw(ctx);
-    }
-
-    if (this.evolveFlash > 0) {
-      ctx.fillStyle = 'rgba(255,255,200,' + this.evolveFlash * 0.35 + ')';
-      ctx.fillRect(0, 0, w, h);
-    }
-
-    this.drawHUD(ctx);
-
-    // 浮动消息
-    ctx.textAlign = 'center';
-    ctx.font = 'bold 16px sans-serif';
-    for (var m = 0; m < this.messages.length; m++) {
-      var msg = this.messages[m];
-      ctx.fillStyle = 'rgba(0,0,0,0.4)';
-      ctx.fillText(msg.text, w / 2 + 1, 52 + m * 22 + 1);
-      ctx.fillStyle = '#fff';
-      ctx.fillText(msg.text, w / 2, 52 + m * 22);
-    }
-  };
-
-  Game.prototype.drawHUD = function (ctx) {
-    var p = this.player;
-    if (!p) return;
-
-    ctx.fillStyle = 'rgba(0,0,0,0.45)';
-    ctx.fillRect(10, 10, 200, 72);
-    ctx.fillStyle = '#e8f0e8';
-    ctx.font = '12px sans-serif';
-    ctx.textAlign = 'left';
-    ctx.fillText('阶段: ' + U.stageName(p.mass), 18, 28);
-    ctx.fillText('体型: ' + Math.round(p.mass), 18, 44);
-    ctx.fillText('击杀: ' + p.kills, 18, 60);
-    ctx.fillText('存活: ' + this.aliveDinos().length, 18, 76);
-
-    // 右上角存活数
-    ctx.textAlign = 'right';
-    ctx.fillStyle = 'rgba(0,0,0,0.45)';
-    ctx.fillRect(ARENA_W - 110, 10, 100, 28);
-    ctx.fillStyle = '#ffcc66';
-    ctx.font = 'bold 13px sans-serif';
-    ctx.fillText('剩余 ' + this.aliveDinos().length + ' 只', ARENA_W - 18, 28);
   };
 
   Game.ARENA_W = ARENA_W;
@@ -1256,8 +1633,13 @@ kbd {
   var deathStats = doc.getElementById('death-stats');
   var soundButton = doc.getElementById('btn-sound');
   var pauseButton = doc.getElementById('btn-pause');
-  var stage = doc.getElementById('stage');
   var touchControls = doc.getElementById('touch-controls');
+  var toast = doc.getElementById('toast');
+
+  var hudStage = doc.getElementById('hud-stage');
+  var hudMass = doc.getElementById('hud-mass');
+  var hudKills = doc.getElementById('hud-kills');
+  var hudAlive = doc.getElementById('hud-alive');
 
   function showOverlay(name) {
     Object.keys(overlays).forEach(function (key) {
@@ -1288,6 +1670,21 @@ kbd {
       }
       pauseButton.textContent = state === 'paused' ? '继续' : '暂停';
       pauseButton.disabled = state === 'ready';
+    },
+    onHud: function (g) {
+      var p = g.player;
+      if (!p) return;
+      hudStage.textContent = global.Utils.stageName(p.mass);
+      hudMass.textContent = Math.round(p.mass);
+      hudKills.textContent = p.kills;
+      hudAlive.textContent = g.aliveDinos().length;
+
+      if (g.messages.length > 0) {
+        toast.textContent = g.messages[0].text;
+        toast.style.opacity = '1';
+      } else {
+        toast.style.opacity = '0';
+      }
     }
   });
 
@@ -1341,25 +1738,17 @@ kbd {
       game.press(action);
       if (game.state === 'ready') game.setState('playing');
     });
-    button.addEventListener('pointerup', function () {
-      game.release(action);
-    });
-    button.addEventListener('pointercancel', function () {
-      game.release(action);
-    });
+    button.addEventListener('pointerup', function () { game.release(action); });
+    button.addEventListener('pointercancel', function () { game.release(action); });
   });
 
   doc.addEventListener('click', function (event) {
     var target = event.target.closest('[data-action]');
     if (!target) return;
     var action = target.getAttribute('data-action');
-    if (action === 'start') {
-      game.setState('playing');
-    } else if (action === 'restart') {
-      game.restart();
-    } else if (action === 'resume') {
-      game.togglePause();
-    }
+    if (action === 'start') game.setState('playing');
+    else if (action === 'restart') game.restart();
+    else if (action === 'resume') game.togglePause();
   });
 
   function toggleSound() {
@@ -1369,26 +1758,20 @@ kbd {
   }
 
   soundButton.addEventListener('click', toggleSound);
-  pauseButton.addEventListener('click', function () {
-    game.togglePause();
-  });
+  pauseButton.addEventListener('click', function () { game.togglePause(); });
 
   var resizeTimer = 0;
   global.addEventListener('resize', function () {
     global.clearTimeout(resizeTimer);
-    resizeTimer = global.setTimeout(function () {
-      game.resize();
-    }, 80);
+    resizeTimer = global.setTimeout(function () { game.resize(); }, 80);
   });
 
   doc.addEventListener('visibilitychange', function () {
     if (doc.hidden && game.state === 'playing') game.togglePause();
   });
 
-  global.requestAnimationFrame(function () {
-    game.resize();
-  });
+  global.requestAnimationFrame(function () { game.resize(); });
 })(window);
 </script>
-</body>
+  </body>
 </html>

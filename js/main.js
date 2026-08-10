@@ -15,8 +15,13 @@
   var deathStats = doc.getElementById('death-stats');
   var soundButton = doc.getElementById('btn-sound');
   var pauseButton = doc.getElementById('btn-pause');
-  var stage = doc.getElementById('stage');
   var touchControls = doc.getElementById('touch-controls');
+  var toast = doc.getElementById('toast');
+
+  var hudStage = doc.getElementById('hud-stage');
+  var hudMass = doc.getElementById('hud-mass');
+  var hudKills = doc.getElementById('hud-kills');
+  var hudAlive = doc.getElementById('hud-alive');
 
   function showOverlay(name) {
     Object.keys(overlays).forEach(function (key) {
@@ -47,6 +52,21 @@
       }
       pauseButton.textContent = state === 'paused' ? '继续' : '暂停';
       pauseButton.disabled = state === 'ready';
+    },
+    onHud: function (g) {
+      var p = g.player;
+      if (!p) return;
+      hudStage.textContent = global.Utils.stageName(p.mass);
+      hudMass.textContent = Math.round(p.mass);
+      hudKills.textContent = p.kills;
+      hudAlive.textContent = g.aliveDinos().length;
+
+      if (g.messages.length > 0) {
+        toast.textContent = g.messages[0].text;
+        toast.style.opacity = '1';
+      } else {
+        toast.style.opacity = '0';
+      }
     }
   });
 
@@ -100,25 +120,17 @@
       game.press(action);
       if (game.state === 'ready') game.setState('playing');
     });
-    button.addEventListener('pointerup', function () {
-      game.release(action);
-    });
-    button.addEventListener('pointercancel', function () {
-      game.release(action);
-    });
+    button.addEventListener('pointerup', function () { game.release(action); });
+    button.addEventListener('pointercancel', function () { game.release(action); });
   });
 
   doc.addEventListener('click', function (event) {
     var target = event.target.closest('[data-action]');
     if (!target) return;
     var action = target.getAttribute('data-action');
-    if (action === 'start') {
-      game.setState('playing');
-    } else if (action === 'restart') {
-      game.restart();
-    } else if (action === 'resume') {
-      game.togglePause();
-    }
+    if (action === 'start') game.setState('playing');
+    else if (action === 'restart') game.restart();
+    else if (action === 'resume') game.togglePause();
   });
 
   function toggleSound() {
@@ -128,23 +140,17 @@
   }
 
   soundButton.addEventListener('click', toggleSound);
-  pauseButton.addEventListener('click', function () {
-    game.togglePause();
-  });
+  pauseButton.addEventListener('click', function () { game.togglePause(); });
 
   var resizeTimer = 0;
   global.addEventListener('resize', function () {
     global.clearTimeout(resizeTimer);
-    resizeTimer = global.setTimeout(function () {
-      game.resize();
-    }, 80);
+    resizeTimer = global.setTimeout(function () { game.resize(); }, 80);
   });
 
   doc.addEventListener('visibilitychange', function () {
     if (doc.hidden && game.state === 'playing') game.togglePause();
   });
 
-  global.requestAnimationFrame(function () {
-    game.resize();
-  });
+  global.requestAnimationFrame(function () { game.resize(); });
 })(window);
