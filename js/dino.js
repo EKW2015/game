@@ -86,27 +86,9 @@
     }
   };
 
-  Dino.prototype.updateMotion = function (arena, dt) {
+  Dino.prototype.updateMotion = function (world, dt) {
     this.x += this.vx * dt;
     this.y += this.vy * dt;
-
-    var pad = this.radius + 4;
-    if (this.x < pad) {
-      this.x = pad;
-      this.vx = Math.abs(this.vx) * 0.3;
-    }
-    if (this.x > arena.w - pad) {
-      this.x = arena.w - pad;
-      this.vx = -Math.abs(this.vx) * 0.3;
-    }
-    if (this.y < pad) {
-      this.y = pad;
-      this.vy = Math.abs(this.vy) * 0.3;
-    }
-    if (this.y > arena.h - pad) {
-      this.y = arena.h - pad;
-      this.vy = -Math.abs(this.vy) * 0.3;
-    }
 
     if (Math.hypot(this.vx, this.vy) > 8) {
       this.angle = Math.atan2(this.vy, this.vx);
@@ -114,6 +96,11 @@
 
     if (this.biteCooldown > 0) this.biteCooldown -= dt;
     if (this.biteAnim > 0) this.biteAnim -= dt;
+  };
+
+  Dino.prototype.groundY = function (world) {
+    if (!world || !world.heightAt) return 0;
+    return world.heightAt(this.x, this.y);
   };
 
   Dino.prototype.tryBite = function () {

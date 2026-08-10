@@ -3,16 +3,16 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <meta name="description" content="3D 恐龙生存竞技场：移动、捕食、战斗、进化，成为最后存活的恐龙。" />
+    <meta name="description" content="无限 3D 恐龙世界：自由探索、捕食、进化。" />
     <meta name="theme-color" content="#1a3d28" />
-    <title>恐龙生存竞技场 3D</title>
+    <title>无限恐龙世界 3D</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='14' font-size='14'>🦖</text></svg>" />
     <link rel="stylesheet" href="css/style.css" />
   </head>
   <body>
     <main class="page">
       <header class="page__header">
-        <h1 class="page__title">恐龙生存竞技场 <span class="badge-3d">3D</span></h1>
+        <h1 class="page__title">无限恐龙世界 <span class="badge-3d">3D</span></h1>
         <div class="page__tools">
           <button id="btn-sound" class="tool" type="button" aria-pressed="false">音效：开</button>
           <button id="btn-pause" class="tool" type="button">暂停</button>
@@ -20,45 +20,35 @@
       </header>
 
       <div class="stage" id="stage">
-        <canvas id="game" class="stage__canvas" role="img" aria-label="3D 恐龙生存竞技场"></canvas>
+        <canvas id="game" class="stage__canvas" role="img" aria-label="无限 3D 恐龙世界"></canvas>
 
         <div class="hud" id="hud">
           <div class="hud__panel">
             <div>阶段: <strong id="hud-stage">幼龙</strong></div>
-            <div>体型: <strong id="hud-mass">18</strong></div>
+            <div>体型: <strong id="hud-mass">45</strong></div>
             <div>击杀: <strong id="hud-kills">0</strong></div>
           </div>
-          <div class="hud__remain">剩余 <strong id="hud-alive">6</strong> 只</div>
+          <div class="hud__remain">最高击杀 <strong id="hud-best">0</strong></div>
         </div>
 
         <div class="toast" id="toast"></div>
 
         <div class="overlay" id="overlay-ready">
-          <p class="overlay__title">简单模式 3D 🎮</p>
-          <p class="overlay__hint">第三人称 3D · 靠近小恐龙就能吃</p>
-          <p class="overlay__hint">只有 5 只敌人 · 前 12 秒它们不会打你</p>
-          <button class="overlay__button" type="button" data-action="start">开始战斗</button>
-        </div>
-
-        <div class="overlay overlay--hidden" id="overlay-win">
-          <p class="overlay__title overlay__title--win">胜利！</p>
-          <p class="overlay__score">
-            你是最后的恐龙
-            <span class="overlay__record" id="win-stats"></span>
-          </p>
-          <p class="overlay__hint">胜场 <strong id="win-count">0</strong></p>
-          <button class="overlay__button" type="button" data-action="restart">再来一局</button>
+          <p class="overlay__title">无限 3D 恐龙世界 🌍</p>
+          <p class="overlay__hint">真实 3D 恐龙 · 无限大地图 · 自由探索</p>
+          <p class="overlay__hint">方向键移动 · 靠近小恐龙吞食 · 不断进化变大</p>
+          <button class="overlay__button" type="button" data-action="start">进入世界</button>
         </div>
 
         <div class="overlay overlay--hidden" id="overlay-over">
           <p class="overlay__title">你被击败了</p>
           <p class="overlay__score" id="death-stats"></p>
-          <button class="overlay__button" type="button" data-action="restart">再来一局</button>
+          <button class="overlay__button" type="button" data-action="restart">重新开始</button>
         </div>
 
         <div class="overlay overlay--hidden" id="overlay-paused">
           <p class="overlay__title">已暂停</p>
-          <button class="overlay__button" type="button" data-action="resume">继续游戏</button>
+          <button class="overlay__button" type="button" data-action="resume">继续探索</button>
         </div>
 
         <div class="overlay overlay--hidden" id="overlay-error">
@@ -78,11 +68,12 @@
       </div>
 
       <section class="legend">
-        <h2 class="legend__title">怎么玩（超简单）</h2>
+        <h2 class="legend__title">怎么玩</h2>
         <ul class="legend__list">
-          <li>方向键移动，靠近<strong>小恐龙</strong>自动吞食</li>
-          <li>开局你最大，敌人都是小的</li>
-          <li>吃掉 5 只就赢了！空格可以攻击（一般用不到）</li>
+          <li>方向键 / WASD 在无限世界中自由移动</li>
+          <li>靠近比自己小的恐龙即可吞食，体型会变大</li>
+          <li>进化：幼龙 → 猎手 → 霸主 → 传说</li>
+          <li>世界没有边界，一直探索一直变强</li>
         </ul>
       </section>
     </main>
@@ -91,6 +82,8 @@
     <script src="js/utils.js"></script>
     <script src="js/audio.js"></script>
     <script src="js/dino.js"></script>
+    <script src="js/dinomodel.js"></script>
+    <script src="js/world.js"></script>
     <script src="js/ai.js"></script>
     <script src="js/renderer3d.js"></script>
     <script src="js/game.js"></script>

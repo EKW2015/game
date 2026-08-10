@@ -100,8 +100,8 @@ body {
   display: block;
   width: 100%;
   height: auto;
-  aspect-ratio: 3 / 2;
-  background: #87b8e8;
+  aspect-ratio: 16 / 9;
+  background: #7ec8f0;
 }
 
 .badge-3d {
