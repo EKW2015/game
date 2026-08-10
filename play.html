@@ -354,9 +354,9 @@ kbd {
         <div class="toast" id="toast"></div>
 
         <div class="overlay" id="overlay-ready">
-          <p class="overlay__title">3D 生存之战</p>
-          <p class="overlay__hint">第三人称 3D 视角 · 比对手更大就能吞食</p>
-          <p class="overlay__hint">进化到传说级，成为最后一只存活的恐龙！</p>
+          <p class="overlay__title">简单模式 🎮</p>
+          <p class="overlay__hint">你比敌人大 · 靠近小恐龙就能吃</p>
+          <p class="overlay__hint">只有 5 只敌人 · 前 12 秒它们不会打你</p>
           <button class="overlay__button" type="button" data-action="start">开始战斗</button>
         </div>
 
@@ -393,12 +393,11 @@ kbd {
       </div>
 
       <section class="legend">
-        <h2 class="legend__title">怎么玩</h2>
+        <h2 class="legend__title">怎么玩（超简单）</h2>
         <ul class="legend__list">
-          <li><kbd>WASD</kbd> / 方向键 移动</li>
-          <li><kbd>空格</kbd> / <kbd>J</kbd> 撕咬攻击</li>
-          <li>比对方大 → 靠近就能吞食 → 进化变大</li>
-          <li>消灭所有恐龙，最后一只存活即获胜</li>
+          <li>方向键移动，靠近<strong>小恐龙</strong>自动吞食</li>
+          <li>开局你最大，敌人都是小的</li>
+          <li>吃掉 5 只就赢了！空格可以攻击（一般用不到）</li>
         </ul>
       </section>
     </main>
@@ -595,7 +594,8 @@ kbd {
   };
 
   Dino.prototype.speed = function () {
-    return 140 + this.stage * 18 - this.mass * 0.35;
+    var base = 140 + this.stage * 18 - this.mass * 0.35;
+    return this.isPlayer ? base * 1.35 : base * 0.85;
   };
 
   Dino.prototype.biteDamage = function () {
@@ -603,6 +603,9 @@ kbd {
   };
 
   Dino.prototype.canEat = function (other) {
+    if (this.isPlayer) {
+      return this.radius > other.radius * 1.02 && this.mass > other.mass * 1.05;
+    }
     return this.radius > other.radius * 1.12 && this.mass > other.mass * 1.15;
   };
 
@@ -791,12 +794,13 @@ kbd {
 
   var U = global.Utils;
 
-  function nearest(dino, others) {
+  function nearest(dino, others, skipPlayer) {
     var best = null;
     var bestD = Infinity;
     for (var i = 0; i < others.length; i++) {
       var o = others[i];
       if (!o.alive || o.id === dino.id) continue;
+      if (skipPlayer && o.isPlayer) continue;
       var d = U.dist(dino.x, dino.y, o.x, o.y);
       if (d < bestD) {
         bestD = d;
@@ -806,48 +810,57 @@ kbd {
     return { target: best, dist: bestD };
   }
 
-  function updateAI(dino, others, dt) {
+  function updateAI(dino, others, dt, ctx) {
     if (!dino.alive || dino.isPlayer) return;
 
-    var hunt = nearest(dino, others);
+    ctx = ctx || {};
+    var inGrace = ctx.playTime != null && ctx.playTime < (ctx.graceTime || 0);
+
+    // 简单模式：保护期内只漫游，不攻击
+    if (inGrace) {
+      dino.wanderAngle += U.rand(-0.6, 0.6) * dt;
+      var wx = dino.x + Math.cos(dino.wanderAngle) * 200;
+      var wy = dino.y + Math.sin(dino.wanderAngle) * 200;
+      dino.moveToward(wx, wy, 0.2, dt);
+      return { action: 'grace' };
+    }
+
+    // 简单模式：AI 基本无视玩家，只互相打闹
+    var hunt = nearest(dino, others, true);
     var target = hunt.target;
     var biteRange = dino.biteReach() + (target ? target.radius : 0);
 
     if (target) {
-      var ratio = dino.eatRatio(target);
       var canEat = dino.canEat(target);
+      var ratio = dino.eatRatio(target);
       var similar = ratio > 0.75 && ratio < 1.12;
 
       if (canEat && hunt.dist < dino.radius + target.radius + 30) {
-        dino.moveToward(target.x, target.y, 1, dt);
+        dino.moveToward(target.x, target.y, 0.6, dt);
         if (hunt.dist < biteRange && dino.tryBite()) {
           return { action: 'bite', target: target };
         }
         return { action: 'chase', target: target };
       }
 
-      if (target.canEat(dino) && hunt.dist < target.radius * 3) {
+      if (target.canEat(dino) && hunt.dist < target.radius * 2) {
         var fleeX = dino.x + (dino.x - target.x);
         var fleeY = dino.y + (dino.y - target.y);
-        dino.moveToward(fleeX, fleeY, 1.1, dt);
+        dino.moveToward(fleeX, fleeY, 0.8, dt);
         return { action: 'flee', target: target };
       }
 
-      if (similar && hunt.dist < dino.radius * 4) {
+      if (similar && hunt.dist < dino.radius * 3 && Math.random() < 0.008) {
         if (hunt.dist < biteRange && dino.tryBite()) {
           return { action: 'bite', target: target };
         }
-        if (Math.random() < 0.02) dino.moveToward(target.x, target.y, 0.7, dt);
-        else dino.wanderAngle += U.rand(-0.8, 0.8) * dt;
-        return { action: 'fight', target: target };
       }
     }
 
-    // 漫游
-    dino.wanderAngle += U.rand(-1, 1) * dt;
-    var wx = dino.x + Math.cos(dino.wanderAngle) * 200;
-    var wy = dino.y + Math.sin(dino.wanderAngle) * 200;
-    dino.moveToward(wx, wy, 0.35, dt);
+    dino.wanderAngle += U.rand(-0.8, 0.8) * dt;
+    var wanderX = dino.x + Math.cos(dino.wanderAngle) * 200;
+    var wanderY = dino.y + Math.sin(dino.wanderAngle) * 200;
+    dino.moveToward(wanderX, wanderY, 0.22, dt);
     return { action: 'wander' };
   }
 
@@ -1234,7 +1247,9 @@ kbd {
 
   var ARENA_W = 960;
   var ARENA_H = 640;
-  var INITIAL_NPC = 11;
+  var INITIAL_NPC = 5;       // 简单模式：只有 5 只敌人
+  var GRACE_TIME = 12;       // 开局 12 秒敌人不攻击你
+  var PLAYER_START_MASS = 32; // 开局更大
 
   var AI_NAMES = [
     '暴龙', '迅猛龙', '棘龙', '甲龙', '剑龙',
@@ -1282,6 +1297,7 @@ kbd {
     this.messages = [];
     this.nextId = 1;
     this.evolveFlash = 0;
+    this.playTime = 0;
 
     // 清除旧 3D 模型
     if (this.r3d) {
@@ -1295,7 +1311,8 @@ kbd {
       isPlayer: true,
       x: ARENA_W * 0.5,
       y: ARENA_H * 0.5,
-      mass: 18,
+      mass: PLAYER_START_MASS,
+      hp: 200,
       name: '你'
     });
 
@@ -1312,6 +1329,7 @@ kbd {
       y: opts.y,
       mass: opts.mass || U.rand(12, 28),
       angle: U.rand(0, Math.PI * 2),
+      hp: opts.hp,
       name: opts.name || '恐龙'
     });
     dino.syncStats();
@@ -1329,15 +1347,13 @@ kbd {
       y = U.rand(pad, ARENA_H - pad);
       safe = true;
       if (this.player && this.player.alive) {
-        safe = U.dist(x, y, this.player.x, this.player.y) > 120;
+        safe = U.dist(x, y, this.player.x, this.player.y) > 220;
       }
       tries++;
     } while (!safe && tries < 20);
 
-    var mass = U.rand(14, 32);
-    if (this.player && this.player.alive && Math.random() < 0.35) {
-      mass = U.rand(this.player.mass * 0.7, this.player.mass * 1.3);
-    }
+    // 简单模式：敌人都是小恐龙，比你小很多
+    var mass = U.rand(8, 16);
 
     return this.spawnDino({
       x: x,
@@ -1357,7 +1373,11 @@ kbd {
 
   Game.prototype.setState = function (state) {
     if (this.state === state) return;
+    var was = this.state;
     this.state = state;
+    if (state === 'playing' && was === 'ready') {
+      this.addMessage('简单模式：靠近小恐龙就能吃！', 3);
+    }
     if (this.hooks.onState) this.hooks.onState(state, this);
   };
 
@@ -1442,6 +1462,13 @@ kbd {
       return;
     }
 
+    this.playTime += dt;
+
+    // 玩家缓慢回血
+    if (this.player.alive && this.player.hp < this.player.maxHp) {
+      this.player.hp = Math.min(this.player.maxHp, this.player.hp + 8 * dt);
+    }
+
     this.updatePlayer(dt);
     this.updateNPCs(dt);
     this.resolveCombat();
@@ -1481,11 +1508,12 @@ kbd {
 
   Game.prototype.updateNPCs = function (dt) {
     var alive = this.aliveDinos();
+    var ctx = { playTime: this.playTime, graceTime: GRACE_TIME, player: this.player };
     for (var i = 0; i < this.dinos.length; i++) {
       var d = this.dinos[i];
       if (!d.alive || d.isPlayer) continue;
 
-      var result = AI.update(d, alive, dt);
+      var result = AI.update(d, alive, dt, ctx);
       if (result && result.action === 'bite') Sfx.bite();
 
       d.applyFriction(dt);
@@ -1513,6 +1541,7 @@ kbd {
 
         var dmg = attacker.biteDamage();
         if (victim.radius > attacker.radius * 0.9) dmg *= 0.65;
+        if (victim.isPlayer) dmg *= 0.35; // 玩家更耐打
 
         var killed = victim.takeDamage(dmg, attacker);
         this.addParticles(victim.x, victim.y, '#ff6060', 4);
@@ -1534,7 +1563,8 @@ kbd {
         if (!prey.alive || prey.id === eater.id) continue;
 
         var d = U.dist(eater.x, eater.y, prey.x, prey.y);
-        if (d > eater.radius + prey.radius * 0.55) continue;
+        var eatDist = eater.isPlayer ? 0.75 : 0.55;
+        if (d > eater.radius + prey.radius * eatDist) continue;
         if (!eater.canEat(prey)) continue;
 
         var evolved = eater.absorb(prey);
@@ -1773,5 +1803,6 @@ kbd {
   global.requestAnimationFrame(function () { game.resize(); });
 })(window);
 </script>
+    <script src="js/main.js"></script>
   </body>
 </html>

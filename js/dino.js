@@ -47,7 +47,8 @@
   };
 
   Dino.prototype.speed = function () {
-    return 140 + this.stage * 18 - this.mass * 0.35;
+    var base = 140 + this.stage * 18 - this.mass * 0.35;
+    return this.isPlayer ? base * 1.35 : base * 0.85;
   };
 
   Dino.prototype.biteDamage = function () {
@@ -55,6 +56,9 @@
   };
 
   Dino.prototype.canEat = function (other) {
+    if (this.isPlayer) {
+      return this.radius > other.radius * 1.02 && this.mass > other.mass * 1.05;
+    }
     return this.radius > other.radius * 1.12 && this.mass > other.mass * 1.15;
   };
 

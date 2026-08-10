@@ -12,7 +12,9 @@
 
   var ARENA_W = 960;
   var ARENA_H = 640;
-  var INITIAL_NPC = 11;
+  var INITIAL_NPC = 5;       // 简单模式：只有 5 只敌人
+  var GRACE_TIME = 12;       // 开局 12 秒敌人不攻击你
+  var PLAYER_START_MASS = 32; // 开局更大
 
   var AI_NAMES = [
     '暴龙', '迅猛龙', '棘龙', '甲龙', '剑龙',
@@ -60,6 +62,7 @@
     this.messages = [];
     this.nextId = 1;
     this.evolveFlash = 0;
+    this.playTime = 0;
 
     // 清除旧 3D 模型
     if (this.r3d) {
@@ -73,7 +76,8 @@
       isPlayer: true,
       x: ARENA_W * 0.5,
       y: ARENA_H * 0.5,
-      mass: 18,
+      mass: PLAYER_START_MASS,
+      hp: 200,
       name: '你'
     });
 
@@ -90,6 +94,7 @@
       y: opts.y,
       mass: opts.mass || U.rand(12, 28),
       angle: U.rand(0, Math.PI * 2),
+      hp: opts.hp,
       name: opts.name || '恐龙'
     });
     dino.syncStats();
@@ -107,15 +112,13 @@
       y = U.rand(pad, ARENA_H - pad);
       safe = true;
       if (this.player && this.player.alive) {
-        safe = U.dist(x, y, this.player.x, this.player.y) > 120;
+        safe = U.dist(x, y, this.player.x, this.player.y) > 220;
       }
       tries++;
     } while (!safe && tries < 20);
 
-    var mass = U.rand(14, 32);
-    if (this.player && this.player.alive && Math.random() < 0.35) {
-      mass = U.rand(this.player.mass * 0.7, this.player.mass * 1.3);
-    }
+    // 简单模式：敌人都是小恐龙，比你小很多
+    var mass = U.rand(8, 16);
 
     return this.spawnDino({
       x: x,
@@ -135,7 +138,11 @@
 
   Game.prototype.setState = function (state) {
     if (this.state === state) return;
+    var was = this.state;
     this.state = state;
+    if (state === 'playing' && was === 'ready') {
+      this.addMessage('简单模式：靠近小恐龙就能吃！', 3);
+    }
     if (this.hooks.onState) this.hooks.onState(state, this);
   };
 
@@ -220,6 +227,13 @@
       return;
     }
 
+    this.playTime += dt;
+
+    // 玩家缓慢回血
+    if (this.player.alive && this.player.hp < this.player.maxHp) {
+      this.player.hp = Math.min(this.player.maxHp, this.player.hp + 8 * dt);
+    }
+
     this.updatePlayer(dt);
     this.updateNPCs(dt);
     this.resolveCombat();
@@ -259,11 +273,12 @@
 
   Game.prototype.updateNPCs = function (dt) {
     var alive = this.aliveDinos();
+    var ctx = { playTime: this.playTime, graceTime: GRACE_TIME, player: this.player };
     for (var i = 0; i < this.dinos.length; i++) {
       var d = this.dinos[i];
       if (!d.alive || d.isPlayer) continue;
 
-      var result = AI.update(d, alive, dt);
+      var result = AI.update(d, alive, dt, ctx);
       if (result && result.action === 'bite') Sfx.bite();
 
       d.applyFriction(dt);
@@ -291,6 +306,7 @@
 
         var dmg = attacker.biteDamage();
         if (victim.radius > attacker.radius * 0.9) dmg *= 0.65;
+        if (victim.isPlayer) dmg *= 0.35; // 玩家更耐打
 
         var killed = victim.takeDamage(dmg, attacker);
         this.addParticles(victim.x, victim.y, '#ff6060', 4);
@@ -312,7 +328,8 @@
         if (!prey.alive || prey.id === eater.id) continue;
 
         var d = U.dist(eater.x, eater.y, prey.x, prey.y);
-        if (d > eater.radius + prey.radius * 0.55) continue;
+        var eatDist = eater.isPlayer ? 0.75 : 0.55;
+        if (d > eater.radius + prey.radius * eatDist) continue;
         if (!eater.canEat(prey)) continue;
 
         var evolved = eater.absorb(prey);
