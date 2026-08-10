@@ -28,14 +28,14 @@
             <div>体型: <strong id="hud-mass">18</strong></div>
             <div>击杀: <strong id="hud-kills">0</strong></div>
           </div>
-          <div class="hud__remain">剩余 <strong id="hud-alive">12</strong> 只</div>
+          <div class="hud__remain">剩余 <strong id="hud-alive">6</strong> 只</div>
         </div>
 
         <div class="toast" id="toast"></div>
 
         <div class="overlay" id="overlay-ready">
-          <p class="overlay__title">简单模式 🎮</p>
-          <p class="overlay__hint">你比敌人大 · 靠近小恐龙就能吃</p>
+          <p class="overlay__title">简单模式 3D 🎮</p>
+          <p class="overlay__hint">第三人称 3D · 靠近小恐龙就能吃</p>
           <p class="overlay__hint">只有 5 只敌人 · 前 12 秒它们不会打你</p>
           <button class="overlay__button" type="button" data-action="start">开始战斗</button>
         </div>
@@ -60,6 +60,11 @@
           <p class="overlay__title">已暂停</p>
           <button class="overlay__button" type="button" data-action="resume">继续游戏</button>
         </div>
+
+        <div class="overlay overlay--hidden" id="overlay-error">
+          <p class="overlay__title">3D 加载失败</p>
+          <p class="overlay__hint" id="error-msg">请用 Chrome 浏览器打开 play.html</p>
+        </div>
       </div>
 
       <div class="touch" id="touch-controls" aria-hidden="true">
@@ -82,7 +87,7 @@
       </section>
     </main>
 
-    <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+    <script src="js/vendor/three.min.js"></script>
     <script src="js/utils.js"></script>
     <script src="js/audio.js"></script>
     <script src="js/dino.js"></script>

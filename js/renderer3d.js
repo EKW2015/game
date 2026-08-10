@@ -7,22 +7,29 @@
   var U = global.Utils;
 
   function Renderer3D(canvas, arena) {
+    if (typeof THREE === 'undefined') {
+      throw new Error('Three.js 未加载');
+    }
+
     this.arena = arena;
     this.meshes = new Map();
     this.particleMeshes = [];
 
     this.scene = new THREE.Scene();
-    this.scene.background = new THREE.Color(0x87b8e8);
-    this.scene.fog = new THREE.Fog(0x87b8e8, 400, 1400);
+    this.scene.background = new THREE.Color(0x6eb5ff);
+    this.scene.fog = new THREE.Fog(0x9fd4ff, 350, 1200);
 
-    this.camera = new THREE.PerspectiveCamera(55, arena.w / arena.h, 1, 3000);
-    this.camera.position.set(arena.w * 0.5, 420, arena.h * 0.5 + 380);
+    this.camera = new THREE.PerspectiveCamera(60, arena.w / arena.h, 1, 3000);
+    this.camera.position.set(arena.w * 0.5, 280, arena.h * 0.5 + 320);
 
     this.renderer = new THREE.WebGLRenderer({
       canvas: canvas,
       antialias: true,
       alpha: false
     });
+    if (!this.renderer.getContext()) {
+      throw new Error('WebGL 不可用');
+    }
     this.renderer.setPixelRatio(Math.min(global.devicePixelRatio || 1, 2));
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -336,10 +343,10 @@
 
     var targetX = player.x;
     var targetZ = player.y;
-    var dist = 280 + player.radius * 1.2;
-    var height = 220 + player.radius * 0.8;
+    var dist = 200 + player.radius * 0.8;
+    var height = 160 + player.radius * 0.5;
 
-    var idealX = targetX - Math.sin(player.angle) * dist * 0.3;
+    var idealX = targetX - Math.sin(player.angle) * dist * 0.45;
     var idealZ = targetZ - Math.cos(player.angle) * dist;
     var idealY = height;
 
@@ -348,7 +355,7 @@
     this.camera.position.y += (idealY - this.camera.position.y) * lerp;
     this.camera.position.z += (idealZ - this.camera.position.z) * lerp;
 
-    this.camera.lookAt(targetX, player.radius * 0.3 + 8, targetZ);
+    this.camera.lookAt(targetX, player.radius * 0.4 + 12, targetZ);
   };
 
   Renderer3D.prototype.resize = function (width, height) {

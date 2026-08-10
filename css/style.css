@@ -175,8 +175,8 @@ body {
   padding: 16px;
   text-align: center;
   pointer-events: none;
-  background: rgba(10, 24, 16, 0.78);
-  backdrop-filter: blur(2px);
+  background: rgba(10, 24, 16, 0.55);
+  backdrop-filter: blur(1px);
 }
 
 .overlay--hidden {

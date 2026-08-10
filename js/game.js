@@ -224,6 +224,18 @@
 
     if (this.state !== 'playing') {
       if (this.player) this.r3d.updateCamera(this.player, dt);
+      // 非游戏中也更新 AI 漫游，让 3D 场景有动感
+      if (this.state === 'ready') {
+        var alive = this.aliveDinos();
+        var ctx = { playTime: 0, graceTime: GRACE_TIME, player: this.player };
+        for (var i = 0; i < this.dinos.length; i++) {
+          var d = this.dinos[i];
+          if (!d.alive || d.isPlayer) continue;
+          AI.update(d, alive, dt, ctx);
+          d.applyFriction(dt);
+          d.updateMotion(this.arena, dt);
+        }
+      }
       return;
     }
 
