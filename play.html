@@ -1,0 +1,1394 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>恐龙生存竞技场</title>
+<style>:root {
+  --page-bg: #0f2418;
+  --card-bg: #1a3d28;
+  --ink: #e8f0e8;
+  --ink-soft: #9cb8a8;
+  --line: rgba(200, 230, 210, 0.16);
+  --accent: #5cd65c;
+  --accent-ink: #0f2418;
+  --win: #ffcc66;
+  --shadow: 0 18px 40px -24px rgba(0, 0, 0, 0.7);
+  --radius: 14px;
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 16px calc(24px + env(safe-area-inset-bottom));
+  background: var(--page-bg);
+  color: var(--ink);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+    "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+.page {
+  width: min(1000px, 100%);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.page__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.page__title {
+  margin: 0;
+  font-size: clamp(20px, 4vw, 28px);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--accent);
+}
+
+.page__tools {
+  display: flex;
+  gap: 8px;
+}
+
+.tool {
+  font: inherit;
+  font-size: 13px;
+  padding: 7px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--card-bg);
+  color: var(--ink-soft);
+  cursor: pointer;
+  transition: color 0.2s ease, border-color 0.2s ease;
+}
+
+.tool:hover {
+  color: var(--ink);
+  border-color: var(--ink-soft);
+}
+
+.tool:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.stage {
+  position: relative;
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: var(--card-bg);
+  box-shadow: var(--shadow);
+  border: 1px solid var(--line);
+  touch-action: manipulation;
+  user-select: none;
+}
+
+.stage__canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 3 / 2;
+}
+
+.overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 16px;
+  text-align: center;
+  pointer-events: none;
+  background: rgba(10, 24, 16, 0.78);
+  backdrop-filter: blur(2px);
+}
+
+.overlay--hidden {
+  display: none;
+}
+
+.overlay__title {
+  margin: 0;
+  font-size: clamp(20px, 4vw, 28px);
+  font-weight: 700;
+  letter-spacing: 0.12em;
+}
+
+.overlay__title--win {
+  color: var(--win);
+}
+
+.overlay__hint,
+.overlay__score {
+  margin: 0;
+  font-size: 13px;
+  color: var(--ink-soft);
+  max-width: 420px;
+}
+
+.overlay__score strong {
+  color: var(--ink);
+}
+
+.overlay__record {
+  display: block;
+  margin-top: 6px;
+  font-size: 14px;
+  color: var(--accent);
+}
+
+.overlay__button {
+  pointer-events: auto;
+  margin-top: 10px;
+  font: inherit;
+  font-size: 14px;
+  padding: 10px 28px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.overlay__button:hover {
+  filter: brightness(1.08);
+}
+
+kbd {
+  display: inline-block;
+  min-width: 20px;
+  padding: 1px 6px;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  background: var(--card-bg);
+  font-size: 11px;
+}
+
+.touch {
+  display: none;
+  align-items: center;
+  gap: 16px;
+}
+
+.touch__dpad {
+  display: grid;
+  grid-template-columns: repeat(3, 52px);
+  grid-template-rows: repeat(3, 52px);
+  gap: 4px;
+}
+
+.touch__btn {
+  font: inherit;
+  font-size: 18px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--card-bg);
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.touch__btn--up { grid-column: 2; grid-row: 1; }
+.touch__btn--left { grid-column: 1; grid-row: 2; }
+.touch__btn--right { grid-column: 3; grid-row: 2; }
+.touch__btn--down { grid-column: 2; grid-row: 3; }
+
+.touch__bite {
+  flex: 1;
+  font: inherit;
+  font-size: 16px;
+  font-weight: 600;
+  padding: 20px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: #c44a4a;
+  color: #fff;
+  cursor: pointer;
+}
+
+@media (pointer: coarse) {
+  .touch {
+    display: flex;
+  }
+}
+
+.legend {
+  padding: 16px 18px;
+  border-radius: var(--radius);
+  border: 1px solid var(--line);
+  background: var(--card-bg);
+}
+
+.legend__title {
+  margin: 0 0 10px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink-soft);
+  letter-spacing: 0.1em;
+}
+
+.legend__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 6px;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  font-size: 13px;
+}
+
+.legend__note {
+  margin: 12px 0 0;
+  font-size: 12px;
+  color: var(--ink-soft);
+}
+</style>
+</head>
+<body>
+<main class="page">
+<header class="page__header">
+<h1 class="page__title">恐龙生存竞技场</h1>
+<div class="page__tools">
+<button id="btn-sound" class="tool" type="button">音效：开</button>
+<button id="btn-pause" class="tool" type="button">暂停</button>
+</div>
+</header>
+<div class="stage" id="stage">
+<canvas id="game" class="stage__canvas" width="1920" height="1280"></canvas>
+<div class="overlay" id="overlay-ready">
+<p class="overlay__title">生存之战</p>
+<p class="overlay__hint">点下面按钮开始 · 方向键移动 · 空格攻击</p>
+<button class="overlay__button" type="button" data-action="start">开始战斗</button>
+</div>
+<div class="overlay overlay--hidden" id="overlay-win">
+<p class="overlay__title overlay__title--win">胜利！</p>
+<p class="overlay__score">你是最后的恐龙 <span class="overlay__record" id="win-stats"></span></p>
+<p class="overlay__hint">胜场 <strong id="win-count">0</strong></p>
+<button class="overlay__button" type="button" data-action="restart">再来一局</button>
+</div>
+<div class="overlay overlay--hidden" id="overlay-over">
+<p class="overlay__title">你被击败了</p>
+<p class="overlay__score" id="death-stats"></p>
+<button class="overlay__button" type="button" data-action="restart">再来一局</button>
+</div>
+<div class="overlay overlay--hidden" id="overlay-paused">
+<p class="overlay__title">已暂停</p>
+<button class="overlay__button" type="button" data-action="resume">继续游戏</button>
+</div>
+</div>
+<div class="touch" id="touch-controls">
+<div class="touch__dpad">
+<button class="touch__btn touch__btn--up" type="button" data-hold="up">↑</button>
+<button class="touch__btn touch__btn--left" type="button" data-hold="left">←</button>
+<button class="touch__btn touch__btn--right" type="button" data-hold="right">→</button>
+<button class="touch__btn touch__btn--down" type="button" data-hold="down">↓</button>
+</div>
+<button class="touch__bite" type="button" data-hold="bite">撕咬</button>
+</div>
+<section class="legend">
+<h2 class="legend__title">怎么玩</h2>
+<ul class="legend__list">
+<li>方向键 或 WASD 移动</li>
+<li>空格 攻击</li>
+<li>比对方大 → 靠近就能吃</li>
+<li>吃掉所有恐龙就赢了</li>
+</ul>
+</section>
+</main>
+<script>(function (global) {
+  'use strict';
+
+  function clamp(v, min, max) {
+    return Math.max(min, Math.min(max, v));
+  }
+
+  function lerp(a, b, t) {
+    return a + (b - a) * t;
+  }
+
+  function rand(min, max) {
+    return min + Math.random() * (max - min);
+  }
+
+  function randInt(min, max) {
+    return Math.floor(rand(min, max + 1));
+  }
+
+  function dist(x1, y1, x2, y2) {
+    return Math.hypot(x2 - x1, y2 - y1);
+  }
+
+  function angleTo(fromX, fromY, toX, toY) {
+    return Math.atan2(toY - fromY, toX - fromX);
+  }
+
+  function wrapAngle(a) {
+    while (a > Math.PI) a -= Math.PI * 2;
+    while (a < -Math.PI) a += Math.PI * 2;
+    return a;
+  }
+
+  function radiusFromMass(mass) {
+    return Math.sqrt(mass) * 2.8 + 8;
+  }
+
+  function massFromRadius(r) {
+    return Math.max(1, ((r - 8) / 2.8) * ((r - 8) / 2.8));
+  }
+
+  function evolutionStage(mass) {
+    if (mass < 35) return 0;
+    if (mass < 90) return 1;
+    if (mass < 180) return 2;
+    return 3;
+  }
+
+  var STAGE_NAMES = ['幼龙', '猎手', '霸主', '传说'];
+
+  global.Utils = {
+    clamp: clamp,
+    lerp: lerp,
+    rand: rand,
+    randInt: randInt,
+    dist: dist,
+    angleTo: angleTo,
+    wrapAngle: wrapAngle,
+    radiusFromMass: radiusFromMass,
+    massFromRadius: massFromRadius,
+    evolutionStage: evolutionStage,
+    stageName: function (mass) {
+      return STAGE_NAMES[evolutionStage(mass)];
+    }
+  };
+})(window);
+
+(function (global) {
+  'use strict';
+
+  var ctx = null;
+  var muted = false;
+
+  function ensureContext() {
+    if (ctx) return ctx;
+    var Ctor = global.AudioContext || global.webkitAudioContext;
+    if (!Ctor) return null;
+    try {
+      ctx = new Ctor();
+    } catch (e) {
+      ctx = null;
+    }
+    return ctx;
+  }
+
+  function tone(opts) {
+    if (muted) return;
+    var ac = ensureContext();
+    if (!ac) return;
+    if (ac.state === 'suspended') ac.resume();
+
+    var t0 = ac.currentTime + (opts.delay || 0);
+    var osc = ac.createOscillator();
+    var gain = ac.createGain();
+    osc.type = opts.type || 'square';
+    osc.frequency.setValueAtTime(opts.from, t0);
+    if (opts.to) osc.frequency.exponentialRampToValueAtTime(opts.to, t0 + opts.duration);
+    var vol = opts.volume == null ? 0.1 : opts.volume;
+    gain.gain.setValueAtTime(0.0001, t0);
+    gain.gain.exponentialRampToValueAtTime(vol, t0 + 0.01);
+    gain.gain.exponentialRampToValueAtTime(0.0001, t0 + opts.duration);
+    osc.connect(gain);
+    gain.connect(ac.destination);
+    osc.start(t0);
+    osc.stop(t0 + opts.duration + 0.02);
+  }
+
+  global.Sfx = {
+    bite: function () {
+      tone({ type: 'sawtooth', from: 180, to: 90, duration: 0.08, volume: 0.08 });
+    },
+    eat: function () {
+      tone({ from: 320, to: 640, duration: 0.15, volume: 0.1 });
+      tone({ from: 520, to: 880, duration: 0.12, volume: 0.08, delay: 0.08 });
+    },
+    evolve: function () {
+      tone({ from: 440, duration: 0.1, volume: 0.09 });
+      tone({ from: 660, duration: 0.1, volume: 0.09, delay: 0.1 });
+      tone({ from: 880, duration: 0.18, volume: 0.1, delay: 0.2 });
+    },
+    win: function () {
+      tone({ from: 523, duration: 0.12, volume: 0.1 });
+      tone({ from: 659, duration: 0.12, volume: 0.1, delay: 0.12 });
+      tone({ from: 784, duration: 0.25, volume: 0.12, delay: 0.24 });
+    },
+    die: function () {
+      tone({ type: 'sawtooth', from: 400, to: 60, duration: 0.5, volume: 0.12 });
+    },
+    isMuted: function () {
+      return muted;
+    },
+    toggle: function () {
+      muted = !muted;
+      return muted;
+    },
+    setMuted: function (value) {
+      muted = !!value;
+      return muted;
+    }
+  };
+})(window);
+
+(function (global) {
+  'use strict';
+
+  var U = global.Utils;
+
+  var STAGE_COLORS = [
+    { body: '#4caf7a', belly: '#8fd4a8', eye: '#1a3d2e' },
+    { body: '#4a8fd4', belly: '#9ec8f0', eye: '#1a2d4a' },
+    { body: '#e07a3a', belly: '#f0b878', eye: '#4a2010' },
+    { body: '#d44a4a', belly: '#f09090', eye: '#3a1010' }
+  ];
+
+  var PLAYER_COLORS = { body: '#5cd65c', belly: '#b8f0b8', eye: '#1a4a1a' };
+
+  function Dino(opts) {
+    this.id = opts.id;
+    this.isPlayer = !!opts.isPlayer;
+    this.x = opts.x;
+    this.y = opts.y;
+    this.vx = 0;
+    this.vy = 0;
+    this.angle = opts.angle || 0;
+    this.mass = opts.mass || 18;
+    this.radius = U.radiusFromMass(this.mass);
+    this.stage = U.evolutionStage(this.mass);
+    this.hp = opts.hp || 100;
+    this.maxHp = this.hp;
+    this.biteCooldown = 0;
+    this.biteAnim = 0;
+    this.alive = true;
+    this.kills = 0;
+    this.ai = opts.ai || null;
+    this.wanderAngle = U.rand(0, Math.PI * 2);
+    this.name = opts.name || (this.isPlayer ? '你' : '恐龙');
+  }
+
+  Dino.prototype.syncStats = function () {
+    this.radius = U.radiusFromMass(this.mass);
+    var newStage = U.evolutionStage(this.mass);
+    if (newStage !== this.stage) {
+      this.stage = newStage;
+      this.maxHp = 80 + this.stage * 35 + this.mass * 0.4;
+      this.hp = Math.min(this.hp + 25, this.maxHp);
+      return true;
+    }
+    return false;
+  };
+
+  Dino.prototype.speed = function () {
+    return 140 + this.stage * 18 - this.mass * 0.35;
+  };
+
+  Dino.prototype.biteDamage = function () {
+    return 12 + this.stage * 8 + this.mass * 0.15;
+  };
+
+  Dino.prototype.canEat = function (other) {
+    return this.radius > other.radius * 1.12 && this.mass > other.mass * 1.15;
+  };
+
+  Dino.prototype.eatRatio = function (other) {
+    return this.radius / other.radius;
+  };
+
+  Dino.prototype.moveToward = function (tx, ty, power, dt) {
+    var a = U.angleTo(this.x, this.y, tx, ty);
+    this.angle = a;
+    var spd = this.speed() * power;
+    this.vx += Math.cos(a) * spd * dt * 3.5;
+    this.vy += Math.sin(a) * spd * dt * 3.5;
+  };
+
+  Dino.prototype.applyFriction = function (dt) {
+    var drag = Math.pow(0.12, dt);
+    this.vx *= drag;
+    this.vy *= drag;
+    var max = this.speed() * 1.1;
+    var v = Math.hypot(this.vx, this.vy);
+    if (v > max) {
+      this.vx = (this.vx / v) * max;
+      this.vy = (this.vy / v) * max;
+    }
+  };
+
+  Dino.prototype.updateMotion = function (arena, dt) {
+    this.x += this.vx * dt;
+    this.y += this.vy * dt;
+
+    var pad = this.radius + 4;
+    if (this.x < pad) {
+      this.x = pad;
+      this.vx = Math.abs(this.vx) * 0.3;
+    }
+    if (this.x > arena.w - pad) {
+      this.x = arena.w - pad;
+      this.vx = -Math.abs(this.vx) * 0.3;
+    }
+    if (this.y < pad) {
+      this.y = pad;
+      this.vy = Math.abs(this.vy) * 0.3;
+    }
+    if (this.y > arena.h - pad) {
+      this.y = arena.h - pad;
+      this.vy = -Math.abs(this.vy) * 0.3;
+    }
+
+    if (Math.hypot(this.vx, this.vy) > 8) {
+      this.angle = Math.atan2(this.vy, this.vx);
+    }
+
+    if (this.biteCooldown > 0) this.biteCooldown -= dt;
+    if (this.biteAnim > 0) this.biteAnim -= dt;
+  };
+
+  Dino.prototype.tryBite = function () {
+    if (this.biteCooldown > 0) return false;
+    this.biteCooldown = 0.38 - this.stage * 0.04;
+    this.biteAnim = 0.18;
+    return true;
+  };
+
+  Dino.prototype.biteReach = function () {
+    return this.radius * 1.55;
+  };
+
+  Dino.prototype.takeDamage = function (amount, from) {
+    this.hp -= amount;
+    if (from) {
+      var push = 120 + from.mass * 0.5;
+      var a = U.angleTo(from.x, from.y, this.x, this.y);
+      this.vx += Math.cos(a) * push;
+      this.vy += Math.sin(a) * push;
+    }
+    return this.hp <= 0;
+  };
+
+  Dino.prototype.absorb = function (other) {
+    this.mass += other.mass * 0.85;
+    this.kills += 1;
+    var evolved = this.syncStats();
+    this.hp = Math.min(this.maxHp, this.hp + other.mass * 0.3);
+    return evolved;
+  };
+
+  Dino.prototype.colors = function () {
+    if (this.isPlayer) return PLAYER_COLORS;
+    return STAGE_COLORS[this.stage];
+  };
+
+  Dino.prototype.draw = function (ctx) {
+    if (!this.alive) return;
+
+    var c = this.colors();
+    var r = this.radius;
+    var bite = this.biteAnim > 0 ? this.biteAnim / 0.18 : 0;
+
+    ctx.save();
+    ctx.translate(this.x, this.y);
+    ctx.rotate(this.angle);
+
+    // 尾巴
+    ctx.fillStyle = c.body;
+    ctx.beginPath();
+    ctx.moveTo(-r * 0.35, 0);
+    ctx.lineTo(-r * 1.35, -r * 0.22);
+    ctx.lineTo(-r * 1.1, 0);
+    ctx.lineTo(-r * 1.35, r * 0.22);
+    ctx.closePath();
+    ctx.fill();
+
+    // 身体
+    ctx.fillStyle = c.belly;
+    ctx.beginPath();
+    ctx.ellipse(0, 0, r * 0.95, r * 0.72, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = c.body;
+    ctx.beginPath();
+    ctx.ellipse(r * 0.05, 0, r * 0.82, r * 0.62, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // 头
+    var headX = r * 0.72 + bite * r * 0.25;
+    ctx.beginPath();
+    ctx.arc(headX, 0, r * 0.48, 0, Math.PI * 2);
+    ctx.fill();
+
+    // 嘴
+    ctx.fillStyle = c.eye;
+    ctx.beginPath();
+    ctx.moveTo(headX + r * 0.2, -r * 0.12);
+    ctx.lineTo(headX + r * 0.55 + bite * r * 0.2, -r * 0.05);
+    ctx.lineTo(headX + r * 0.55 + bite * r * 0.2, r * 0.05);
+    ctx.lineTo(headX + r * 0.2, r * 0.12);
+    ctx.closePath();
+    ctx.fill();
+
+    // 眼睛
+    ctx.fillStyle = '#fff';
+    ctx.beginPath();
+    ctx.arc(headX + r * 0.08, -r * 0.18, r * 0.14, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = c.eye;
+    ctx.beginPath();
+    ctx.arc(headX + r * 0.12, -r * 0.18, r * 0.07, 0, Math.PI * 2);
+    ctx.fill();
+
+    // 腿（俯视小点）
+    ctx.fillStyle = c.body;
+    var leg = r * 0.18;
+    ctx.fillRect(-r * 0.15, -r * 0.55, leg, leg);
+    ctx.fillRect(-r * 0.15, r * 0.38, leg, leg);
+    ctx.fillRect(r * 0.2, -r * 0.45, leg, leg);
+    ctx.fillRect(r * 0.2, r * 0.28, leg, leg);
+
+  ctx.restore();
+
+    // 血条（受伤或玩家时显示）
+    if (this.hp < this.maxHp || this.isPlayer) {
+      var barW = r * 1.6;
+      var bx = this.x - barW / 2;
+      var by = this.y - r - 10;
+      ctx.fillStyle = 'rgba(0,0,0,0.35)';
+      ctx.fillRect(bx, by, barW, 5);
+      ctx.fillStyle = this.isPlayer ? '#5cd65c' : '#e06060';
+      ctx.fillRect(bx, by, barW * (this.hp / this.maxHp), 5);
+    }
+
+    // 玩家标记
+    if (this.isPlayer) {
+      ctx.fillStyle = '#5cd65c';
+      ctx.font = 'bold 11px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('你', this.x, this.y - r - 16);
+    }
+  };
+
+  global.Dino = Dino;
+})(window);
+
+(function (global) {
+  'use strict';
+
+  var U = global.Utils;
+
+  function nearest(dino, others) {
+    var best = null;
+    var bestD = Infinity;
+    for (var i = 0; i < others.length; i++) {
+      var o = others[i];
+      if (!o.alive || o.id === dino.id) continue;
+      var d = U.dist(dino.x, dino.y, o.x, o.y);
+      if (d < bestD) {
+        bestD = d;
+        best = o;
+      }
+    }
+    return { target: best, dist: bestD };
+  }
+
+  function updateAI(dino, others, dt) {
+    if (!dino.alive || dino.isPlayer) return;
+
+    var hunt = nearest(dino, others);
+    var target = hunt.target;
+    var biteRange = dino.biteReach() + (target ? target.radius : 0);
+
+    if (target) {
+      var ratio = dino.eatRatio(target);
+      var canEat = dino.canEat(target);
+      var similar = ratio > 0.75 && ratio < 1.12;
+
+      if (canEat && hunt.dist < dino.radius + target.radius + 30) {
+        dino.moveToward(target.x, target.y, 1, dt);
+        if (hunt.dist < biteRange && dino.tryBite()) {
+          return { action: 'bite', target: target };
+        }
+        return { action: 'chase', target: target };
+      }
+
+      if (target.canEat(dino) && hunt.dist < target.radius * 3) {
+        var fleeX = dino.x + (dino.x - target.x);
+        var fleeY = dino.y + (dino.y - target.y);
+        dino.moveToward(fleeX, fleeY, 1.1, dt);
+        return { action: 'flee', target: target };
+      }
+
+      if (similar && hunt.dist < dino.radius * 4) {
+        if (hunt.dist < biteRange && dino.tryBite()) {
+          return { action: 'bite', target: target };
+        }
+        if (Math.random() < 0.02) dino.moveToward(target.x, target.y, 0.7, dt);
+        else dino.wanderAngle += U.rand(-0.8, 0.8) * dt;
+        return { action: 'fight', target: target };
+      }
+    }
+
+    // 漫游
+    dino.wanderAngle += U.rand(-1, 1) * dt;
+    var wx = dino.x + Math.cos(dino.wanderAngle) * 200;
+    var wy = dino.y + Math.sin(dino.wanderAngle) * 200;
+    dino.moveToward(wx, wy, 0.35, dt);
+    return { action: 'wander' };
+  }
+
+  global.AI = { update: updateAI };
+})(window);
+
+/**
+ * 恐龙生存竞技场 —— 移动、捕食、战斗、进化，最后一只存活获胜。
+ */
+(function (global) {
+  'use strict';
+
+  var U = global.Utils;
+  var Dino = global.Dino;
+  var AI = global.AI;
+  var Sfx = global.Sfx;
+
+  var ARENA_W = 960;
+  var ARENA_H = 640;
+  var INITIAL_NPC = 11;
+
+  var AI_NAMES = [
+    '暴龙', '迅猛龙', '棘龙', '甲龙', '剑龙',
+    '异特龙', '镰刀龙', '三角龙', '双脊龙', '禽龙', '重爪龙', '角龙'
+  ];
+
+  function Game(canvas, hooks) {
+    this.canvas = canvas;
+    this.ctx = canvas.getContext('2d');
+    this.hooks = hooks || {};
+    this.arena = { w: ARENA_W, h: ARENA_H };
+    this.scale = 1;
+    this.state = 'ready';
+    this.input = { up: false, down: false, left: false, right: false, bite: false };
+    this.particles = [];
+    this.messages = [];
+    this.nextId = 1;
+
+    this.highWins = this.loadHighWins();
+
+    this.reset();
+    this.resize();
+    this.lastTime = 0;
+    this.tick = this.tick.bind(this);
+    global.requestAnimationFrame(this.tick);
+  }
+
+  Game.prototype.loadHighWins = function () {
+    try {
+      return parseInt(global.localStorage.getItem('dinoSurvival.wins'), 10) || 0;
+    } catch (e) {
+      return 0;
+    }
+  };
+
+  Game.prototype.saveHighWins = function () {
+    try {
+      global.localStorage.setItem('dinoSurvival.wins', String(this.highWins));
+    } catch (e) {}
+  };
+
+  Game.prototype.reset = function () {
+    this.dinos = [];
+    this.particles = [];
+    this.messages = [];
+    this.nextId = 1;
+    this.evolveFlash = 0;
+
+    this.player = this.spawnDino({
+      isPlayer: true,
+      x: ARENA_W * 0.5,
+      y: ARENA_H * 0.5,
+      mass: 18,
+      name: '你'
+    });
+
+    for (var i = 0; i < INITIAL_NPC; i++) {
+      this.spawnNpc();
+    }
+  };
+
+  Game.prototype.spawnDino = function (opts) {
+    var dino = new Dino({
+      id: this.nextId++,
+      isPlayer: opts.isPlayer,
+      x: opts.x,
+      y: opts.y,
+      mass: opts.mass || U.rand(12, 28),
+      angle: U.rand(0, Math.PI * 2),
+      name: opts.name || '恐龙'
+    });
+    dino.syncStats();
+    this.dinos.push(dino);
+    return dino;
+  };
+
+  Game.prototype.spawnNpc = function () {
+    var pad = 60;
+    var x, y, safe;
+    var tries = 0;
+    do {
+      x = U.rand(pad, ARENA_W - pad);
+      y = U.rand(pad, ARENA_H - pad);
+      safe = true;
+      if (this.player && this.player.alive) {
+        safe = U.dist(x, y, this.player.x, this.player.y) > 120;
+      }
+      tries++;
+    } while (!safe && tries < 20);
+
+    var mass = U.rand(14, 32);
+    if (this.player && this.player.alive && Math.random() < 0.35) {
+      mass = U.rand(this.player.mass * 0.7, this.player.mass * 1.3);
+    }
+
+    return this.spawnDino({
+      x: x,
+      y: y,
+      mass: mass,
+      name: AI_NAMES[U.randInt(0, AI_NAMES.length - 1)]
+    });
+  };
+
+  Game.prototype.aliveDinos = function () {
+    var out = [];
+    for (var i = 0; i < this.dinos.length; i++) {
+      if (this.dinos[i].alive) out.push(this.dinos[i]);
+    }
+    return out;
+  };
+
+  Game.prototype.setState = function (state) {
+    if (this.state === state) return;
+    this.state = state;
+    if (this.hooks.onState) this.hooks.onState(state, this);
+  };
+
+  Game.prototype.press = function (action) {
+    if (action === 'bite') this.input.bite = true;
+    else if (action in this.input) this.input[action] = true;
+
+    if (this.state === 'ready') {
+      this.setState('playing');
+    } else if (this.state === 'over' || this.state === 'win') {
+      this.reset();
+      this.setState('playing');
+    }
+  };
+
+  Game.prototype.release = function (action) {
+    if (action === 'bite') this.input.bite = false;
+    else if (action in this.input) this.input[action] = false;
+  };
+
+  Game.prototype.restart = function () {
+    this.reset();
+    this.setState('playing');
+  };
+
+  Game.prototype.togglePause = function () {
+    if (this.state === 'playing') this.setState('paused');
+    else if (this.state === 'paused') this.setState('playing');
+  };
+
+  Game.prototype.addMessage = function (text, duration) {
+    this.messages.push({ text: text, life: duration || 2.2 });
+  };
+
+  Game.prototype.addParticles = function (x, y, color, count) {
+    for (var i = 0; i < count; i++) {
+      var a = U.rand(0, Math.PI * 2);
+      var spd = U.rand(40, 180);
+      this.particles.push({
+        x: x,
+        y: y,
+        vx: Math.cos(a) * spd,
+        vy: Math.sin(a) * spd,
+        life: U.rand(0.3, 0.7),
+        color: color,
+        size: U.rand(2, 5)
+      });
+    }
+  };
+
+  // ------------------------------------------------------------ 主循环
+
+  Game.prototype.tick = function (now) {
+    global.requestAnimationFrame(this.tick);
+    if (!this.lastTime) this.lastTime = now;
+    var dt = Math.min((now - this.lastTime) / 1000, 0.05);
+    this.lastTime = now;
+    this.update(dt);
+    this.draw();
+  };
+
+  Game.prototype.update = function (dt) {
+    if (this.state === 'paused') return;
+
+    if (this.evolveFlash > 0) this.evolveFlash -= dt;
+
+    for (var m = this.messages.length - 1; m >= 0; m--) {
+      this.messages[m].life -= dt;
+      if (this.messages[m].life <= 0) this.messages.splice(m, 1);
+    }
+
+    for (var p = this.particles.length - 1; p >= 0; p--) {
+      var part = this.particles[p];
+      part.life -= dt;
+      part.x += part.vx * dt;
+      part.y += part.vy * dt;
+      part.vx *= 0.92;
+      part.vy *= 0.92;
+      if (part.life <= 0) this.particles.splice(p, 1);
+    }
+
+    if (this.state !== 'playing') return;
+
+    this.updatePlayer(dt);
+    this.updateNPCs(dt);
+    this.resolveCombat();
+    this.resolveEating();
+    this.checkEnd();
+  };
+
+  Game.prototype.updatePlayer = function (dt) {
+    var p = this.player;
+    if (!p.alive) return;
+
+    var ax = 0;
+    var ay = 0;
+    if (this.input.left) ax -= 1;
+    if (this.input.right) ax += 1;
+    if (this.input.up) ay -= 1;
+    if (this.input.down) ay += 1;
+
+    if (ax !== 0 || ay !== 0) {
+      var len = Math.hypot(ax, ay);
+      ax /= len;
+      ay /= len;
+      var spd = p.speed();
+      p.vx += ax * spd * dt * 4;
+      p.vy += ay * spd * dt * 4;
+      p.angle = Math.atan2(ay, ax);
+    }
+
+    if (this.input.bite && p.tryBite()) {
+      Sfx.bite();
+    }
+
+    p.applyFriction(dt);
+    p.updateMotion(this.arena, dt);
+  };
+
+  Game.prototype.updateNPCs = function (dt) {
+    var alive = this.aliveDinos();
+    for (var i = 0; i < this.dinos.length; i++) {
+      var d = this.dinos[i];
+      if (!d.alive || d.isPlayer) continue;
+
+      var result = AI.update(d, alive, dt);
+      if (result && result.action === 'bite') Sfx.bite();
+
+      d.applyFriction(dt);
+      d.updateMotion(this.arena, dt);
+    }
+  };
+
+  Game.prototype.resolveCombat = function () {
+    for (var i = 0; i < this.dinos.length; i++) {
+      var attacker = this.dinos[i];
+      if (!attacker.alive || attacker.biteAnim <= 0) continue;
+
+      for (var j = 0; j < this.dinos.length; j++) {
+        var victim = this.dinos[j];
+        if (!victim.alive || victim.id === attacker.id) continue;
+
+        var d = U.dist(attacker.x, attacker.y, victim.x, victim.y);
+        if (d > attacker.biteReach() + victim.radius * 0.6) continue;
+
+        // 咬击必须在面朝方向
+        var angleToVictim = U.angleTo(attacker.x, attacker.y, victim.x, victim.y);
+        var diff = Math.abs(U.wrapAngle(angleToVictim - attacker.angle));
+        if (diff > Math.PI * 0.55) continue;
+
+        if (attacker.canEat(victim)) continue; // 能直接吞就不咬
+
+        var dmg = attacker.biteDamage();
+        if (victim.radius > attacker.radius * 0.9) dmg *= 0.65;
+
+        var killed = victim.takeDamage(dmg, attacker);
+        this.addParticles(victim.x, victim.y, '#ff6060', 4);
+
+        if (killed) {
+          this.killDino(victim, attacker);
+        }
+      }
+    }
+  };
+
+  Game.prototype.resolveEating = function () {
+    for (var i = 0; i < this.dinos.length; i++) {
+      var eater = this.dinos[i];
+      if (!eater.alive) continue;
+
+      for (var j = 0; j < this.dinos.length; j++) {
+        var prey = this.dinos[j];
+        if (!prey.alive || prey.id === eater.id) continue;
+
+        var d = U.dist(eater.x, eater.y, prey.x, prey.y);
+        if (d > eater.radius + prey.radius * 0.55) continue;
+        if (!eater.canEat(prey)) continue;
+
+        var evolved = eater.absorb(prey);
+        prey.alive = false;
+        Sfx.eat();
+        this.addParticles(prey.x, prey.y, eater.colors().body, 10);
+        this.addMessage(eater.isPlayer ? '吞食 ' + prey.name + '！' : prey.name + ' 被吞食', 1.8);
+
+        if (evolved) {
+          if (eater.isPlayer) {
+            Sfx.evolve();
+            this.evolveFlash = 0.6;
+            this.addMessage('进化 → ' + U.stageName(eater.mass) + '！', 2.5);
+          }
+        }
+
+        if (eater.isPlayer) {
+          if (this.hooks.onStats) this.hooks.onStats(this);
+        }
+      }
+    }
+  };
+
+  Game.prototype.killDino = function (victim, killer) {
+    victim.alive = false;
+    this.addParticles(victim.x, victim.y, '#888', 8);
+
+    if (killer) {
+      killer.kills += 1;
+      killer.mass += victim.mass * 0.25;
+      var evolved = killer.syncStats();
+      if (killer.isPlayer && evolved) {
+        Sfx.evolve();
+        this.addMessage('进化 → ' + U.stageName(killer.mass) + '！', 2.5);
+      }
+    }
+
+    if (victim.isPlayer) {
+      Sfx.die();
+      this.setState('over');
+      this.addMessage('你被击败了…', 3);
+    }
+  };
+
+  Game.prototype.checkEnd = function () {
+    var alive = this.aliveDinos();
+    if (!this.player.alive) return;
+
+    var npcCount = 0;
+    for (var i = 0; i < alive.length; i++) {
+      if (!alive[i].isPlayer) npcCount++;
+    }
+
+    if (npcCount === 0) {
+      Sfx.win();
+      this.highWins += 1;
+      this.saveHighWins();
+      this.setState('win');
+      this.addMessage('你是最后的恐龙！胜利！', 4);
+    }
+  };
+
+  // ------------------------------------------------------------ 渲染
+
+  Game.prototype.resize = function () {
+    var rect = this.canvas.getBoundingClientRect();
+    var dpr = global.devicePixelRatio || 1;
+    var width = Math.max(1, Math.round(rect.width * dpr));
+    var height = Math.round((width * ARENA_H) / ARENA_W);
+
+    if (this.canvas.width !== width || this.canvas.height !== height) {
+      this.canvas.width = width;
+      this.canvas.height = height;
+    }
+    this.scale = width / ARENA_W;
+  };
+
+  Game.prototype.draw = function () {
+    var ctx = this.ctx;
+    var w = ARENA_W;
+    var h = ARENA_H;
+
+    ctx.setTransform(this.scale, 0, 0, this.scale, 0, 0);
+
+    // 草地背景
+    ctx.fillStyle = '#2d5a3d';
+    ctx.fillRect(0, 0, w, h);
+
+    // 草地纹理
+    ctx.fillStyle = '#346648';
+    for (var gx = 0; gx < w; gx += 40) {
+      for (var gy = 0; gy < h; gy += 40) {
+        if ((gx + gy) % 80 === 0) {
+          ctx.fillRect(gx, gy, 20, 20);
+        }
+      }
+    }
+
+    // 边界
+    ctx.strokeStyle = '#1a3d28';
+    ctx.lineWidth = 6;
+    ctx.strokeRect(3, 3, w - 6, h - 6);
+
+    // 粒子
+    for (var i = 0; i < this.particles.length; i++) {
+      var p = this.particles[i];
+      ctx.globalAlpha = p.life;
+      ctx.fillStyle = p.color;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+
+    // 恐龙（小的先画，大的后画）
+    var sorted = this.dinos.slice().sort(function (a, b) {
+      return a.radius - b.radius;
+    });
+    for (var d = 0; d < sorted.length; d++) {
+      sorted[d].draw(ctx);
+    }
+
+    if (this.evolveFlash > 0) {
+      ctx.fillStyle = 'rgba(255,255,200,' + this.evolveFlash * 0.35 + ')';
+      ctx.fillRect(0, 0, w, h);
+    }
+
+    this.drawHUD(ctx);
+
+    // 浮动消息
+    ctx.textAlign = 'center';
+    ctx.font = 'bold 16px sans-serif';
+    for (var m = 0; m < this.messages.length; m++) {
+      var msg = this.messages[m];
+      ctx.fillStyle = 'rgba(0,0,0,0.4)';
+      ctx.fillText(msg.text, w / 2 + 1, 52 + m * 22 + 1);
+      ctx.fillStyle = '#fff';
+      ctx.fillText(msg.text, w / 2, 52 + m * 22);
+    }
+  };
+
+  Game.prototype.drawHUD = function (ctx) {
+    var p = this.player;
+    if (!p) return;
+
+    ctx.fillStyle = 'rgba(0,0,0,0.45)';
+    ctx.fillRect(10, 10, 200, 72);
+    ctx.fillStyle = '#e8f0e8';
+    ctx.font = '12px sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText('阶段: ' + U.stageName(p.mass), 18, 28);
+    ctx.fillText('体型: ' + Math.round(p.mass), 18, 44);
+    ctx.fillText('击杀: ' + p.kills, 18, 60);
+    ctx.fillText('存活: ' + this.aliveDinos().length, 18, 76);
+
+    // 右上角存活数
+    ctx.textAlign = 'right';
+    ctx.fillStyle = 'rgba(0,0,0,0.45)';
+    ctx.fillRect(ARENA_W - 110, 10, 100, 28);
+    ctx.fillStyle = '#ffcc66';
+    ctx.font = 'bold 13px sans-serif';
+    ctx.fillText('剩余 ' + this.aliveDinos().length + ' 只', ARENA_W - 18, 28);
+  };
+
+  Game.ARENA_W = ARENA_W;
+  Game.ARENA_H = ARENA_H;
+  global.Game = Game;
+})(window);
+
+(function (global) {
+  'use strict';
+
+  var doc = global.document;
+  var canvas = doc.getElementById('game');
+
+  var overlays = {
+    ready: doc.getElementById('overlay-ready'),
+    win: doc.getElementById('overlay-win'),
+    over: doc.getElementById('overlay-over'),
+    paused: doc.getElementById('overlay-paused')
+  };
+  var winStats = doc.getElementById('win-stats');
+  var winCount = doc.getElementById('win-count');
+  var deathStats = doc.getElementById('death-stats');
+  var soundButton = doc.getElementById('btn-sound');
+  var pauseButton = doc.getElementById('btn-pause');
+  var stage = doc.getElementById('stage');
+  var touchControls = doc.getElementById('touch-controls');
+
+  function showOverlay(name) {
+    Object.keys(overlays).forEach(function (key) {
+      overlays[key].classList.toggle('overlay--hidden', key !== name);
+    });
+  }
+
+  function formatStats(g) {
+    var p = g.player;
+    return '阶段 ' + global.Utils.stageName(p.mass) + ' · 击杀 ' + p.kills + ' · 体型 ' + Math.round(p.mass);
+  }
+
+  var game = new global.Game(canvas, {
+    onState: function (state, g) {
+      if (state === 'win') {
+        winStats.textContent = formatStats(g);
+        winCount.textContent = g.highWins;
+        showOverlay('win');
+      } else if (state === 'over') {
+        deathStats.textContent = formatStats(g);
+        showOverlay('over');
+      } else if (state === 'paused') {
+        showOverlay('paused');
+      } else if (state === 'ready') {
+        showOverlay('ready');
+      } else {
+        showOverlay(null);
+      }
+      pauseButton.textContent = state === 'paused' ? '继续' : '暂停';
+      pauseButton.disabled = state === 'ready';
+    }
+  });
+
+  showOverlay('ready');
+  pauseButton.disabled = true;
+
+  var MOVE_KEYS = {
+    ArrowUp: 'up', KeyW: 'up',
+    ArrowDown: 'down', KeyS: 'down',
+    ArrowLeft: 'left', KeyA: 'left',
+    ArrowRight: 'right', KeyD: 'right'
+  };
+  var BITE_KEYS = { Space: 1, KeyJ: 1 };
+
+  doc.addEventListener('keydown', function (event) {
+    if (event.metaKey || event.ctrlKey || event.altKey) return;
+    var code = event.code;
+
+    if (MOVE_KEYS[code]) {
+      event.preventDefault();
+      if (!event.repeat) game.press(MOVE_KEYS[code]);
+      return;
+    }
+    if (BITE_KEYS[code]) {
+      event.preventDefault();
+      if (!event.repeat) game.press('bite');
+      return;
+    }
+    if (code === 'KeyP' || code === 'Escape') {
+      event.preventDefault();
+      game.togglePause();
+    } else if (code === 'KeyM') {
+      toggleSound();
+    } else if (code === 'KeyR') {
+      if (game.state === 'over' || game.state === 'win' || game.state === 'playing') {
+        game.restart();
+      }
+    }
+  });
+
+  doc.addEventListener('keyup', function (event) {
+    if (MOVE_KEYS[event.code]) game.release(MOVE_KEYS[event.code]);
+    else if (BITE_KEYS[event.code]) game.release('bite');
+  });
+
+  Array.prototype.forEach.call(touchControls.querySelectorAll('[data-hold]'), function (button) {
+    var action = button.getAttribute('data-hold');
+    button.addEventListener('pointerdown', function (event) {
+      event.preventDefault();
+      button.setPointerCapture(event.pointerId);
+      game.press(action);
+      if (game.state === 'ready') game.setState('playing');
+    });
+    button.addEventListener('pointerup', function () {
+      game.release(action);
+    });
+    button.addEventListener('pointercancel', function () {
+      game.release(action);
+    });
+  });
+
+  doc.addEventListener('click', function (event) {
+    var target = event.target.closest('[data-action]');
+    if (!target) return;
+    var action = target.getAttribute('data-action');
+    if (action === 'start') {
+      game.setState('playing');
+    } else if (action === 'restart') {
+      game.restart();
+    } else if (action === 'resume') {
+      game.togglePause();
+    }
+  });
+
+  function toggleSound() {
+    var muted = global.Sfx.toggle();
+    soundButton.textContent = muted ? '音效：关' : '音效：开';
+    soundButton.setAttribute('aria-pressed', String(muted));
+  }
+
+  soundButton.addEventListener('click', toggleSound);
+  pauseButton.addEventListener('click', function () {
+    game.togglePause();
+  });
+
+  var resizeTimer = 0;
+  global.addEventListener('resize', function () {
+    global.clearTimeout(resizeTimer);
+    resizeTimer = global.setTimeout(function () {
+      game.resize();
+    }, 80);
+  });
+
+  doc.addEventListener('visibilitychange', function () {
+    if (doc.hidden && game.state === 'playing') game.togglePause();
+  });
+
+  global.requestAnimationFrame(function () {
+    game.resize();
+  });
+})(window);
+</script>
+</body>
+</html>
