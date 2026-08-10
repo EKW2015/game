@@ -101,6 +101,67 @@ body {
   width: 100%;
   height: auto;
   aspect-ratio: 3 / 2;
+  background: #87b8e8;
+}
+
+.badge-3d {
+  display: inline-block;
+  font-size: 0.45em;
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: linear-gradient(135deg, #5cd65c, #3a9ad9);
+  color: #0f2418;
+  vertical-align: middle;
+  letter-spacing: 0.05em;
+}
+
+.hud {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  padding: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.hud__panel {
+  background: rgba(0, 0, 0, 0.5);
+  color: #e8f0e8;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  line-height: 1.7;
+}
+
+.hud__panel strong {
+  color: #5cd65c;
+}
+
+.hud__remain {
+  background: rgba(0, 0, 0, 0.5);
+  color: #ffcc66;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.toast {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -80px);
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+  padding: 8px 18px;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 600;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  pointer-events: none;
+  white-space: nowrap;
 }
 
 .overlay {
@@ -114,8 +175,8 @@ body {
   padding: 16px;
   text-align: center;
   pointer-events: none;
-  background: rgba(10, 24, 16, 0.78);
-  backdrop-filter: blur(2px);
+  background: rgba(10, 24, 16, 0.55);
+  backdrop-filter: blur(1px);
 }
 
 .overlay--hidden {

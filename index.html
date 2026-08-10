@@ -3,16 +3,16 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <meta name="description" content="恐龙生存竞技场：移动、捕食、战斗、进化，成为最后存活的恐龙。" />
+    <meta name="description" content="3D 恐龙生存竞技场：移动、捕食、战斗、进化，成为最后存活的恐龙。" />
     <meta name="theme-color" content="#1a3d28" />
-    <title>恐龙生存竞技场</title>
+    <title>恐龙生存竞技场 3D</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='14' font-size='14'>🦖</text></svg>" />
     <link rel="stylesheet" href="css/style.css" />
   </head>
   <body>
     <main class="page">
       <header class="page__header">
-        <h1 class="page__title">恐龙生存竞技场</h1>
+        <h1 class="page__title">恐龙生存竞技场 <span class="badge-3d">3D</span></h1>
         <div class="page__tools">
           <button id="btn-sound" class="tool" type="button" aria-pressed="false">音效：开</button>
           <button id="btn-pause" class="tool" type="button">暂停</button>
@@ -20,13 +20,23 @@
       </header>
 
       <div class="stage" id="stage">
-        <canvas id="game" class="stage__canvas" width="1920" height="1280" role="img"
-          aria-label="恐龙生存竞技场游戏画面"></canvas>
+        <canvas id="game" class="stage__canvas" role="img" aria-label="3D 恐龙生存竞技场"></canvas>
+
+        <div class="hud" id="hud">
+          <div class="hud__panel">
+            <div>阶段: <strong id="hud-stage">幼龙</strong></div>
+            <div>体型: <strong id="hud-mass">18</strong></div>
+            <div>击杀: <strong id="hud-kills">0</strong></div>
+          </div>
+          <div class="hud__remain">剩余 <strong id="hud-alive">6</strong> 只</div>
+        </div>
+
+        <div class="toast" id="toast"></div>
 
         <div class="overlay" id="overlay-ready">
-          <p class="overlay__title">生存之战</p>
-          <p class="overlay__hint">比对手更大就能吞食它们 · 体型相近则互相撕咬</p>
-          <p class="overlay__hint">进化到传说级，成为最后一只存活的恐龙！</p>
+          <p class="overlay__title">简单模式 3D 🎮</p>
+          <p class="overlay__hint">第三人称 3D · 靠近小恐龙就能吃</p>
+          <p class="overlay__hint">只有 5 只敌人 · 前 12 秒它们不会打你</p>
           <button class="overlay__button" type="button" data-action="start">开始战斗</button>
         </div>
 
@@ -43,48 +53,46 @@
         <div class="overlay overlay--hidden" id="overlay-over">
           <p class="overlay__title">你被击败了</p>
           <p class="overlay__score" id="death-stats"></p>
-          <p class="overlay__hint">被更大的恐龙吞食，或战斗中被击杀</p>
           <button class="overlay__button" type="button" data-action="restart">再来一局</button>
         </div>
 
         <div class="overlay overlay--hidden" id="overlay-paused">
           <p class="overlay__title">已暂停</p>
-          <p class="overlay__hint">按 <kbd>P</kbd> 继续</p>
           <button class="overlay__button" type="button" data-action="resume">继续游戏</button>
+        </div>
+
+        <div class="overlay overlay--hidden" id="overlay-error">
+          <p class="overlay__title">3D 加载失败</p>
+          <p class="overlay__hint" id="error-msg">请用 Chrome 浏览器打开 play.html</p>
         </div>
       </div>
 
       <div class="touch" id="touch-controls" aria-hidden="true">
         <div class="touch__dpad">
-          <button class="touch__btn touch__btn--up" type="button" data-hold="up" aria-label="上">↑</button>
-          <button class="touch__btn touch__btn--left" type="button" data-hold="left" aria-label="左">←</button>
-          <button class="touch__btn touch__btn--right" type="button" data-hold="right" aria-label="右">→</button>
-          <button class="touch__btn touch__btn--down" type="button" data-hold="down" aria-label="下">↓</button>
+          <button class="touch__btn touch__btn--up" type="button" data-hold="up">↑</button>
+          <button class="touch__btn touch__btn--left" type="button" data-hold="left">←</button>
+          <button class="touch__btn touch__btn--right" type="button" data-hold="right">→</button>
+          <button class="touch__btn touch__btn--down" type="button" data-hold="down">↓</button>
         </div>
         <button class="touch__bite" type="button" data-hold="bite">撕咬</button>
       </div>
 
       <section class="legend">
-        <h2 class="legend__title">玩法说明</h2>
+        <h2 class="legend__title">怎么玩（超简单）</h2>
         <ul class="legend__list">
-          <li><kbd>WASD</kbd> / 方向键 移动恐龙</li>
-          <li><kbd>空格</kbd> / <kbd>J</kbd> 撕咬攻击（体型相近时战斗）</li>
-          <li>体型明显大于对手时靠近即可吞食，获得体型并进化</li>
-          <li>进化阶段：幼龙 → 猎手 → 霸主 → 传说</li>
-          <li>消灭所有其他恐龙，最后一只存活即获胜</li>
+          <li>方向键移动，靠近<strong>小恐龙</strong>自动吞食</li>
+          <li>开局你最大，敌人都是小的</li>
+          <li>吃掉 5 只就赢了！空格可以攻击（一般用不到）</li>
         </ul>
-        <p class="legend__note">遇到比自己大的恐龙要逃跑；撕咬可以削弱对手，击杀后也能获得部分体型。</p>
       </section>
     </main>
 
-    <noscript>
-      <p style="text-align: center">这个游戏需要启用 JavaScript 才能运行。</p>
-    </noscript>
-
+    <script src="js/vendor/three.min.js"></script>
     <script src="js/utils.js"></script>
     <script src="js/audio.js"></script>
     <script src="js/dino.js"></script>
     <script src="js/ai.js"></script>
+    <script src="js/renderer3d.js"></script>
     <script src="js/game.js"></script>
     <script src="js/main.js"></script>
   </body>
