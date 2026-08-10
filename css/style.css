@@ -94,11 +94,13 @@ body {
   border: 1px solid var(--line);
   touch-action: manipulation;
   user-select: none;
+  min-height: 360px;
 }
 
 .stage__canvas {
   display: block;
   width: 100%;
+  min-height: 360px;
   height: auto;
   aspect-ratio: 16 / 9;
   background: #7ec8f0;

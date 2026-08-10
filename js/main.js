@@ -21,8 +21,21 @@
   var hudMass = doc.getElementById('hud-mass');
   var hudKills = doc.getElementById('hud-kills');
   var hudBest = doc.getElementById('hud-best');
+  var bootScreen = doc.getElementById('boot-screen');
+  var bootMsg = doc.getElementById('boot-msg');
 
   var game = null;
+
+  function hideBoot() {
+    if (bootScreen) bootScreen.style.display = 'none';
+  }
+
+  function showBootError(msg) {
+    if (bootMsg) {
+      bootMsg.style.color = '#ff8888';
+      bootMsg.innerHTML = msg;
+    }
+  }
 
   function showOverlay(name) {
     Object.keys(overlays).forEach(function (key) {
@@ -120,12 +133,14 @@
 
   function startGame() {
     if (typeof THREE === 'undefined') {
-      if (errorMsg) errorMsg.textContent = '3D 引擎没加载。请重新下载 play.html，用 Chrome 打开。';
+      showBootError('3D 引擎加载失败<br><br>请重新下载 play.html（约700KB）<br>用 Chrome 浏览器双击打开<br><br>❌ 不要直接在 GitHub 网页里打开');
+      if (errorMsg) errorMsg.textContent = '3D 引擎没加载。请下载 play.html 用 Chrome 打开。';
       showOverlay('error');
       return;
     }
 
     try {
+      if (bootMsg) bootMsg.textContent = '正在创建 3D 世界…';
       game = new global.Game(canvas, {
         onState: function (state, g) {
           if (state === 'over') {
@@ -160,9 +175,11 @@
 
       showOverlay('ready');
       pauseButton.disabled = true;
+      hideBoot();
       global.requestAnimationFrame(function () { game.resize(); });
     } catch (err) {
       console.error(err);
+      showBootError('3D 启动失败：' + (err.message || 'WebGL 不可用') + '<br><br>请换 <b>Chrome 浏览器</b> 打开');
       if (errorMsg) errorMsg.textContent = err.message || 'WebGL 不可用，请用 Chrome 浏览器';
       showOverlay('error');
     }
