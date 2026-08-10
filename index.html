@@ -6,10 +6,16 @@
     <meta name="description" content="无限 3D 恐龙世界：自由探索、捕食、进化。" />
     <meta name="theme-color" content="#1a3d28" />
     <title>无限恐龙世界 3D</title>
+    <style>html,body{background:#0f2418!important;min-height:100vh;margin:0}</style>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='14' font-size='14'>🦖</text></svg>" />
     <link rel="stylesheet" href="css/style.css" />
   </head>
   <body>
+    <div id="boot-screen" style="position:fixed;inset:0;background:#0f2418;z-index:99999;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#5cd65c;font-family:sans-serif;text-align:center;padding:20px">
+      <div style="font-size:56px;margin-bottom:12px">🦖</div>
+      <div style="font-size:24px;font-weight:bold">无限恐龙世界 3D</div>
+      <div id="boot-msg" style="font-size:15px;color:#9cb8a8;margin-top:14px">正在加载 3D 引擎，请稍候…</div>
+    </div>
     <main class="page">
       <header class="page__header">
         <h1 class="page__title">无限恐龙世界 <span class="badge-3d">3D</span></h1>
