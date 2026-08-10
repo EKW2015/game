@@ -6,13 +6,10 @@
 
   var overlays = {
     ready: doc.getElementById('overlay-ready'),
-    win: doc.getElementById('overlay-win'),
     over: doc.getElementById('overlay-over'),
     paused: doc.getElementById('overlay-paused'),
     error: doc.getElementById('overlay-error')
   };
-  var winStats = doc.getElementById('win-stats');
-  var winCount = doc.getElementById('win-count');
   var deathStats = doc.getElementById('death-stats');
   var errorMsg = doc.getElementById('error-msg');
   var soundButton = doc.getElementById('btn-sound');
@@ -23,7 +20,7 @@
   var hudStage = doc.getElementById('hud-stage');
   var hudMass = doc.getElementById('hud-mass');
   var hudKills = doc.getElementById('hud-kills');
-  var hudAlive = doc.getElementById('hud-alive');
+  var hudBest = doc.getElementById('hud-best');
 
   var game = null;
 
@@ -68,9 +65,7 @@
       } else if (code === 'KeyM') {
         toggleSound();
       } else if (code === 'KeyR') {
-        if (game.state === 'over' || game.state === 'win' || game.state === 'playing') {
-          game.restart();
-        }
+        if (game.state === 'over' || game.state === 'playing') game.restart();
       }
     });
 
@@ -133,11 +128,7 @@
     try {
       game = new global.Game(canvas, {
         onState: function (state, g) {
-          if (state === 'win') {
-            winStats.textContent = formatStats(g);
-            winCount.textContent = g.highWins;
-            showOverlay('win');
-          } else if (state === 'over') {
+          if (state === 'over') {
             deathStats.textContent = formatStats(g);
             showOverlay('over');
           } else if (state === 'paused') {
@@ -156,7 +147,7 @@
           hudStage.textContent = global.Utils.stageName(p.mass);
           hudMass.textContent = Math.round(p.mass);
           hudKills.textContent = p.kills;
-          hudAlive.textContent = g.aliveDinos().length;
+          hudBest.textContent = g.highKills;
 
           if (g.messages.length > 0) {
             toast.textContent = g.messages[0].text;
@@ -172,9 +163,7 @@
       global.requestAnimationFrame(function () { game.resize(); });
     } catch (err) {
       console.error(err);
-      if (errorMsg) {
-        errorMsg.textContent = err.message || 'WebGL 不可用，请用 Chrome 浏览器打开';
-      }
+      if (errorMsg) errorMsg.textContent = err.message || 'WebGL 不可用，请用 Chrome 浏览器';
       showOverlay('error');
     }
   }

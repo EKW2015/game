@@ -32,7 +32,7 @@
   }
 
   function radiusFromMass(mass) {
-    return Math.sqrt(mass) * 2.8 + 8;
+    return Math.sqrt(mass) * 6.5 + 28;
   }
 
   function massFromRadius(r) {
