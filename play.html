@@ -1938,7 +1938,11 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
       showOverlay('ready');
       pauseButton.disabled = true;
       hideBoot();
-      global.requestAnimationFrame(function () { game.resize(); });
+      global.requestAnimationFrame(function () {
+        game.resize();
+        // 打开即玩，无需再点按钮
+        game.setState('playing');
+      });
     } catch (err) {
       console.error(err);
       showBootError('3D 启动失败：' + (err.message || 'WebGL 不可用') + '<br><br>请换 <b>Chrome 浏览器</b> 打开');
