@@ -260,8 +260,8 @@
 
         var LEVELS = {
           easy: { name: '简单', start: 180, min: 120, step: 3, wrap: true },
-          normal: { name: '普通', start: 135, min: 75, step: 3.5, wrap: false },
-          hard: { name: '困难', start: 100, min: 55, step: 3, wrap: false }
+          normal: { name: '普通', start: 145, min: 75, step: 3.5, wrap: false },
+          hard: { name: '困难', start: 105, min: 55, step: 3, wrap: false }
         };
 
         var FOOD_SCORE = 10;
@@ -297,12 +297,13 @@
         }
 
         function reset(game) {
-          var cx = Math.floor(game.cols / 2);
+          // 从左侧起步，向右留出足够的反应距离
+          var hx = game.cols >= 8 ? 3 : Math.max(2, Math.floor(game.cols / 2));
           var cy = Math.floor(game.rows / 2);
           game.cells = [
-            { x: cx, y: cy },
-            { x: cx - 1, y: cy },
-            { x: cx - 2, y: cy }
+            { x: hx, y: cy },
+            { x: hx - 1, y: cy },
+            { x: hx - 2, y: cy }
           ];
           game.dir = 'right';
           game.pending = [];
@@ -501,6 +502,8 @@
         var lastFrame = 0;
         var cell = 20;
         var flash = 0;
+        var grace = 0; // 开局倒计时：先站着不动，给玩家反应时间
+        var GRACE_MS = 1500;
 
         function copyCells(cells) {
           return cells.map(function (c) { return { x: c.x, y: c.y }; });
@@ -602,11 +605,11 @@
               if ((x + y) % 2 === 0) ctx.fillRect(x * cell, y * cell, cell, cell);
             }
           }
-          if (!game.wrap) {
-            ctx.strokeStyle = 'rgba(214, 92, 92, 0.35)';
-            ctx.lineWidth = 3;
-            ctx.strokeRect(1.5, 1.5, size - 3, game.rows * cell - 3);
-          }
+          ctx.lineWidth = 4;
+          ctx.setLineDash(game.wrap ? [cell * 0.35, cell * 0.35] : []);
+          ctx.strokeStyle = game.wrap ? 'rgba(92, 214, 92, 0.4)' : 'rgba(232, 92, 82, 0.7)';
+          ctx.strokeRect(2, 2, size - 4, game.rows * cell - 4);
+          ctx.setLineDash([]);
         }
 
         function drawApple(x, y, time) {
@@ -736,12 +739,30 @@
           }
         }
 
+        function drawCountdown() {
+          var size = game.cols * cell;
+          var num = Math.max(1, Math.ceil(grace / (GRACE_MS / 3)));
+          var phase = (grace % (GRACE_MS / 3)) / (GRACE_MS / 3);
+
+          ctx.fillStyle = 'rgba(8, 22, 14, 0.45)';
+          ctx.fillRect(0, 0, size, game.rows * cell);
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillStyle = 'rgba(139, 247, 164, ' + (0.35 + phase * 0.6).toFixed(2) + ')';
+          ctx.font = 'bold ' + Math.round(size * 0.22) + 'px sans-serif';
+          ctx.fillText(String(num), size / 2, size * 0.44);
+          ctx.fillStyle = 'rgba(216, 240, 216, 0.85)';
+          ctx.font = Math.round(size * 0.045) + 'px sans-serif';
+          ctx.fillText('准备好了就按方向键', size / 2, size * 0.63);
+        }
+
         function draw(t) {
           var time = Date.now();
           drawBoard();
           if (game.food) drawApple(game.food.x, game.food.y, time);
           if (game.bonus) drawBonus(game.bonus, time);
           drawSnake(state === 'playing' ? t : 1);
+          if (state === 'playing' && grace > 0) drawCountdown();
 
           if (flash > 0) {
             ctx.fillStyle = 'rgba(232, 72, 63, ' + (flash * 0.35).toFixed(3) + ')';
@@ -757,7 +778,10 @@
           if (flash > 0) flash = Math.max(0, flash - dt / 400);
 
           var interval = Core.tickInterval(game);
-          if (state === 'playing') {
+          if (state === 'playing' && grace > 0) {
+            grace = Math.max(0, grace - dt);
+            acc = 0;
+          } else if (state === 'playing') {
             acc += dt;
             while (acc >= interval && state === 'playing') {
               acc -= interval;
@@ -791,6 +815,7 @@
           prevCells = copyCells(game.cells);
           acc = 0;
           flash = 0;
+          grace = GRACE_MS;
           state = 'playing';
           show(null);
           el.pause.textContent = '暂停';
@@ -836,7 +861,10 @@
           if (dir) {
             e.preventDefault();
             if (state === 'ready') startGame();
-            if (state === 'playing') Core.turn(game, dir);
+            if (state === 'playing') {
+              Core.turn(game, dir);
+              grace = 0; // 玩家已经准备好了，不用等倒计时
+            }
             return;
           }
           if (key === ' ' || key === 'Spacebar') {
@@ -880,6 +908,7 @@
           state = 'ready';
           acc = 0;
           flash = 0;
+          grace = 0;
           var buttons = el.levels.querySelectorAll('[data-level]');
           for (var i = 0; i < buttons.length; i++) {
             buttons[i].setAttribute('aria-pressed', buttons[i] === btn ? 'true' : 'false');
@@ -895,7 +924,10 @@
           if (!btn) return;
           e.preventDefault();
           if (state === 'ready') startGame();
-          if (state === 'playing') Core.turn(game, btn.getAttribute('data-dir'));
+          if (state === 'playing') {
+            Core.turn(game, btn.getAttribute('data-dir'));
+            grace = 0;
+          }
         });
 
         // 滑动手势
@@ -910,6 +942,7 @@
           var dy = e.clientY - swipe.y;
           if (Math.abs(dx) < 24 && Math.abs(dy) < 24) return;
           Core.turn(game, Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'right' : 'left') : (dy > 0 ? 'down' : 'up'));
+          grace = 0;
           swipe = { x: e.clientX, y: e.clientY };
         });
         canvas.addEventListener('pointerup', function () { swipe = null; });

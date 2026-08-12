@@ -89,16 +89,17 @@ console.log('撞墙');
   let steps = 0;
   while (!game.over && steps < 100) { Core.step(game); steps++; }
   check('普通模式撞墙结束', game.over && game.reason === '撞到墙了');
-  check('在 10 步内撞到右墙', steps === 10);
+  check('从左侧起步，撞到右墙前有 17 步反应距离', steps === 17);
 }
 
 console.log('穿墙');
 {
   const game = Core.createGame({ cols: 20, rows: 20, level: 'easy', rng: seeded(5) });
+  const startX = game.cells[0].x;
   game.food = null;
-  for (let i = 0; i < 15; i++) Core.step(game);
+  for (let i = 0; i < 25; i++) Core.step(game);
   check('简单模式不会撞墙', !game.over);
-  check('从左边绕回来', game.cells[0].x === (10 + 15) % 20);
+  check('从左边绕回来', game.cells[0].x === (startX + 25) % 20);
 }
 
 console.log('转向');
