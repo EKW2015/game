@@ -23,7 +23,9 @@ const html = body
   .replace(/<script src="js\/[^"]+"><\/script>\s*/g, '')
   .replace('<script src="js/vendor/three.min.js"></script>', '')
   .trim()
-  .replace('</body>', '<script>' + three + '<\/script>\n<script>' + js + '<\/script>\n</body>');
+  .replace('</body>', function () {
+    return '<script>' + three + '<\/script>\n<script>' + js + '<\/script>\n</body>';
+  });
 
 fs.writeFileSync(path.join(root, 'play.html'), html);
 console.log('play.html', Math.round(html.length / 1024), 'KB');
