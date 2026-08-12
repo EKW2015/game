@@ -106,6 +106,41 @@ body {
   background: #7ec8f0;
 }
 
+.crosshair {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 18px;
+  height: 18px;
+  margin: -9px 0 0 -9px;
+  pointer-events: none;
+  opacity: 0.55;
+}
+
+.crosshair::before,
+.crosshair::after {
+  content: "";
+  position: absolute;
+  background: rgba(255, 255, 255, 0.85);
+  border-radius: 1px;
+}
+
+.crosshair::before {
+  left: 50%;
+  top: 2px;
+  width: 2px;
+  height: 14px;
+  margin-left: -1px;
+}
+
+.crosshair::after {
+  top: 50%;
+  left: 2px;
+  width: 14px;
+  height: 2px;
+  margin-top: -1px;
+}
+
 .badge-3d {
   display: inline-block;
   font-size: 0.45em;

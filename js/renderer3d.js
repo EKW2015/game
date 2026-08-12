@@ -1,5 +1,5 @@
 /**
- * 无限 3D 世界渲染：真实恐龙、区块地形、跟随相机。
+ * 无限 3D 世界渲染：真实恐龙、区块地形、第一人称相机。
  */
 (function (global) {
   'use strict';
@@ -17,8 +17,8 @@
     this.scene.background = new THREE.Color(0x7ec8f0);
     this.scene.fog = new THREE.Fog(0xa8daf5, 280, 3200);
 
-    this.camera = new THREE.PerspectiveCamera(58, 16 / 9, 2, 5000);
-    this.camera.position.set(0, 180, 280);
+    this.camera = new THREE.PerspectiveCamera(72, 16 / 9, 2, 5000);
+    this.camera.position.set(0, 80, 0);
 
     this.renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true });
     if (!this.renderer.getContext()) throw new Error('WebGL 不可用');
@@ -71,6 +71,12 @@
   };
 
   Renderer3D.prototype.updateDinoMesh = function (dino, world) {
+    if (dino.isPlayer) {
+      var existing = this.meshes.get(dino.id);
+      if (existing) existing.visible = false;
+      return;
+    }
+
     var group = this.meshes.get(dino.id) || this.createDinoMesh(dino);
     if (!dino.alive) {
       group.visible = false;
@@ -138,19 +144,22 @@
   Renderer3D.prototype.updateCamera = function (player, dt) {
     if (!player) return;
 
-    var dist = 260 + player.radius * 1.4;
-    var height = 140 + player.radius * 0.7;
-    var idealX = player.x - Math.sin(player.angle) * dist * 0.55;
-    var idealZ = player.y - Math.cos(player.angle) * dist;
-    var idealY = height + this.world.heightAt(player.x, player.y);
+    var ground = this.world.heightAt(player.x, player.y);
+    var eyeHeight = player.radius * 0.55 + 16;
+    var idealX = player.x;
+    var idealY = ground + eyeHeight;
+    var idealZ = player.y;
 
     var lerp = 1 - Math.pow(0.0008, dt);
     this.camera.position.x += (idealX - this.camera.position.x) * lerp;
     this.camera.position.y += (idealY - this.camera.position.y) * lerp;
     this.camera.position.z += (idealZ - this.camera.position.z) * lerp;
 
-    var lookY = this.world.heightAt(player.x, player.y) + player.radius * 0.35 + 10;
-    this.camera.lookAt(player.x, lookY, player.y);
+    var lookDist = 140;
+    var lookX = player.x + Math.cos(player.angle) * lookDist;
+    var lookY = ground + eyeHeight * 0.95;
+    var lookZ = player.y + Math.sin(player.angle) * lookDist;
+    this.camera.lookAt(lookX, lookY, lookZ);
 
     this.world.update(player.x, player.y);
 
