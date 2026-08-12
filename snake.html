@@ -259,9 +259,9 @@
         var OPPOSITE = { up: 'down', down: 'up', left: 'right', right: 'left' };
 
         var LEVELS = {
-          easy: { name: '简单', start: 180, min: 120, step: 3, wrap: true },
-          normal: { name: '普通', start: 145, min: 75, step: 3.5, wrap: false },
-          hard: { name: '困难', start: 105, min: 55, step: 3, wrap: false }
+          easy: { name: '简单', start: 145, min: 90, step: 3.5, wrap: true },
+          normal: { name: '普通', start: 115, min: 58, step: 4, wrap: false },
+          hard: { name: '困难', start: 85, min: 42, step: 3.5, wrap: false }
         };
 
         var FOOD_SCORE = 10;
@@ -503,7 +503,7 @@
         var cell = 20;
         var flash = 0;
         var grace = 0; // 开局倒计时：先站着不动，给玩家反应时间
-        var GRACE_MS = 1500;
+        var GRACE_MS = 900;
 
         function copyCells(cells) {
           return cells.map(function (c) { return { x: c.x, y: c.y }; });
