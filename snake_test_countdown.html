@@ -448,46 +448,6 @@
           return event;
         }
 
-        /** 穿墙时取离参考点最近的等价坐标，让身体在逻辑上保持连续 */
-        function nearestRep(v, ref, span, wrap) {
-          if (!wrap) return v;
-          var best = v;
-          for (var k = -1; k <= 1; k += 2) {
-            var cand = v + k * span;
-            if (Math.abs(cand - ref) < Math.abs(best - ref)) best = cand;
-          }
-          return best;
-        }
-
-        /**
-         * 把蛇展开成一条连续折线（格子坐标，穿墙时会超出棋盘范围）
-         * t 是两步之间的插值进度，用来让移动看起来是平滑的
-         */
-        function pathPoints(game, prevCells, t) {
-          var pts = [];
-          var gx = 0;
-          var gy = 0;
-          for (var i = 0; i < game.cells.length; i++) {
-            var cur = game.cells[i];
-            gx = i === 0 ? cur.x : nearestRep(cur.x, gx, game.cols, game.wrap);
-            gy = i === 0 ? cur.y : nearestRep(cur.y, gy, game.rows, game.wrap);
-            var prev = prevCells[i] || prevCells[prevCells.length - 1] || cur;
-            var px = nearestRep(prev.x, gx, game.cols, game.wrap);
-            var py = nearestRep(prev.y, gy, game.rows, game.wrap);
-            pts.push({ x: px + (gx - px) * t, y: py + (gy - py) * t });
-          }
-          return pts;
-        }
-
-        /** 需要画哪几份平移副本，才能让棋盘范围内不缺一段身体 */
-        function shiftRange(min, max, span) {
-          var list = [];
-          for (var k = Math.ceil(-max / span); k <= Math.floor((span - min) / span) && list.length < 8; k++) {
-            list.push(k);
-          }
-          return list.length ? list : [0];
-        }
-
         var api = {
           DIRS: DIRS,
           OPPOSITE: OPPOSITE,
@@ -501,9 +461,7 @@
           turn: turn,
           step: step,
           occupied: occupied,
-          randomFreeCell: randomFreeCell,
-          pathPoints: pathPoints,
-          shiftRange: shiftRange
+          randomFreeCell: randomFreeCell
         };
 
         global.SnakeCore = api;
@@ -545,7 +503,7 @@
         var cell = 20;
         var flash = 0;
         var grace = 0; // 开局倒计时：先站着不动，给玩家反应时间
-        var GRACE_MS = 900;
+        var GRACE_MS = 5000;
 
         function copyCells(cells) {
           return cells.map(function (c) { return { x: c.x, y: c.y }; });
@@ -620,10 +578,21 @@
         /* ---------- 绘制 ---------- */
         function cx(v) { return (v + 0.5) * cell; }
 
+        function lerp(a, b, t) { return a + (b - a) * t; }
+
         function segPositions(t) {
-          return Core.pathPoints(game, prevCells, t).map(function (p) {
-            return { x: cx(p.x), y: cx(p.y) };
-          });
+          var pts = [];
+          for (var i = 0; i < game.cells.length; i++) {
+            var cur = game.cells[i];
+            var prev = prevCells[i] || prevCells[prevCells.length - 1] || cur;
+            var jumped = Math.abs(cur.x - prev.x) > 1 || Math.abs(cur.y - prev.y) > 1;
+            pts.push({
+              x: jumped ? cx(cur.x) : lerp(cx(prev.x), cx(cur.x), t),
+              y: jumped ? cx(cur.y) : lerp(cx(prev.y), cx(cur.y), t),
+              jumped: jumped
+            });
+          }
+          return pts;
         }
 
         function drawBoard() {
@@ -693,60 +662,43 @@
         function drawSnake(t) {
           var pts = segPositions(t);
           if (!pts.length) return;
-          var w = game.cols * cell;
-          var h = game.rows * cell;
 
-          // 身体跨过边界时，再把整条蛇平移一份画到对面，接缝处才不会断开
-          var shiftsX = [0];
-          var shiftsY = [0];
-          if (game.wrap) {
-            var minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
-            for (var i = 0; i < pts.length; i++) {
-              minX = Math.min(minX, pts[i].x); maxX = Math.max(maxX, pts[i].x);
-              minY = Math.min(minY, pts[i].y); maxY = Math.max(maxY, pts[i].y);
+          // 穿墙时把身体拆成多段，避免出现横跨全屏的连线
+          var paths = [[pts[0]]];
+          for (var i = 1; i < pts.length; i++) {
+            if (pts[i].jumped || Math.hypot(pts[i].x - pts[i - 1].x, pts[i].y - pts[i - 1].y) > cell * 1.6) {
+              paths.push([pts[i]]);
+            } else {
+              paths[paths.length - 1].push(pts[i]);
             }
-            shiftsX = Core.shiftRange(minX, maxX, w);
-            shiftsY = Core.shiftRange(minY, maxY, h);
           }
 
-          ctx.save();
-          ctx.beginPath();
-          ctx.rect(0, 0, w, h);
-          ctx.clip();
           ctx.lineCap = 'round';
           ctx.lineJoin = 'round';
-          for (var sx = 0; sx < shiftsX.length; sx++) {
-            for (var sy = 0; sy < shiftsY.length; sy++) {
-              ctx.save();
-              ctx.translate(shiftsX[sx] * w, shiftsY[sy] * h);
-              drawBody(pts);
-              drawHead(pts[0]);
-              ctx.restore();
+          for (var p = 0; p < paths.length; p++) {
+            var path = paths[p];
+            if (path.length === 1) {
+              ctx.fillStyle = '#3f9f5c';
+              ctx.beginPath();
+              ctx.arc(path[0].x, path[0].y, cell * 0.4, 0, Math.PI * 2);
+              ctx.fill();
+              continue;
             }
-          }
-          ctx.restore();
-        }
+            ctx.strokeStyle = 'rgba(6, 33, 15, 0.65)';
+            ctx.lineWidth = cell * 0.9;
+            strokePath(path);
 
-        function drawBody(pts) {
-          if (pts.length < 2) {
-            ctx.fillStyle = '#3f9f5c';
-            ctx.beginPath();
-            ctx.arc(pts[0].x, pts[0].y, cell * 0.37, 0, Math.PI * 2);
-            ctx.fill();
-            return;
+            var head = path[0];
+            var tail = path[path.length - 1];
+            var grad = ctx.createLinearGradient(head.x, head.y, tail.x, tail.y);
+            grad.addColorStop(0, '#8bf7a4');
+            grad.addColorStop(1, '#2f8f4e');
+            ctx.strokeStyle = grad;
+            ctx.lineWidth = cell * 0.74;
+            strokePath(path);
           }
-          ctx.strokeStyle = 'rgba(6, 33, 15, 0.65)';
-          ctx.lineWidth = cell * 0.9;
-          strokePath(pts);
 
-          var head = pts[0];
-          var tail = pts[pts.length - 1];
-          var grad = ctx.createLinearGradient(head.x, head.y, tail.x, tail.y);
-          grad.addColorStop(0, '#8bf7a4');
-          grad.addColorStop(1, '#2f8f4e');
-          ctx.strokeStyle = grad;
-          ctx.lineWidth = cell * 0.74;
-          strokePath(pts);
+          drawHead(pts[0]);
         }
 
         function strokePath(path) {

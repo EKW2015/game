@@ -157,6 +157,63 @@ console.log('满屏通关');
   check('铺满棋盘算通关', game.over && game.won && game.reason === '满屏通关');
 }
 
+console.log('绘制用的折线');
+{
+  const copy = (cells) => cells.map((c) => ({ x: c.x, y: c.y }));
+  const gaps = (pts) => {
+    let worst = 0;
+    for (let i = 1; i < pts.length; i++) {
+      worst = Math.max(worst, Math.hypot(pts[i].x - pts[i - 1].x, pts[i].y - pts[i - 1].y));
+    }
+    return worst;
+  };
+
+  const game = Core.createGame({ cols: 20, rows: 20, level: 'normal', rng: seeded(11) });
+  let prev = copy(game.cells);
+  Core.step(game);
+  const mid = Core.pathPoints(game, prev, 0.5);
+  check('普通模式：相邻两节始终挨着', gaps(mid) <= 1.001);
+  check('插值到一半时蛇头位于两格中间', Math.abs(mid[0].x - (game.cells[0].x - 0.5)) < 1e-9);
+
+  // 简单模式一路向右，穿过右边界的那一步最容易画裂
+  const wrapGame = Core.createGame({ cols: 20, rows: 20, level: 'easy', rng: seeded(12) });
+  wrapGame.food = null;
+  let worstGap = 0;
+  let wrapped = false;
+  for (let i = 0; i < 30; i++) {
+    prev = copy(wrapGame.cells);
+    Core.step(wrapGame);
+    if (wrapGame.wrapped) wrapped = true;
+    for (const t of [0, 0.25, 0.5, 0.75, 1]) {
+      worstGap = Math.max(worstGap, gaps(Core.pathPoints(wrapGame, prev, t)));
+    }
+  }
+  check('确实穿了墙', wrapped);
+  check('穿墙过程中身体不会断开', worstGap <= 1.001);
+
+  // 平移副本要能盖住露在棋盘外的那一截
+  const covered = (min, max, span) => {
+    const shifts = Core.shiftRange(min, max, span);
+    let left = min;
+    let ok = true;
+    shifts.forEach((k) => {
+      if (k * span + max < 0 || k * span + min > span) ok = false; // 画了看不见的副本
+    });
+    // 棋盘上每个位置都要被某一份副本覆盖到
+    for (let x = 0; x <= span; x += span / 40) {
+      if (!shifts.some((k) => x >= k * span + min - 1e-9 && x <= k * span + max + 1e-9)) {
+        if (x >= min && x <= max) ok = false;
+      }
+      left = x;
+    }
+    return ok && left >= 0;
+  };
+  check('身体没出界时只画一份', Core.shiftRange(40, 360, 400).join() === '0');
+  check('探出左边界时补画右侧副本', Core.shiftRange(-30, 360, 400).join() === '0,1');
+  check('探出右边界时补画左侧副本', Core.shiftRange(40, 430, 400).join() === '-1,0');
+  check('副本能覆盖整块棋盘', covered(-30, 360, 400) && covered(40, 430, 400));
+}
+
 console.log('速度');
 {
   const game = Core.createGame({ cols: 20, rows: 20, level: 'normal', rng: seeded(10) });
