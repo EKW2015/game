@@ -23,6 +23,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           cp -r docs /tmp/game-deploy
+          cp snake.html /tmp/game-deploy/snake.html
           git checkout --orphan gh-pages-deploy
           git rm -rf . 2>/dev/null || true
           cp -r /tmp/game-deploy/* .
