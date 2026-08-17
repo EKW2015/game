@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="description" content="夜城飞车：霓虹城市 3D 竞速，16 场比赛、5 个挑战、自由驾驶与车库改装。" />
+    <meta name="theme-color" content="#05060f" />
+    <title>夜城飞车 NIGHT CITY RACING</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='14' font-size='14'>🏎️</text></svg>" />
+    <link rel="stylesheet" href="css/style.css" />
+  </head>
+  <body>
+    <canvas id="view"></canvas>
+
+    <div id="boot">
+      <div class="logo">夜城飞车</div>
+      <div class="sub" id="boot-msg">正在点亮霓虹城市…</div>
+      <div class="err hidden" id="boot-err"></div>
+    </div>
+
+    <div id="ui">
+      <!-- ============ 比赛 HUD ============ -->
+      <div class="hud hud--p1 hidden" id="hud-p1">
+        <div class="hud__info">
+          <div class="chip"><div class="chip__label">名次</div><div class="chip__value" data-hud="pos">1 / 5</div></div>
+          <div class="chip"><div class="chip__label">圈数</div><div class="chip__value" data-hud="lap">1 / 3</div></div>
+          <div class="chip"><div class="chip__label">时间</div><div class="chip__value chip__value--small" data-hud="time">0:00.000</div></div>
+          <div class="chip"><div class="chip__label">上圈</div><div class="chip__value chip__value--small" data-hud="last">--:--.---</div></div>
+          <div class="chip"><div class="chip__label">最快</div><div class="chip__value chip__value--small" data-hud="best">--:--.---</div></div>
+          <div class="chip"><div class="chip__label" data-hud="score-label">漂移分</div><div class="chip__value chip__value--small" data-hud="score">0</div></div>
+        </div>
+        <div class="hud__map"><canvas data-hud="map" width="172" height="172"></canvas></div>
+        <div class="hud__nos"><div class="hud__nos-fill" data-hud="nos"></div></div>
+        <div class="hud__dial">
+          <canvas data-hud="dial" width="168" height="168"></canvas>
+          <div class="hud__readout">
+            <div class="hud__speed" data-hud="speed">0</div>
+            <div class="hud__unit">KM/H</div>
+            <div class="hud__gear" data-hud="gear">N</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="hud hud--p2 hidden" id="hud-p2">
+        <div class="hud__name" data-hud="name">玩家2</div>
+        <div class="hud__info">
+          <div class="chip"><div class="chip__label">名次</div><div class="chip__value" data-hud="pos">-</div></div>
+          <div class="chip"><div class="chip__label">圈数</div><div class="chip__value" data-hud="lap">-</div></div>
+        </div>
+        <div class="hud__map"><canvas data-hud="map" width="140" height="140"></canvas></div>
+        <div class="hud__nos"><div class="hud__nos-fill" data-hud="nos"></div></div>
+        <div class="hud__dial">
+          <canvas data-hud="dial" width="140" height="140"></canvas>
+          <div class="hud__readout">
+            <div class="hud__speed" data-hud="speed">0</div>
+            <div class="hud__unit">KM/H</div>
+            <div class="hud__gear" data-hud="gear">N</div>
+          </div>
+        </div>
+      </div>
+
+      <div id="countdown"></div>
+      <div id="toast"></div>
+      <div id="wrongway" class="hidden">⚠ 逆行</div>
+
+      <div id="race-bar" class="hidden">
+        <button class="btn btn--small btn--ghost" id="btn-camera" type="button">视角 C</button>
+        <button class="btn btn--small btn--ghost" id="btn-sound" type="button">音效 开</button>
+        <button class="btn btn--small btn--ghost" id="btn-pause" type="button">暂停 P</button>
+      </div>
+
+      <!-- ============ 主菜单 ============ -->
+      <section class="screen" id="screen-menu">
+        <h1 class="title">夜城飞车</h1>
+        <p class="subtitle">NIGHT CITY RACING · 霓虹之夜的极速对决</p>
+        <div class="menu-money">💰 <span id="menu-money">$0</span></div>
+        <button class="btn btn--primary" data-go="events" type="button">开始比赛</button>
+        <button class="btn" data-go="challenges" type="button">挑战赛</button>
+        <button class="btn" data-go="free" type="button">自由驾驶</button>
+        <button class="btn" data-go="garage" type="button">车库改装</button>
+        <button class="btn" data-go="versus" type="button">双人分屏</button>
+        <button class="btn btn--ghost btn--small" data-go="help" type="button">操作说明</button>
+      </section>
+
+      <!-- ============ 赛事列表 ============ -->
+      <section class="screen hidden" id="screen-events">
+        <div class="panel">
+          <div class="panel__head">
+            <div class="panel__title">赛事 · 16 场</div>
+            <div>
+              <span class="menu-money">💰 <span data-money>$0</span></span>
+              <button class="btn btn--small btn--ghost" data-go="menu" type="button">返回</button>
+            </div>
+          </div>
+          <div class="list" id="event-list"></div>
+        </div>
+      </section>
+
+      <!-- ============ 挑战列表 ============ -->
+      <section class="screen hidden" id="screen-challenges">
+        <div class="panel">
+          <div class="panel__head">
+            <div class="panel__title">挑战 · 可无限重复刷钱</div>
+            <div>
+              <span class="menu-money">💰 <span data-money>$0</span></span>
+              <button class="btn btn--small btn--ghost" data-go="menu" type="button">返回</button>
+            </div>
+          </div>
+          <div class="list" id="challenge-list"></div>
+        </div>
+      </section>
+
+      <!-- ============ 车库 ============ -->
+      <section class="screen hidden" id="screen-garage">
+        <div class="garage">
+          <div class="garage__col">
+            <div class="panel__title">车型</div>
+            <div class="garage__cars" id="garage-cars"></div>
+          </div>
+          <div class="garage__col">
+            <div class="panel__head">
+              <div class="panel__title" id="garage-name">车名</div>
+              <span class="menu-money">💰 <span data-money>$0</span></span>
+            </div>
+            <div id="garage-stats"></div>
+            <div class="section-title">车漆</div>
+            <div class="swatches" id="garage-paints"></div>
+            <div class="section-title">轮毂</div>
+            <div class="swatches" id="garage-rims"></div>
+            <div style="display:flex;gap:10px;margin-top:16px;flex-wrap:wrap">
+              <button class="btn btn--small btn--primary" id="garage-action" type="button">选择</button>
+              <button class="btn btn--small btn--ghost" data-go="menu" type="button">返回</button>
+            </div>
+          </div>
+          <div class="garage__col">
+            <div class="panel__title">改装</div>
+            <div class="tune" id="garage-tune"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ 结果 ============ -->
+      <section class="screen hidden" id="screen-results">
+        <div class="result" id="result-box"></div>
+      </section>
+
+      <!-- ============ 暂停 ============ -->
+      <section class="screen hidden" id="screen-pause">
+        <h2 class="title" style="font-size:38px">已暂停</h2>
+        <button class="btn btn--primary" id="btn-resume" type="button">继续比赛</button>
+        <button class="btn" id="btn-restart" type="button">重新开始</button>
+        <button class="btn btn--ghost" id="btn-quit" type="button">退出到菜单</button>
+      </section>
+
+      <!-- ============ 操作说明 ============ -->
+      <section class="screen hidden" id="screen-help">
+        <div class="panel">
+          <div class="panel__head">
+            <div class="panel__title">操作说明</div>
+            <button class="btn btn--small btn--ghost" data-go="menu" type="button">返回</button>
+          </div>
+          <div class="section-title">单人</div>
+          <div class="keys">
+            <div class="keys__row"><span>油门 / 转向 / 刹车倒车</span><span class="keys__key">W A S D 或 方向键</span></div>
+            <div class="keys__row"><span>氮气加速 NOS</span><span class="keys__key">Shift</span></div>
+            <div class="keys__row"><span>手刹漂移</span><span class="keys__key">空格</span></div>
+            <div class="keys__row"><span>回到赛道</span><span class="keys__key">R</span></div>
+            <div class="keys__row"><span>回头看</span><span class="keys__key">T</span></div>
+            <div class="keys__row"><span>切换视角</span><span class="keys__key">C</span></div>
+            <div class="keys__row"><span>暂停</span><span class="keys__key">P / Esc</span></div>
+            <div class="keys__row"><span>静音</span><span class="keys__key">N</span></div>
+          </div>
+          <div class="section-title">双人分屏（上：玩家1，下：玩家2）</div>
+          <div class="keys">
+            <div class="keys__row"><span>玩家1 移动</span><span class="keys__key">方向键</span></div>
+            <div class="keys__row"><span>玩家1 氮气 / 回位 / 回头 / 视角</span><span class="keys__key">M / O / L / K</span></div>
+            <div class="keys__row"><span>玩家2 移动</span><span class="keys__key">W A S D</span></div>
+            <div class="keys__row"><span>玩家2 氮气 / 回位 / 回头 / 视角</span><span class="keys__key">Shift / R / T / C</span></div>
+          </div>
+          <div class="section-title">玩法</div>
+          <div class="keys">
+            <div class="keys__row"><span>比赛拿名次赚金币，解锁下一场</span><span class="keys__key">16 场</span></div>
+            <div class="keys__row"><span>挑战可无限重复刷钱</span><span class="keys__key">5 个</span></div>
+            <div class="keys__row"><span>金币在车库买车 / 升级 / 改色</span><span class="keys__key">10 台车</span></div>
+            <div class="keys__row"><span>漂移与滞空都会加分换钱</span><span class="keys__key">连击</span></div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <div class="touch hidden" id="touch">
+      <button class="t-left" data-touch="left" type="button">◀</button>
+      <button class="t-right" data-touch="right" type="button">▶</button>
+      <button class="t-brake" data-touch="brake" type="button">刹车</button>
+      <button class="t-gas" data-touch="gas" type="button">油门</button>
+      <button class="t-nos" data-touch="nos" type="button">NOS</button>
+    </div>
+
+    <script src="../js/vendor/three.min.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/track.js"></script>
+    <script src="js/car.js"></script>
+    <script src="js/world.js"></script>
+    <script src="js/ai.js"></script>
+    <script src="js/garage.js"></script>
+    <script src="js/events.js"></script>
+    <script src="js/audio.js"></script>
+    <script src="js/carmodel.js"></script>
+    <script src="js/scene.js"></script>
+    <script src="js/hud.js"></script>
+    <script src="js/game.js"></script>
+    <script src="js/main.js"></script>
+  </body>
+</html>
