@@ -111,25 +111,33 @@
       </section>
 
       <!-- ============ 车库 ============ -->
-      <section class="screen hidden" id="screen-garage">
+      <section class="screen screen--clear hidden" id="screen-garage">
         <div class="garage">
           <div class="garage__col">
             <div class="panel__title">车型</div>
             <div class="garage__cars" id="garage-cars"></div>
           </div>
-          <div class="garage__col">
-            <div class="panel__head">
-              <div class="panel__title" id="garage-name">车名</div>
-              <span class="menu-money">💰 <span data-money>$0</span></span>
-            </div>
-            <div id="garage-stats"></div>
-            <div class="section-title">车漆</div>
-            <div class="swatches" id="garage-paints"></div>
-            <div class="section-title">轮毂</div>
-            <div class="swatches" id="garage-rims"></div>
-            <div style="display:flex;gap:10px;margin-top:16px;flex-wrap:wrap">
-              <button class="btn btn--small btn--primary" id="garage-action" type="button">选择</button>
-              <button class="btn btn--small btn--ghost" data-go="menu" type="button">返回</button>
+          <div class="garage__stage">
+            <div class="garage__card">
+              <div class="panel__head">
+                <div class="panel__title" id="garage-name">车名</div>
+                <span class="menu-money">💰 <span data-money>$0</span></span>
+              </div>
+              <div id="garage-stats"></div>
+              <div class="garage__row">
+                <div>
+                  <div class="section-title">车漆</div>
+                  <div class="swatches" id="garage-paints"></div>
+                </div>
+                <div>
+                  <div class="section-title">轮毂</div>
+                  <div class="swatches" id="garage-rims"></div>
+                </div>
+              </div>
+              <div class="garage__buttons">
+                <button class="btn btn--small btn--primary" id="garage-action" type="button">选择</button>
+                <button class="btn btn--small btn--ghost" data-go="menu" type="button">返回</button>
+              </div>
             </div>
           </div>
           <div class="garage__col">

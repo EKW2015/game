@@ -1,0 +1,14 @@
+{
+  "name": "night-city-racing",
+  "version": "1.0.0",
+  "private": true,
+  "description": "夜城飞车：浏览器里的霓虹城市 3D 竞速游戏（含恐龙生存游戏）",
+  "scripts": {
+    "build": "node tools/build-racing.js && node tools/build-play.js",
+    "build:racing": "node tools/build-racing.js",
+    "test": "node tools/racing-smoke.js"
+  },
+  "devDependencies": {
+    "puppeteer-core": "^24.0.0"
+  }
+}

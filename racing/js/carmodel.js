@@ -20,11 +20,29 @@
     return cache[key];
   }
 
+  /**
+   * 上窄下宽的“梯形盒子”——低多边形车身全靠它撑起造型。
+   * topX / topZ 为顶面相对底面的缩放。
+   */
+  function taperedBox(width, height, depth, topX, topZ, shiftTop) {
+    var g = new THREE.BoxGeometry(width, height, depth);
+    var pos = g.attributes.position;
+    for (var i = 0; i < pos.count; i++) {
+      if (pos.getY(i) > 0) {
+        pos.setX(i, pos.getX(i) * topX + (shiftTop || 0));
+        pos.setZ(i, pos.getZ(i) * topZ);
+      }
+    }
+    pos.needsUpdate = true;
+    g.computeVertexNormals();
+    return g;
+  }
+
   function makeWheel(radius, rimColor) {
     var group = new THREE.Group();
     var tire = new THREE.Mesh(
       geo('tire' + radius.toFixed(2), function () {
-        var g = new THREE.CylinderGeometry(radius, radius, 0.3, 16);
+        var g = new THREE.CylinderGeometry(radius, radius, 0.34, 18);
         g.rotateX(Math.PI / 2);
         return g;
       }),
@@ -34,7 +52,7 @@
 
     var rim = new THREE.Mesh(
       geo('rim' + radius.toFixed(2), function () {
-        var g = new THREE.CylinderGeometry(radius * 0.62, radius * 0.62, 0.32, 12);
+        var g = new THREE.CylinderGeometry(radius * 0.64, radius * 0.64, 0.36, 12);
         g.rotateX(Math.PI / 2);
         return g;
       }),
@@ -53,8 +71,8 @@
       var rimColor = spec.rimColor === undefined ? 0xb8c0cc : spec.rimColor;
 
       var group = new THREE.Group();
-      var wheelR = 0.35;
-      var bodyY = wheelR + 0.16;
+      var wheelR = 0.38;
+      var bodyY = wheelR + 0.1;
 
       var paint = new THREE.MeshStandardMaterial({
         color: color, roughness: 0.28, metalness: 0.72,
@@ -66,38 +84,71 @@
         transparent: true, opacity: 0.82, emissive: 0x0d2436, emissiveIntensity: 0.4
       });
 
-      // 主车身
-      var hull = new THREE.Mesh(new THREE.BoxGeometry(shape.len, shape.height, shape.width), paint);
+      // 主车身：上窄下宽
+      var hull = new THREE.Mesh(
+        taperedBox(shape.len * 0.94, shape.height, shape.width, 0.94, 0.86),
+        paint
+      );
       hull.position.y = bodyY + shape.height / 2;
       hull.castShadow = true;
       group.add(hull);
 
-      // 车头楔形（缩窄的低矮前脸）
-      var nose = new THREE.Mesh(new THREE.BoxGeometry(shape.len * 0.3, shape.height * 0.62, shape.width * shape.nose), paint);
-      nose.position.set(shape.len * 0.56, bodyY + shape.height * 0.32, 0);
+      // 车头：低矮前倾的楔形
+      var nose = new THREE.Mesh(
+        taperedBox(shape.len * 0.34, shape.height * 0.66, shape.width * shape.nose, 1.25, 1.12),
+        paint
+      );
+      nose.position.set(shape.len * 0.55, bodyY + shape.height * 0.3, 0);
+      nose.rotation.z = 0.06;
       nose.castShadow = true;
       group.add(nose);
 
-      // 车尾扩散器
-      var tail = new THREE.Mesh(new THREE.BoxGeometry(shape.len * 0.16, shape.height * 0.5, shape.width * 0.9), dark);
-      tail.position.set(-shape.len * 0.55, bodyY + shape.height * 0.22, 0);
+      // 前唇 / 后扩散器
+      var splitter = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.1, shape.width * 0.92), dark);
+      splitter.position.set(shape.len * 0.68, bodyY - 0.04, 0);
+      group.add(splitter);
+
+      var tail = new THREE.Mesh(new THREE.BoxGeometry(shape.len * 0.14, shape.height * 0.62, shape.width * 0.94), dark);
+      tail.position.set(-shape.len * 0.53, bodyY + shape.height * 0.28, 0);
       group.add(tail);
 
-      // 座舱
-      var cabin = new THREE.Mesh(new THREE.BoxGeometry(shape.cabinLen, shape.cabin, shape.width * 0.82), glass);
-      cabin.position.set(shape.cabinShift, bodyY + shape.height + shape.cabin / 2 - 0.03, 0);
+      // 座舱：前挡风向后收，做出溜背
+      var cabin = new THREE.Mesh(
+        taperedBox(shape.cabinLen, shape.cabin, shape.width * 0.84, 0.6, 0.72, -shape.cabinLen * 0.12),
+        glass
+      );
+      cabin.position.set(shape.cabinShift, bodyY + shape.height + shape.cabin / 2 - 0.05, 0);
       cabin.castShadow = true;
       group.add(cabin);
 
-      var roof = new THREE.Mesh(new THREE.BoxGeometry(shape.cabinLen * 0.62, 0.07, shape.width * 0.78), paint);
-      roof.position.set(shape.cabinShift - 0.1, bodyY + shape.height + shape.cabin - 0.02, 0);
+      var roof = new THREE.Mesh(
+        new THREE.BoxGeometry(shape.cabinLen * 0.5, 0.08, shape.width * 0.62),
+        paint
+      );
+      roof.position.set(shape.cabinShift - shape.cabinLen * 0.14, bodyY + shape.height + shape.cabin - 0.06, 0);
       group.add(roof);
 
-      // 侧裙
+      // 轮眉：把车轮包进车身，避免“板子加四个圈”的感觉
+      var axleX = shape.len * 0.33;
+      [[axleX, 1], [axleX, -1], [-axleX, 1], [-axleX, -1]].forEach(function (pos) {
+        var arch = new THREE.Mesh(
+          taperedBox(wheelR * 2.5, shape.height * 0.92, 0.42, 0.72, 0.8),
+          paint
+        );
+        arch.position.set(pos[0], bodyY + shape.height * 0.42, pos[1] * (shape.width * 0.5 - 0.04));
+        arch.castShadow = true;
+        group.add(arch);
+      });
+
+      // 侧裙 + 进气口
       [-1, 1].forEach(function (side) {
-        var skirt = new THREE.Mesh(new THREE.BoxGeometry(shape.len * 0.62, 0.12, 0.14), dark);
-        skirt.position.set(0, wheelR * 0.55, side * shape.width * 0.5);
+        var skirt = new THREE.Mesh(new THREE.BoxGeometry(shape.len * 0.5, 0.13, 0.16), dark);
+        skirt.position.set(0, wheelR * 0.5, side * (shape.width * 0.5 + 0.02));
         group.add(skirt);
+
+        var intake = new THREE.Mesh(new THREE.BoxGeometry(0.6, shape.height * 0.4, 0.12), dark);
+        intake.position.set(-shape.len * 0.16, bodyY + shape.height * 0.55, side * (shape.width * 0.48));
+        group.add(intake);
       });
 
       // 尾翼
@@ -130,10 +181,10 @@
 
       // 车底霓虹
       var glowMat = new THREE.MeshBasicMaterial({
-        color: color, transparent: true, opacity: 0.5,
+        color: color, transparent: true, opacity: 0.2,
         blending: THREE.AdditiveBlending, depthWrite: false
       });
-      var glow = new THREE.Mesh(new THREE.PlaneGeometry(shape.len * 1.25, shape.width * 1.7), glowMat);
+      var glow = new THREE.Mesh(new THREE.PlaneGeometry(shape.len * 0.88, shape.width * 1.05), glowMat);
       glow.rotation.x = -Math.PI / 2;
       glow.position.y = 0.06;
       group.add(glow);
@@ -156,10 +207,9 @@
       // 车轮
       var wheels = [];
       var frontWheels = [];
-      var axleX = shape.len * 0.34;
       [[axleX, 1], [axleX, -1], [-axleX, 1], [-axleX, -1]].forEach(function (pos, i) {
         var wheel = makeWheel(wheelR, rimColor);
-        wheel.position.set(pos[0], wheelR, pos[1] * (shape.width * 0.5 + 0.02));
+        wheel.position.set(pos[0], wheelR, pos[1] * (shape.width * 0.5 + 0.04));
         wheel.castShadow = true;
         group.add(wheel);
         wheels.push(wheel);
@@ -207,7 +257,7 @@
         }
       }
       data.flameMat.color.setHex(boosting ? (Math.sin(time * 30) > 0 ? 0x66ddff : 0xaa66ff) : 0x66ddff);
-      data.glow.opacity = 0.35 + car.driftAmount * 0.4 + (boosting ? 0.3 : 0);
+      data.glow.opacity = 0.16 + car.driftAmount * 0.3 + (boosting ? 0.22 : 0);
     }
   };
 

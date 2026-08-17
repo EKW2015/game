@@ -97,6 +97,9 @@ html, body {
 
 .hidden { display: none !important; }
 
+/* 车库要看到 3D 展台，不加遮罩 */
+.screen--clear { background: none; backdrop-filter: none; }
+
 .title {
   font-size: clamp(26px, 5.4vw, 54px);
   font-weight: 900;
@@ -205,12 +208,32 @@ html, body {
 }
 
 .garage__col {
-  background: var(--panel);
+  background: rgba(8, 12, 24, 0.88);
   border: 1px solid var(--line);
   border-radius: 14px;
   padding: 14px;
   overflow: auto;
 }
+
+/* 中间一栏留空，让 3D 展台上的车露出来 */
+.garage__stage {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  pointer-events: none;
+}
+
+.garage__card {
+  pointer-events: auto;
+  background: rgba(8, 12, 24, 0.8);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 14px;
+  backdrop-filter: blur(6px);
+}
+
+.garage__row { display: flex; gap: 22px; flex-wrap: wrap; }
+.garage__buttons { display: flex; gap: 10px; margin-top: 14px; flex-wrap: wrap; }
 
 .garage__cars { display: flex; flex-direction: column; gap: 8px; }
 
@@ -591,25 +614,33 @@ html, body {
       </section>
 
       <!-- ============ 车库 ============ -->
-      <section class="screen hidden" id="screen-garage">
+      <section class="screen screen--clear hidden" id="screen-garage">
         <div class="garage">
           <div class="garage__col">
             <div class="panel__title">车型</div>
             <div class="garage__cars" id="garage-cars"></div>
           </div>
-          <div class="garage__col">
-            <div class="panel__head">
-              <div class="panel__title" id="garage-name">车名</div>
-              <span class="menu-money">💰 <span data-money>$0</span></span>
-            </div>
-            <div id="garage-stats"></div>
-            <div class="section-title">车漆</div>
-            <div class="swatches" id="garage-paints"></div>
-            <div class="section-title">轮毂</div>
-            <div class="swatches" id="garage-rims"></div>
-            <div style="display:flex;gap:10px;margin-top:16px;flex-wrap:wrap">
-              <button class="btn btn--small btn--primary" id="garage-action" type="button">选择</button>
-              <button class="btn btn--small btn--ghost" data-go="menu" type="button">返回</button>
+          <div class="garage__stage">
+            <div class="garage__card">
+              <div class="panel__head">
+                <div class="panel__title" id="garage-name">车名</div>
+                <span class="menu-money">💰 <span data-money>$0</span></span>
+              </div>
+              <div id="garage-stats"></div>
+              <div class="garage__row">
+                <div>
+                  <div class="section-title">车漆</div>
+                  <div class="swatches" id="garage-paints"></div>
+                </div>
+                <div>
+                  <div class="section-title">轮毂</div>
+                  <div class="swatches" id="garage-rims"></div>
+                </div>
+              </div>
+              <div class="garage__buttons">
+                <button class="btn btn--small btn--primary" id="garage-action" type="button">选择</button>
+                <button class="btn btn--small btn--ghost" data-go="menu" type="button">返回</button>
+              </div>
             </div>
           </div>
           <div class="garage__col">
@@ -2071,11 +2102,29 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     return cache[key];
   }
 
+  /**
+   * 上窄下宽的“梯形盒子”——低多边形车身全靠它撑起造型。
+   * topX / topZ 为顶面相对底面的缩放。
+   */
+  function taperedBox(width, height, depth, topX, topZ, shiftTop) {
+    var g = new THREE.BoxGeometry(width, height, depth);
+    var pos = g.attributes.position;
+    for (var i = 0; i < pos.count; i++) {
+      if (pos.getY(i) > 0) {
+        pos.setX(i, pos.getX(i) * topX + (shiftTop || 0));
+        pos.setZ(i, pos.getZ(i) * topZ);
+      }
+    }
+    pos.needsUpdate = true;
+    g.computeVertexNormals();
+    return g;
+  }
+
   function makeWheel(radius, rimColor) {
     var group = new THREE.Group();
     var tire = new THREE.Mesh(
       geo('tire' + radius.toFixed(2), function () {
-        var g = new THREE.CylinderGeometry(radius, radius, 0.3, 16);
+        var g = new THREE.CylinderGeometry(radius, radius, 0.34, 18);
         g.rotateX(Math.PI / 2);
         return g;
       }),
@@ -2085,7 +2134,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
 
     var rim = new THREE.Mesh(
       geo('rim' + radius.toFixed(2), function () {
-        var g = new THREE.CylinderGeometry(radius * 0.62, radius * 0.62, 0.32, 12);
+        var g = new THREE.CylinderGeometry(radius * 0.64, radius * 0.64, 0.36, 12);
         g.rotateX(Math.PI / 2);
         return g;
       }),
@@ -2104,8 +2153,8 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
       var rimColor = spec.rimColor === undefined ? 0xb8c0cc : spec.rimColor;
 
       var group = new THREE.Group();
-      var wheelR = 0.35;
-      var bodyY = wheelR + 0.16;
+      var wheelR = 0.38;
+      var bodyY = wheelR + 0.1;
 
       var paint = new THREE.MeshStandardMaterial({
         color: color, roughness: 0.28, metalness: 0.72,
@@ -2117,38 +2166,71 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
         transparent: true, opacity: 0.82, emissive: 0x0d2436, emissiveIntensity: 0.4
       });
 
-      // 主车身
-      var hull = new THREE.Mesh(new THREE.BoxGeometry(shape.len, shape.height, shape.width), paint);
+      // 主车身：上窄下宽
+      var hull = new THREE.Mesh(
+        taperedBox(shape.len * 0.94, shape.height, shape.width, 0.94, 0.86),
+        paint
+      );
       hull.position.y = bodyY + shape.height / 2;
       hull.castShadow = true;
       group.add(hull);
 
-      // 车头楔形（缩窄的低矮前脸）
-      var nose = new THREE.Mesh(new THREE.BoxGeometry(shape.len * 0.3, shape.height * 0.62, shape.width * shape.nose), paint);
-      nose.position.set(shape.len * 0.56, bodyY + shape.height * 0.32, 0);
+      // 车头：低矮前倾的楔形
+      var nose = new THREE.Mesh(
+        taperedBox(shape.len * 0.34, shape.height * 0.66, shape.width * shape.nose, 1.25, 1.12),
+        paint
+      );
+      nose.position.set(shape.len * 0.55, bodyY + shape.height * 0.3, 0);
+      nose.rotation.z = 0.06;
       nose.castShadow = true;
       group.add(nose);
 
-      // 车尾扩散器
-      var tail = new THREE.Mesh(new THREE.BoxGeometry(shape.len * 0.16, shape.height * 0.5, shape.width * 0.9), dark);
-      tail.position.set(-shape.len * 0.55, bodyY + shape.height * 0.22, 0);
+      // 前唇 / 后扩散器
+      var splitter = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.1, shape.width * 0.92), dark);
+      splitter.position.set(shape.len * 0.68, bodyY - 0.04, 0);
+      group.add(splitter);
+
+      var tail = new THREE.Mesh(new THREE.BoxGeometry(shape.len * 0.14, shape.height * 0.62, shape.width * 0.94), dark);
+      tail.position.set(-shape.len * 0.53, bodyY + shape.height * 0.28, 0);
       group.add(tail);
 
-      // 座舱
-      var cabin = new THREE.Mesh(new THREE.BoxGeometry(shape.cabinLen, shape.cabin, shape.width * 0.82), glass);
-      cabin.position.set(shape.cabinShift, bodyY + shape.height + shape.cabin / 2 - 0.03, 0);
+      // 座舱：前挡风向后收，做出溜背
+      var cabin = new THREE.Mesh(
+        taperedBox(shape.cabinLen, shape.cabin, shape.width * 0.84, 0.6, 0.72, -shape.cabinLen * 0.12),
+        glass
+      );
+      cabin.position.set(shape.cabinShift, bodyY + shape.height + shape.cabin / 2 - 0.05, 0);
       cabin.castShadow = true;
       group.add(cabin);
 
-      var roof = new THREE.Mesh(new THREE.BoxGeometry(shape.cabinLen * 0.62, 0.07, shape.width * 0.78), paint);
-      roof.position.set(shape.cabinShift - 0.1, bodyY + shape.height + shape.cabin - 0.02, 0);
+      var roof = new THREE.Mesh(
+        new THREE.BoxGeometry(shape.cabinLen * 0.5, 0.08, shape.width * 0.62),
+        paint
+      );
+      roof.position.set(shape.cabinShift - shape.cabinLen * 0.14, bodyY + shape.height + shape.cabin - 0.06, 0);
       group.add(roof);
 
-      // 侧裙
+      // 轮眉：把车轮包进车身，避免“板子加四个圈”的感觉
+      var axleX = shape.len * 0.33;
+      [[axleX, 1], [axleX, -1], [-axleX, 1], [-axleX, -1]].forEach(function (pos) {
+        var arch = new THREE.Mesh(
+          taperedBox(wheelR * 2.5, shape.height * 0.92, 0.42, 0.72, 0.8),
+          paint
+        );
+        arch.position.set(pos[0], bodyY + shape.height * 0.42, pos[1] * (shape.width * 0.5 - 0.04));
+        arch.castShadow = true;
+        group.add(arch);
+      });
+
+      // 侧裙 + 进气口
       [-1, 1].forEach(function (side) {
-        var skirt = new THREE.Mesh(new THREE.BoxGeometry(shape.len * 0.62, 0.12, 0.14), dark);
-        skirt.position.set(0, wheelR * 0.55, side * shape.width * 0.5);
+        var skirt = new THREE.Mesh(new THREE.BoxGeometry(shape.len * 0.5, 0.13, 0.16), dark);
+        skirt.position.set(0, wheelR * 0.5, side * (shape.width * 0.5 + 0.02));
         group.add(skirt);
+
+        var intake = new THREE.Mesh(new THREE.BoxGeometry(0.6, shape.height * 0.4, 0.12), dark);
+        intake.position.set(-shape.len * 0.16, bodyY + shape.height * 0.55, side * (shape.width * 0.48));
+        group.add(intake);
       });
 
       // 尾翼
@@ -2181,10 +2263,10 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
 
       // 车底霓虹
       var glowMat = new THREE.MeshBasicMaterial({
-        color: color, transparent: true, opacity: 0.5,
+        color: color, transparent: true, opacity: 0.2,
         blending: THREE.AdditiveBlending, depthWrite: false
       });
-      var glow = new THREE.Mesh(new THREE.PlaneGeometry(shape.len * 1.25, shape.width * 1.7), glowMat);
+      var glow = new THREE.Mesh(new THREE.PlaneGeometry(shape.len * 0.88, shape.width * 1.05), glowMat);
       glow.rotation.x = -Math.PI / 2;
       glow.position.y = 0.06;
       group.add(glow);
@@ -2207,10 +2289,9 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
       // 车轮
       var wheels = [];
       var frontWheels = [];
-      var axleX = shape.len * 0.34;
       [[axleX, 1], [axleX, -1], [-axleX, 1], [-axleX, -1]].forEach(function (pos, i) {
         var wheel = makeWheel(wheelR, rimColor);
-        wheel.position.set(pos[0], wheelR, pos[1] * (shape.width * 0.5 + 0.02));
+        wheel.position.set(pos[0], wheelR, pos[1] * (shape.width * 0.5 + 0.04));
         wheel.castShadow = true;
         group.add(wheel);
         wheels.push(wheel);
@@ -2258,7 +2339,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
         }
       }
       data.flameMat.color.setHex(boosting ? (Math.sin(time * 30) > 0 ? 0x66ddff : 0xaa66ff) : 0x66ddff);
-      data.glow.opacity = 0.35 + car.driftAmount * 0.4 + (boosting ? 0.3 : 0);
+      data.glow.opacity = 0.16 + car.driftAmount * 0.3 + (boosting ? 0.22 : 0);
     }
   };
 
@@ -2275,11 +2356,12 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
   var Utils = global.Utils;
   var CarModel = global.CarModel;
 
+  // dist = 相机在车后方多少米（负数表示车头前方）
   var CAMERA_MODES = [
     { id: 'chase', name: '第三人称', dist: 10.5, height: 3.9, fov: 74 },
     { id: 'far', name: '远景', dist: 16, height: 6.4, fov: 70 },
-    { id: 'hood', name: '引擎盖', dist: -1.4, height: 1.32, fov: 78 },
-    { id: 'cockpit', name: '第一人称', dist: -0.15, height: 1.16, fov: 82 },
+    { id: 'hood', name: '引擎盖', dist: -1.1, height: 1.34, fov: 78 },
+    { id: 'cockpit', name: '第一人称', dist: 0.15, height: 1.22, fov: 84, hideCar: true },
     { id: 'top', name: '俯视', dist: 9, height: 24, fov: 62 }
   ];
 
@@ -2436,6 +2518,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
 
     this.trackGroup = null;
     this.carEntries = [];
+    this.hiddenFor = [null, null];
     this.textures = { building: buildingTextures(), ground: groundTexture() };
     this.time = 0;
 
@@ -2872,8 +2955,12 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     neonRing.position.y = 4;
     this.trackGroup.add(neonRing);
 
-    var rampMat = new THREE.MeshStandardMaterial({ color: 0x232838, roughness: 0.55, metalness: 0.45 });
-    var edgeMat = new THREE.MeshBasicMaterial({ color: 0xff2fb9, transparent: true, opacity: 0.9, blending: THREE.AdditiveBlending, depthWrite: false });
+    var rampMat = new THREE.MeshStandardMaterial({
+      color: 0x3a4258, roughness: 0.5, metalness: 0.4,
+      emissive: 0x14203a, emissiveIntensity: 1, side: THREE.DoubleSide
+    });
+    var edgeMat = new THREE.MeshBasicMaterial({ color: 0xff2fb9, transparent: true, opacity: 0.95, blending: THREE.AdditiveBlending, depthWrite: false });
+    var sideMat = new THREE.MeshBasicMaterial({ color: 0x18e0ff, transparent: true, opacity: 0.8, blending: THREE.AdditiveBlending, depthWrite: false });
 
     arena.ramps.forEach(function (r) {
       var geom = new THREE.BufferGeometry();
@@ -2902,6 +2989,29 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
       lip.position.set(r.x + Math.cos(r.angle) * hl, r.height + 0.1, r.z - Math.sin(r.angle) * hl);
       lip.rotation.y = -r.angle;
       this.trackGroup.add(lip);
+
+      // 坡面两侧的霓虹导引线，远处也能看清跳台在哪
+      [-1, 1].forEach(function (side) {
+        var stripe = new THREE.Mesh(new THREE.PlaneGeometry(r.length, 0.4), sideMat);
+        stripe.rotation.x = -Math.PI / 2;
+        stripe.rotation.z = -r.angle + Math.PI / 2;
+        stripe.position.set(
+          r.x - Math.sin(-r.angle) * side * hw,
+          0.06,
+          r.z - Math.cos(-r.angle) * side * hw
+        );
+        this.trackGroup.add(stripe);
+
+        var rail = new THREE.Mesh(new THREE.BoxGeometry(r.length * 1.02, 0.16, 0.16), sideMat);
+        rail.position.set(
+          r.x - Math.sin(-r.angle) * side * hw,
+          r.height / 2 + 0.2,
+          r.z - Math.cos(-r.angle) * side * hw
+        );
+        rail.rotation.y = -r.angle;
+        rail.rotation.z = Math.atan2(r.height, r.length);
+        this.trackGroup.add(rail);
+      }, this);
     }, this);
 
     // 场地外围城市剪影
@@ -2959,17 +3069,17 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
       this.trackGroup.add(mesh);
     }, this);
 
-    var key = new THREE.SpotLight(0xdce8ff, 260, 60, 0.8, 0.7, 1.4);
+    var key = new THREE.SpotLight(0xdce8ff, 3200, 70, 0.85, 0.7, 1.2);
     key.position.set(6, 14, 8);
     key.target.position.set(0, 0.6, 0);
     key.castShadow = true;
     this.trackGroup.add(key);
     this.trackGroup.add(key.target);
 
-    var fillA = new THREE.PointLight(0x18e0ff, 500, 60, 2);
+    var fillA = new THREE.PointLight(0x18e0ff, 2600, 60, 2);
     fillA.position.set(-9, 4, -6);
     this.trackGroup.add(fillA);
-    var fillB = new THREE.PointLight(0xff2fb9, 500, 60, 2);
+    var fillB = new THREE.PointLight(0xff2fb9, 2600, 60, 2);
     fillB.position.set(9, 4, -7);
     this.trackGroup.add(fillB);
 
@@ -3012,11 +3122,12 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
   Scene3D.prototype.updateShowroom = function (dt) {
     this.showroomAngle = (this.showroomAngle || 0) + dt * 0.32;
     var cam = this.cameras[0];
-    var r = 11.5;
-    cam.fov = 42;
+    var r = 9.5;
+    cam.fov = 44;
     cam.updateProjectionMatrix();
-    cam.position.set(Math.cos(this.showroomAngle) * r, 3.6 + Math.sin(this.showroomAngle * 0.6) * 0.7, Math.sin(this.showroomAngle) * r);
-    cam.lookAt(0, 0.9, 0);
+    cam.position.set(Math.cos(this.showroomAngle) * r, 2.9 + Math.sin(this.showroomAngle * 0.6) * 0.5, Math.sin(this.showroomAngle) * r);
+    // 视线压低一点，让车出现在画面上半部分（下半部分被信息卡挡住）
+    cam.lookAt(0, -1.7, 0);
     if (this.showcase) this.showcase.rotation.y += dt * 0.12;
     this.headlight.position.set(0, -50, 0);
     this.headlight.target.position.set(0, -60, 0);
@@ -3040,10 +3151,14 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     return group;
   };
 
-  Scene3D.prototype.syncCars = function (dt) {
+  Scene3D.prototype.syncCars = function (dt, split) {
     this.time += dt;
     for (var i = 0; i < this.carEntries.length; i++) {
-      CarModel.sync(this.carEntries[i].group, this.carEntries[i].car, this.time);
+      var entry = this.carEntries[i];
+      CarModel.sync(entry.group, entry.car, this.time);
+      // 第一人称时藏起自己的车；分屏下要两个视角都是第一人称才藏
+      var hidden = this.hiddenFor[0] === entry.car && (!split || this.hiddenFor[1] === entry.car);
+      entry.group.visible = !hidden;
     }
   };
 
@@ -3091,10 +3206,12 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
       st.z = Utils.damp(st.z, targetZ, follow, dt);
     } else {
       var side = mode.id === 'cockpit' ? 0.34 : 0;
-      st.x = car.x + f.x * mode.dist - f.z * side;
-      st.y = car.y + mode.height;
-      st.z = car.z + f.z * mode.dist + f.x * side;
+      st.x = targetX - f.z * side;
+      st.y = targetY;
+      st.z = targetZ + f.x * side;
     }
+
+    this.hiddenFor[slot] = mode.hideCar ? car : null;
 
     st.shake = Math.max(0, st.shake - dt * 2.4);
     var jitter = st.shake * 0.35 + (car.nosActive ? 0.06 : 0) + car.driftAmount * 0.05;
@@ -3517,8 +3634,8 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
         c.update(dt, this.world);
         this.world.collide(c);
       }
-      this.scene.syncCars(dt);
       this.updateCameras(dt);
+      this.scene.syncCars(dt, this.config.players > 1);
       this.updateHud();
       return;
     }
@@ -3553,8 +3670,8 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     this.updateProgress(dt);
     this.updateScores(dt);
 
-    this.scene.syncCars(dt);
     this.updateCameras(dt);
+    this.scene.syncCars(dt, this.config.players > 1);
     this.updateAudio();
     this.updateHud();
   };
@@ -4501,6 +4618,12 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     bindTouch();
     bindUi();
     global.addEventListener('resize', resize);
+
+    // 供调试/自动化测试使用（也方便玩家在控制台里查看状态）
+    global.NightCityRacing = {
+      game: game, scene: scene, garage: Garage,
+      start: startSession, toMenu: toMenu
+    };
 
     el.boot.classList.add('hidden');
     toMenu();

@@ -1,0 +1,23 @@
+name: Test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: 赛车逻辑冒烟测试
+        run: node tools/racing-smoke.js
+
+      - name: 检查单文件构建是最新的
+        run: |
+          node tools/build-racing.js
+          git diff --exit-code racing.html docs/racing.html

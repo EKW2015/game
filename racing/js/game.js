@@ -200,8 +200,8 @@
         c.update(dt, this.world);
         this.world.collide(c);
       }
-      this.scene.syncCars(dt);
       this.updateCameras(dt);
+      this.scene.syncCars(dt, this.config.players > 1);
       this.updateHud();
       return;
     }
@@ -236,8 +236,8 @@
     this.updateProgress(dt);
     this.updateScores(dt);
 
-    this.scene.syncCars(dt);
     this.updateCameras(dt);
+    this.scene.syncCars(dt, this.config.players > 1);
     this.updateAudio();
     this.updateHud();
   };

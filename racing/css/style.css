@@ -88,6 +88,9 @@ html, body {
 
 .hidden { display: none !important; }
 
+/* 车库要看到 3D 展台，不加遮罩 */
+.screen--clear { background: none; backdrop-filter: none; }
+
 .title {
   font-size: clamp(26px, 5.4vw, 54px);
   font-weight: 900;
@@ -196,12 +199,32 @@ html, body {
 }
 
 .garage__col {
-  background: var(--panel);
+  background: rgba(8, 12, 24, 0.88);
   border: 1px solid var(--line);
   border-radius: 14px;
   padding: 14px;
   overflow: auto;
 }
+
+/* 中间一栏留空，让 3D 展台上的车露出来 */
+.garage__stage {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  pointer-events: none;
+}
+
+.garage__card {
+  pointer-events: auto;
+  background: rgba(8, 12, 24, 0.8);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 14px;
+  backdrop-filter: blur(6px);
+}
+
+.garage__row { display: flex; gap: 22px; flex-wrap: wrap; }
+.garage__buttons { display: flex; gap: 10px; margin-top: 14px; flex-wrap: wrap; }
 
 .garage__cars { display: flex; flex-direction: column; gap: 8px; }
 

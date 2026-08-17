@@ -7,11 +7,12 @@
   var Utils = global.Utils;
   var CarModel = global.CarModel;
 
+  // dist = 相机在车后方多少米（负数表示车头前方）
   var CAMERA_MODES = [
     { id: 'chase', name: '第三人称', dist: 10.5, height: 3.9, fov: 74 },
     { id: 'far', name: '远景', dist: 16, height: 6.4, fov: 70 },
-    { id: 'hood', name: '引擎盖', dist: -1.4, height: 1.32, fov: 78 },
-    { id: 'cockpit', name: '第一人称', dist: -0.15, height: 1.16, fov: 82 },
+    { id: 'hood', name: '引擎盖', dist: -1.1, height: 1.34, fov: 78 },
+    { id: 'cockpit', name: '第一人称', dist: 0.15, height: 1.22, fov: 84, hideCar: true },
     { id: 'top', name: '俯视', dist: 9, height: 24, fov: 62 }
   ];
 
@@ -168,6 +169,7 @@
 
     this.trackGroup = null;
     this.carEntries = [];
+    this.hiddenFor = [null, null];
     this.textures = { building: buildingTextures(), ground: groundTexture() };
     this.time = 0;
 
@@ -604,8 +606,12 @@
     neonRing.position.y = 4;
     this.trackGroup.add(neonRing);
 
-    var rampMat = new THREE.MeshStandardMaterial({ color: 0x232838, roughness: 0.55, metalness: 0.45 });
-    var edgeMat = new THREE.MeshBasicMaterial({ color: 0xff2fb9, transparent: true, opacity: 0.9, blending: THREE.AdditiveBlending, depthWrite: false });
+    var rampMat = new THREE.MeshStandardMaterial({
+      color: 0x3a4258, roughness: 0.5, metalness: 0.4,
+      emissive: 0x14203a, emissiveIntensity: 1, side: THREE.DoubleSide
+    });
+    var edgeMat = new THREE.MeshBasicMaterial({ color: 0xff2fb9, transparent: true, opacity: 0.95, blending: THREE.AdditiveBlending, depthWrite: false });
+    var sideMat = new THREE.MeshBasicMaterial({ color: 0x18e0ff, transparent: true, opacity: 0.8, blending: THREE.AdditiveBlending, depthWrite: false });
 
     arena.ramps.forEach(function (r) {
       var geom = new THREE.BufferGeometry();
@@ -634,6 +640,29 @@
       lip.position.set(r.x + Math.cos(r.angle) * hl, r.height + 0.1, r.z - Math.sin(r.angle) * hl);
       lip.rotation.y = -r.angle;
       this.trackGroup.add(lip);
+
+      // 坡面两侧的霓虹导引线，远处也能看清跳台在哪
+      [-1, 1].forEach(function (side) {
+        var stripe = new THREE.Mesh(new THREE.PlaneGeometry(r.length, 0.4), sideMat);
+        stripe.rotation.x = -Math.PI / 2;
+        stripe.rotation.z = -r.angle + Math.PI / 2;
+        stripe.position.set(
+          r.x - Math.sin(-r.angle) * side * hw,
+          0.06,
+          r.z - Math.cos(-r.angle) * side * hw
+        );
+        this.trackGroup.add(stripe);
+
+        var rail = new THREE.Mesh(new THREE.BoxGeometry(r.length * 1.02, 0.16, 0.16), sideMat);
+        rail.position.set(
+          r.x - Math.sin(-r.angle) * side * hw,
+          r.height / 2 + 0.2,
+          r.z - Math.cos(-r.angle) * side * hw
+        );
+        rail.rotation.y = -r.angle;
+        rail.rotation.z = Math.atan2(r.height, r.length);
+        this.trackGroup.add(rail);
+      }, this);
     }, this);
 
     // 场地外围城市剪影
@@ -691,17 +720,17 @@
       this.trackGroup.add(mesh);
     }, this);
 
-    var key = new THREE.SpotLight(0xdce8ff, 260, 60, 0.8, 0.7, 1.4);
+    var key = new THREE.SpotLight(0xdce8ff, 3200, 70, 0.85, 0.7, 1.2);
     key.position.set(6, 14, 8);
     key.target.position.set(0, 0.6, 0);
     key.castShadow = true;
     this.trackGroup.add(key);
     this.trackGroup.add(key.target);
 
-    var fillA = new THREE.PointLight(0x18e0ff, 500, 60, 2);
+    var fillA = new THREE.PointLight(0x18e0ff, 2600, 60, 2);
     fillA.position.set(-9, 4, -6);
     this.trackGroup.add(fillA);
-    var fillB = new THREE.PointLight(0xff2fb9, 500, 60, 2);
+    var fillB = new THREE.PointLight(0xff2fb9, 2600, 60, 2);
     fillB.position.set(9, 4, -7);
     this.trackGroup.add(fillB);
 
@@ -744,11 +773,12 @@
   Scene3D.prototype.updateShowroom = function (dt) {
     this.showroomAngle = (this.showroomAngle || 0) + dt * 0.32;
     var cam = this.cameras[0];
-    var r = 11.5;
-    cam.fov = 42;
+    var r = 9.5;
+    cam.fov = 44;
     cam.updateProjectionMatrix();
-    cam.position.set(Math.cos(this.showroomAngle) * r, 3.6 + Math.sin(this.showroomAngle * 0.6) * 0.7, Math.sin(this.showroomAngle) * r);
-    cam.lookAt(0, 0.9, 0);
+    cam.position.set(Math.cos(this.showroomAngle) * r, 2.9 + Math.sin(this.showroomAngle * 0.6) * 0.5, Math.sin(this.showroomAngle) * r);
+    // 视线压低一点，让车出现在画面上半部分（下半部分被信息卡挡住）
+    cam.lookAt(0, -1.7, 0);
     if (this.showcase) this.showcase.rotation.y += dt * 0.12;
     this.headlight.position.set(0, -50, 0);
     this.headlight.target.position.set(0, -60, 0);
@@ -772,10 +802,14 @@
     return group;
   };
 
-  Scene3D.prototype.syncCars = function (dt) {
+  Scene3D.prototype.syncCars = function (dt, split) {
     this.time += dt;
     for (var i = 0; i < this.carEntries.length; i++) {
-      CarModel.sync(this.carEntries[i].group, this.carEntries[i].car, this.time);
+      var entry = this.carEntries[i];
+      CarModel.sync(entry.group, entry.car, this.time);
+      // 第一人称时藏起自己的车；分屏下要两个视角都是第一人称才藏
+      var hidden = this.hiddenFor[0] === entry.car && (!split || this.hiddenFor[1] === entry.car);
+      entry.group.visible = !hidden;
     }
   };
 
@@ -823,10 +857,12 @@
       st.z = Utils.damp(st.z, targetZ, follow, dt);
     } else {
       var side = mode.id === 'cockpit' ? 0.34 : 0;
-      st.x = car.x + f.x * mode.dist - f.z * side;
-      st.y = car.y + mode.height;
-      st.z = car.z + f.z * mode.dist + f.x * side;
+      st.x = targetX - f.z * side;
+      st.y = targetY;
+      st.z = targetZ + f.x * side;
     }
+
+    this.hiddenFor[slot] = mode.hideCar ? car : null;
 
     st.shake = Math.max(0, st.shake - dt * 2.4);
     var jitter = st.shake * 0.35 + (car.nosActive ? 0.06 : 0) + car.driftAmount * 0.05;

@@ -596,6 +596,12 @@
     bindUi();
     global.addEventListener('resize', resize);
 
+    // 供调试/自动化测试使用（也方便玩家在控制台里查看状态）
+    global.NightCityRacing = {
+      game: game, scene: scene, garage: Garage,
+      start: startSession, toMenu: toMenu
+    };
+
     el.boot.classList.add('hidden');
     toMenu();
     resize();
