@@ -73,6 +73,32 @@
     return tex;
   }
 
+  /** 自由驾驶场地的水泥地：比城市地面亮，能看清车影和跳台 */
+  function lotTexture() {
+    var c = makeCanvas(256, 256);
+    var g = c.getContext('2d');
+    g.fillStyle = '#2a3040';
+    g.fillRect(0, 0, 256, 256);
+    for (var i = 0; i < 4000; i++) {
+      var v = 38 + Math.random() * 26;
+      g.fillStyle = 'rgba(' + v + ',' + (v + 4) + ',' + (v + 14) + ',0.7)';
+      g.fillRect(Math.random() * 256, Math.random() * 256, 3, 3);
+    }
+    g.strokeStyle = 'rgba(150,190,255,0.22)';
+    g.lineWidth = 3;
+    g.strokeRect(0, 0, 256, 256);
+    g.strokeStyle = 'rgba(120,160,230,0.12)';
+    g.lineWidth = 2;
+    for (var k = 64; k < 256; k += 64) {
+      g.beginPath(); g.moveTo(k, 0); g.lineTo(k, 256); g.stroke();
+      g.beginPath(); g.moveTo(0, k); g.lineTo(256, k); g.stroke();
+    }
+    var tex = new THREE.CanvasTexture(c);
+    tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+    tex.repeat.set(26, 26);
+    return tex;
+  }
+
   function buildingTextures() {
     var c = makeCanvas(128, 256);
     var g = c.getContext('2d');
@@ -149,8 +175,9 @@
     this.renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, powerPreference: 'high-performance' });
     if (!this.renderer.getContext()) throw new Error('WebGL 不可用');
     this.renderer.setPixelRatio(Math.min(global.devicePixelRatio || 1, 2));
-    this.renderer.shadowMap.enabled = true;
-    this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    // 夜景几乎全靠霓虹与自发光，实时阴影收益很小却容易在软件渲染下出问题，
+    // 改用车底的假阴影（见 carmodel.js），顺便省下一遍渲染。
+    this.renderer.shadowMap.enabled = false;
     if ('outputColorSpace' in this.renderer) this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
     this.renderer.toneMappingExposure = 1.15;
@@ -215,25 +242,14 @@
     this.scene.add(new THREE.AmbientLight(0x33456e, 1.5));
     this.scene.add(new THREE.HemisphereLight(0x2a3f7a, 0x090a12, 1.1));
 
-    var moon = new THREE.DirectionalLight(0x9db4ff, 1.1);
+    var moon = new THREE.DirectionalLight(0x9db4ff, 1.25);
     moon.position.set(-600, 700, -500);
-    moon.castShadow = true;
-    moon.shadow.mapSize.set(2048, 2048);
-    moon.shadow.camera.near = 20;
-    moon.shadow.camera.far = 1600;
-    var s = 180;
-    moon.shadow.camera.left = -s;
-    moon.shadow.camera.right = s;
-    moon.shadow.camera.top = s;
-    moon.shadow.camera.bottom = -s;
-    moon.shadow.bias = -0.0012;
     this.scene.add(moon);
     this.scene.add(moon.target);
     this.moon = moon;
 
     // 玩家车头灯
     this.headlight = new THREE.SpotLight(0xdceaff, 6.5, 220, 0.62, 0.55, 0.9);
-    this.headlight.castShadow = false;
     this.scene.add(this.headlight);
     this.scene.add(this.headlight.target);
   };
@@ -279,7 +295,6 @@
     );
     ground.rotation.x = -Math.PI / 2;
     ground.position.y = -0.06;
-    ground.receiveShadow = true;
     this.trackGroup.add(ground);
   };
 
@@ -316,7 +331,6 @@
     var road = new THREE.Mesh(geom, new THREE.MeshStandardMaterial({
       map: tex, roughness: 0.42, metalness: 0.45, color: 0xffffff
     }));
-    road.receiveShadow = true;
     this.trackGroup.add(road);
   };
 
@@ -474,8 +488,6 @@
     }
     mesh.instanceMatrix.needsUpdate = true;
     if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
-    mesh.castShadow = false;
-    mesh.receiveShadow = false;
     this.trackGroup.add(mesh);
 
     this.addSigns(track, slots, rand);
@@ -575,13 +587,27 @@
   Scene3D.prototype.buildArena = function (arena) {
     this.clearWorld();
 
+    if (!this.textures.lot) this.textures.lot = lotTexture();
     var floor = new THREE.Mesh(
       new THREE.CircleGeometry(arena.radius, 64),
-      new THREE.MeshStandardMaterial({ map: this.textures.ground, color: 0x1c2130, roughness: 0.75, metalness: 0.3 })
+      new THREE.MeshStandardMaterial({ map: this.textures.lot, color: 0xa8b3cd, roughness: 0.62, metalness: 0.25 })
     );
     floor.rotation.x = -Math.PI / 2;
-    floor.receiveShadow = true;
     this.trackGroup.add(floor);
+
+    // 地面霓虹圆环，夜里也能判断距离
+    [110, 230, 350].forEach(function (radius, i) {
+      var ring = new THREE.Mesh(
+        new THREE.RingGeometry(radius, radius + 0.6, 96),
+        new THREE.MeshBasicMaterial({
+          color: i % 2 ? 0xff2fb9 : 0x18e0ff, transparent: true, opacity: 0.55,
+          blending: THREE.AdditiveBlending, side: THREE.DoubleSide, depthWrite: false
+        })
+      );
+      ring.rotation.x = -Math.PI / 2;
+      ring.position.y = 0.04;
+      this.trackGroup.add(ring);
+    }, this);
 
     var outer = new THREE.Mesh(
       new THREE.PlaneGeometry(9000, 9000),
@@ -632,8 +658,6 @@
       var mesh = new THREE.Mesh(geom, rampMat);
       mesh.position.set(r.x, 0, r.z);
       mesh.rotation.y = -r.angle;
-      mesh.receiveShadow = true;
-      mesh.castShadow = true;
       this.trackGroup.add(mesh);
 
       var lip = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.35, r.width), edgeMat);
@@ -699,7 +723,6 @@
       new THREE.MeshStandardMaterial({ color: 0x0c0f1a, roughness: 0.24, metalness: 0.85 })
     );
     floor.rotation.x = -Math.PI / 2;
-    floor.receiveShadow = true;
     this.trackGroup.add(floor);
 
     var stage = new THREE.Mesh(
@@ -707,7 +730,6 @@
       new THREE.MeshStandardMaterial({ color: 0x161b2c, roughness: 0.3, metalness: 0.9 })
     );
     stage.position.y = -0.18;
-    stage.receiveShadow = true;
     this.trackGroup.add(stage);
 
     [[6.9, 0x18e0ff], [8.1, 0xff2fb9]].forEach(function (ring) {
@@ -723,7 +745,6 @@
     var key = new THREE.SpotLight(0xdce8ff, 3200, 70, 0.85, 0.7, 1.2);
     key.position.set(6, 14, 8);
     key.target.position.set(0, 0.6, 0);
-    key.castShadow = true;
     this.trackGroup.add(key);
     this.trackGroup.add(key.target);
 
@@ -804,12 +825,99 @@
 
   Scene3D.prototype.syncCars = function (dt, split) {
     this.time += dt;
+    this.updateParticles(dt);
     for (var i = 0; i < this.carEntries.length; i++) {
       var entry = this.carEntries[i];
       CarModel.sync(entry.group, entry.car, this.time);
       // 第一人称时藏起自己的车；分屏下要两个视角都是第一人称才藏
       var hidden = this.hiddenFor[0] === entry.car && (!split || this.hiddenFor[1] === entry.car);
       entry.group.visible = !hidden;
+    }
+  };
+
+  // ---------- 粒子：轮胎烟、火花 ----------
+
+  Scene3D.prototype.initParticles = function () {
+    if (this.particles) return;
+    var c = makeCanvas(64, 64);
+    var g = c.getContext('2d');
+    var grad = g.createRadialGradient(32, 32, 0, 32, 32, 32);
+    grad.addColorStop(0, 'rgba(255,255,255,1)');
+    grad.addColorStop(0.35, 'rgba(255,255,255,0.5)');
+    grad.addColorStop(1, 'rgba(255,255,255,0)');
+    g.fillStyle = grad;
+    g.fillRect(0, 0, 64, 64);
+    var tex = new THREE.CanvasTexture(c);
+
+    this.particles = [];
+    for (var i = 0; i < 90; i++) {
+      var mat = new THREE.SpriteMaterial({
+        map: tex, transparent: true, depthWrite: false,
+        blending: THREE.AdditiveBlending, opacity: 0
+      });
+      var sprite = new THREE.Sprite(mat);
+      sprite.visible = false;
+      this.scene.add(sprite);
+      this.particles.push({ sprite: sprite, life: 0, maxLife: 1, vx: 0, vy: 0, vz: 0, grow: 1 });
+    }
+    this.particleCursor = 0;
+  };
+
+  Scene3D.prototype.spawnParticle = function (x, y, z, color, size, life, spread, rise) {
+    if (!this.particles) this.initParticles();
+    var p = this.particles[this.particleCursor];
+    this.particleCursor = (this.particleCursor + 1) % this.particles.length;
+
+    p.sprite.position.set(x, y, z);
+    p.sprite.scale.setScalar(size);
+    p.sprite.material.color.setHex(color);
+    p.sprite.material.opacity = 0.85;
+    p.sprite.visible = true;
+    p.life = life;
+    p.maxLife = life;
+    p.grow = size * 2.2;
+    p.vx = (Math.random() - 0.5) * spread;
+    p.vy = rise * (0.5 + Math.random());
+    p.vz = (Math.random() - 0.5) * spread;
+  };
+
+  Scene3D.prototype.updateParticles = function (dt) {
+    if (!this.particles) return;
+    for (var i = 0; i < this.particles.length; i++) {
+      var p = this.particles[i];
+      if (p.life <= 0) continue;
+      p.life -= dt;
+      if (p.life <= 0) {
+        p.sprite.visible = false;
+        continue;
+      }
+      var t = p.life / p.maxLife;
+      p.sprite.position.x += p.vx * dt;
+      p.sprite.position.y += p.vy * dt;
+      p.sprite.position.z += p.vz * dt;
+      p.sprite.material.opacity = t * 0.8;
+      p.sprite.scale.setScalar(p.sprite.scale.x + p.grow * dt);
+    }
+  };
+
+  /** 漂移时后轮冒烟 */
+  Scene3D.prototype.emitDriftSmoke = function (car) {
+    var f = car.forward();
+    var back = 1.6;
+    for (var side = -1; side <= 1; side += 2) {
+      this.spawnParticle(
+        car.x - f.x * back - f.z * side * 0.9,
+        car.y + 0.25,
+        car.z - f.z * back + f.x * side * 0.9,
+        0x8fa6c8, 1.1, 0.75, 2.2, 1.4
+      );
+    }
+  };
+
+  Scene3D.prototype.emitSparks = function (car, strength) {
+    var count = Math.min(6, 2 + Math.round(strength / 6));
+    for (var i = 0; i < count; i++) {
+      this.spawnParticle(car.x, car.y + 0.45, car.z, i % 2 ? 0xffc24d : 0xff7a1f, 0.5, 0.4, 9, 2.4);
     }
   };
 

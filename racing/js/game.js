@@ -51,6 +51,7 @@
     this.finishOrder = [];
     this.results = null;
     this.driftScore = 0;
+    this.smokeTimer = 0;
     this.driftCombo = 0;
     this.driftChain = 0;
     this.stuntScore = 0;
@@ -137,7 +138,7 @@
       if (isPlayer) this.players.push(entry);
 
       if (!isPlayer && this.track) {
-        var skill = Utils.clamp(0.4 + (config.difficulty || 0.4) * 0.48 + Utils.randRange(-0.05, 0.05), 0.2, 0.95);
+        var skill = Utils.clamp(0.4 + (config.difficulty || 0.4) * 0.42 + Utils.randRange(-0.05, 0.05), 0.2, 0.9);
         this.drivers.push(new Driver(car, this.track, {
           skill: skill,
           aggression: Utils.randRange(0.4, 0.9),
@@ -220,15 +221,23 @@
       this.drivers[i].update(dt, this.cars);
     }
 
+    this.smokeTimer -= dt;
+    var emitSmoke = this.smokeTimer <= 0;
+    if (emitSmoke) this.smokeTimer = 0.045;
+
     for (var j = 0; j < this.cars.length; j++) {
       var car = this.cars[j];
       car.update(dt, this.world);
       var impact = this.world.collide(car);
       if (impact > 6) {
+        this.scene.emitSparks(car, impact);
         if (car === this.playerCar) {
           this.scene.shake(0, Math.min(0.9, impact / 40));
           Sfx.crash(impact);
         }
+      }
+      if (emitSmoke && !car.airborne && (car.driftTime > 0.12 || (car.nosActive && Math.abs(car.vf) > 8))) {
+        this.scene.emitDriftSmoke(car);
       }
     }
 
@@ -290,7 +299,6 @@
       e.lateral = proj.lateral;
 
       var s = proj.s;
-      var half = track.length / 2;
       var crossed = e.prevS > track.length * 0.72 && s < track.length * 0.28;
       var backwards = e.prevS < track.length * 0.28 && s > track.length * 0.72;
 
@@ -322,7 +330,6 @@
       var sample = track.samples[proj.index];
       var dot = f.x * sample.fx + f.z * sample.fz;
       e.wrongWay = dot < -0.35 && Math.abs(e.car.vf) > 6;
-      void half;
     }
 
     // 名次
@@ -446,20 +453,15 @@
 
   Game.prototype.finishRace = function (entry) {
     var config = this.config;
-    var position = entry.position;
-    // 玩家冲线即结束，其余按当前进度排名
-    var others = this.entries.filter(function (e) { return e !== entry; })
-      .sort(function (a, b) { return b.totalDist - a.totalDist; });
-    var order = [entry].concat(others);
-    // 已经先冲线的对手排在玩家前面
-    order.sort(function (a, b) {
+    // 玩家冲线即结束：已冲线的按成绩排，其余按当前跑过的距离排
+    var order = this.entries.slice().sort(function (a, b) {
       if (a.finished && b.finished) return a.finishTime - b.finishTime;
       if (a.finished) return -1;
       if (b.finished) return 1;
       return b.totalDist - a.totalDist;
     });
     for (var i = 0; i < order.length; i++) order[i].position = i + 1;
-    position = entry.position;
+    var position = entry.position;
 
     var event = config.event ? RaceEvents.race(config.event) : null;
     var prize = 0;

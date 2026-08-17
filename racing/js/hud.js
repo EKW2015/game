@@ -31,10 +31,16 @@
   }
 
   Hud.prototype.setTrack = function (track) {
+    var box = this.el.map ? this.el.map.parentNode : null;
     if (!track || !track.samples) {
+      // 自由驾驶没有赛道，直接把小地图收起来
       this.mapBounds = null;
+      this.track = null;
+      if (this.mapCtx) this.mapCtx.clearRect(0, 0, this.el.map.width, this.el.map.height);
+      if (box) box.style.display = 'none';
       return;
     }
+    if (box) box.style.display = '';
     var minX = Infinity, maxX = -Infinity, minZ = Infinity, maxZ = -Infinity;
     for (var i = 0; i < track.samples.length; i++) {
       var s = track.samples[i];

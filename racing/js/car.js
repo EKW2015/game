@@ -168,6 +168,7 @@
 
     // --- 垂直方向 / 跳跃 ---
     var groundH = world && world.heightAt ? world.heightAt(this.x, this.z) : 0;
+    this.groundH = groundH;
     this.stuntEvent = null;
 
     if (!this.airborne) {

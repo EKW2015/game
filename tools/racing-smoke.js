@@ -37,7 +37,10 @@ var sceneStub = {
   addCar: function () {},
   syncCars: function () {},
   updateCamera: function () {},
-  shake: function () {}
+  shake: function () {},
+  emitDriftSmoke: function () {},
+  emitSparks: function () {},
+  updateParticles: function () {}
 };
 
 var Utils = win.Utils;
@@ -216,10 +219,10 @@ function simulateRace(raceId, carId, tuning, skill) {
   var stock = { engine: 0, brake: 0, agility: 0, turbo: 0, booster: 0, paint: 0, rims: 0 };
   var maxed = { engine: 5, brake: 5, agility: 5, turbo: 5, booster: 5, paint: 0, rims: 0 };
 
-  /** 机器人开得比真人差，取三次最好成绩作为“可达成”的判据 */
+  /** 机器人开得比真人差，取多次里最好的一次作为“可达成”的判据 */
   function best(raceId, carId, tuning, skill) {
     var bestResult = null;
-    for (var i = 0; i < 3; i++) {
+    for (var i = 0; i < 5; i++) {
       var r = simulateRace(raceId, carId, JSON.parse(JSON.stringify(tuning)), skill);
       if (r && (!bestResult || r.position < bestResult.position)) bestResult = r;
     }

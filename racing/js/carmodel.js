@@ -38,6 +38,22 @@
     return g;
   }
 
+  /** 车底假阴影用的径向渐变贴图 */
+  function shadowTexture() {
+    if (cache.shadowTex) return cache.shadowTex;
+    var canvas = document.createElement('canvas');
+    canvas.width = canvas.height = 64;
+    var g = canvas.getContext('2d');
+    var grad = g.createRadialGradient(32, 32, 0, 32, 32, 32);
+    grad.addColorStop(0, 'rgba(0,0,0,0.75)');
+    grad.addColorStop(0.55, 'rgba(0,0,0,0.35)');
+    grad.addColorStop(1, 'rgba(0,0,0,0)');
+    g.fillStyle = grad;
+    g.fillRect(0, 0, 64, 64);
+    cache.shadowTex = new THREE.CanvasTexture(canvas);
+    return cache.shadowTex;
+  }
+
   function makeWheel(radius, rimColor) {
     var group = new THREE.Group();
     var tire = new THREE.Mesh(
@@ -90,7 +106,6 @@
         paint
       );
       hull.position.y = bodyY + shape.height / 2;
-      hull.castShadow = true;
       group.add(hull);
 
       // 车头：低矮前倾的楔形
@@ -100,7 +115,6 @@
       );
       nose.position.set(shape.len * 0.55, bodyY + shape.height * 0.3, 0);
       nose.rotation.z = 0.06;
-      nose.castShadow = true;
       group.add(nose);
 
       // 前唇 / 后扩散器
@@ -118,7 +132,6 @@
         glass
       );
       cabin.position.set(shape.cabinShift, bodyY + shape.height + shape.cabin / 2 - 0.05, 0);
-      cabin.castShadow = true;
       group.add(cabin);
 
       var roof = new THREE.Mesh(
@@ -136,7 +149,6 @@
           paint
         );
         arch.position.set(pos[0], bodyY + shape.height * 0.42, pos[1] * (shape.width * 0.5 - 0.04));
-        arch.castShadow = true;
         group.add(arch);
       });
 
@@ -179,6 +191,16 @@
         group.add(lamp);
       });
 
+      // 车底假阴影
+      var shadowMat = new THREE.MeshBasicMaterial({
+        map: shadowTexture(), transparent: true, opacity: 0.55, depthWrite: false, color: 0x000000
+      });
+      var blob = new THREE.Mesh(new THREE.PlaneGeometry(shape.len * 1.25, shape.width * 1.7), shadowMat);
+      blob.rotation.x = -Math.PI / 2;
+      blob.position.y = 0.03;
+      blob.renderOrder = -1;
+      group.add(blob);
+
       // 车底霓虹
       var glowMat = new THREE.MeshBasicMaterial({
         color: color, transparent: true, opacity: 0.2,
@@ -210,7 +232,6 @@
       [[axleX, 1], [axleX, -1], [-axleX, 1], [-axleX, -1]].forEach(function (pos, i) {
         var wheel = makeWheel(wheelR, rimColor);
         wheel.position.set(pos[0], wheelR, pos[1] * (shape.width * 0.5 + 0.04));
-        wheel.castShadow = true;
         group.add(wheel);
         wheels.push(wheel);
         if (i < 2) frontWheels.push(wheel);
@@ -219,6 +240,8 @@
       group.userData = {
         wheels: wheels,
         frontWheels: frontWheels,
+        blob: blob,
+        blobMat: shadowMat,
         paint: paint,
         tailMat: tailMat,
         glow: glowMat,
@@ -257,6 +280,12 @@
         }
       }
       data.flameMat.color.setHex(boosting ? (Math.sin(time * 30) > 0 ? 0x66ddff : 0xaa66ff) : 0x66ddff);
+
+      // 假阴影贴着地面：越高越淡越大
+      var alt = Math.max(0, car.y - (car.groundH || 0));
+      data.blob.position.y = 0.03 - alt;
+      data.blob.scale.setScalar(1 + alt * 0.06);
+      data.blobMat.opacity = 0.55 * Math.max(0, 1 - alt / 14);
       data.glow.opacity = 0.16 + car.driftAmount * 0.3 + (boosting ? 0.22 : 0);
     }
   };
