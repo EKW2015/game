@@ -208,22 +208,26 @@
     var face = new THREE.CircleGeometry(radius - width * 0.66, 20);
     face.rotateY(Math.PI / 2);
 
-    // 轮眉：半个开口圆柱罩在轮胎上方，转轴沿车宽方向
-    var fender = new THREE.CylinderGeometry(radius + 0.09, radius + 0.09, width + 0.1, 14, 1, true, 0, Math.PI);
+    // 轮眉：半个开口圆柱罩在轮胎上方，转轴沿车宽方向。
+    // 必须比轮胎窄，否则会把整个轮子盖住看不见。
+    var fender = new THREE.CylinderGeometry(radius + 0.08, radius + 0.08, width * 0.8, 14, 1, true, 0, Math.PI);
     fender.rotateZ(Math.PI / 2);
 
-    wheelParts[key] = { tire: tire, hub: hub, face: face, fender: fender };
+    var ring = new THREE.TorusGeometry(radius - width * 0.62, 0.022, 6, 24);
+    ring.rotateY(Math.PI / 2);
+
+    wheelParts[key] = { tire: tire, hub: hub, face: face, fender: fender, ring: ring };
     return wheelParts[key];
   }
 
-  function makeWheel(cfg, side) {
+  function makeWheel(cfg, side, accent) {
     var geos = wheelGeometries(cfg.wheelR, cfg.wheelW);
     var wheel = new THREE.Group();
 
-    // 夜里纯黑的轮胎会和地面糊在一起，所以调到深灰并给一点自发光
+    // 夜里纯黑的轮胎会和地面糊在一起，所以调到中灰并给一点自发光
     wheel.add(new THREE.Mesh(geos.tire, new THREE.MeshStandardMaterial({
-      color: 0x3a3e48, roughness: 0.88, metalness: 0.1,
-      emissive: 0x0d0f14, emissiveIntensity: 1
+      color: 0x4a4e58, roughness: 0.85, metalness: 0.1,
+      emissive: 0x14161c, emissiveIntensity: 1
     })));
     wheel.add(new THREE.Mesh(geos.hub, new THREE.MeshStandardMaterial({
       color: 0x22262f, roughness: 0.7, metalness: 0.2
@@ -237,6 +241,17 @@
     rim.position.x = side * cfg.wheelW * 0.5;
     rim.rotation.y = side > 0 ? 0 : Math.PI;
     wheel.add(rim);
+
+    // 轮圈霓虹光环：远处、任何角度都能一眼看出轮子在哪
+    if (accent != null) {
+      var ring = new THREE.Mesh(geos.ring, new THREE.MeshBasicMaterial({
+        color: accent, transparent: true, opacity: 0.75,
+        blending: THREE.AdditiveBlending, depthWrite: false
+      }));
+      ring.position.x = side * cfg.wheelW * 0.46;
+      wheel.add(ring);
+      wheel.userData.ringMat = ring.material;
+    }
 
     return wheel;
   }
@@ -261,9 +276,10 @@
       emissive: new THREE.Color(paint).multiplyScalar(0.16)
     });
     var darkMat = new THREE.MeshStandardMaterial({ color: 0x0b0c10, roughness: 0.65, metalness: 0.25 });
+    // 玻璃走「低金属度 + 极光滑」：金属度一高，反射会被接近黑的底色染没
     var glassMat = new THREE.MeshStandardMaterial({
-      color: 0x080d16, roughness: 0.08, metalness: 0.95,
-      emissive: 0x0b1725, emissiveIntensity: 0.75
+      color: 0x0d131e, roughness: 0.06, metalness: 0.12,
+      emissive: 0x0c1a2a, emissiveIntensity: 0.7
     });
 
     var body = new THREE.Mesh(geos.body, bodyMat);
@@ -380,20 +396,23 @@
     for (var i = 0; i < spots.length; i++) {
       var holder = new THREE.Group();
       holder.position.set(spots[i].x, cfg.wheelR, spots[i].z);
-      var wheel = makeWheel(cfg, spots[i].side);
+      var wheel = makeWheel(cfg, spots[i].side, opts.player ? accent : null);
       holder.add(wheel);
       holder.userData.front = spots[i].front;
       holder.userData.wheel = wheel;
       car.add(holder);
       wheels.push(holder);
 
-      // 轮眉不跟着轮子转，所以挂在车身上
+      // 轮眉不跟着轮子转，所以挂在车身上；稍微往内藏，让轮圈露在外面
       var fender = new THREE.Mesh(fenderGeo, bodyMat);
-      fender.position.set(spots[i].x, cfg.wheelR, spots[i].z);
+      fender.position.set(spots[i].x - spots[i].side * 0.05, cfg.wheelR, spots[i].z);
       car.add(fender);
     }
 
     car.userData.wheels = wheels;
+    car.userData.ringMats = wheels.map(function (w) {
+      return w.userData.wheel.userData.ringMat;
+    }).filter(Boolean);
     car.userData.tailMat = tailMat;
     car.userData.headMat = headMat;
     car.userData.bodyMat = bodyMat;
@@ -453,6 +472,9 @@
     if (accent != null) {
       if (car.userData.stripMat) car.userData.stripMat.color.setHex(accent);
       if (car.userData.underglow) car.userData.underglow.material.color.setHex(accent);
+      (car.userData.ringMats || []).forEach(function (mat) {
+        mat.color.setHex(accent);
+      });
     }
   }
 
