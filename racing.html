@@ -634,7 +634,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
         d: span * (0.72 + rnd() * 0.24),
         h: h1,
         style: Math.floor(rnd() * 6),
-        neon: rnd() < 0.55 ? Math.floor(rnd() * 8) : -1
+        neon: rnd() < 0.72 ? Math.floor(rnd() * 8) : -1
       });
       return out;
     }
@@ -653,7 +653,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
         d: vertical ? other : slot,
         h: 18 + Math.pow(rnd(), 2.4) * 150,
         style: Math.floor(rnd() * 6),
-        neon: rnd() < 0.45 ? Math.floor(rnd() * 8) : -1
+        neon: rnd() < 0.6 ? Math.floor(rnd() * 8) : -1
       });
     }
     return out;
@@ -1266,6 +1266,99 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
 })(typeof window !== 'undefined' ? window : global);
 
 /**
+ * 夜城飙车 - 自动驾驶（演示模式 & 无头测试共用，不依赖 THREE）
+ *
+ * 走曼哈顿路线：先沿当前这条街开到目标所在的街，再拐弯；
+ * 被挤到人行道上就先回到车道中心，顶住墙超过一会儿就倒车脱困。
+ */
+(function (global) {
+  'use strict';
+
+  var RU = global.RU;
+  var CityMap = global.CityMap;
+
+  function AutoDrive() {
+    this.stuck = 0;
+    this.backup = 0;
+    this.backupSteer = 1;
+  }
+
+  AutoDrive.prototype.reset = function () {
+    this.stuck = 0;
+    this.backup = 0;
+  };
+
+  /** 下一个要开往的路点 */
+  AutoDrive.prototype.waypoint = function (game) {
+    var B = CityMap.BLOCK;
+    var car = game.car;
+    var gate = game.gate;
+
+    // 掉出马路（撞上人行道）时，先垂直回到最近的车道中心
+    if (!CityMap.onRoad(car.x, car.z)) {
+      var lineX = Math.round(car.x / B) * B;
+      var lineZ = Math.round(car.z / B) * B;
+      if (Math.abs(car.x - lineX) < Math.abs(car.z - lineZ)) {
+        return { x: lineX, z: car.z, turning: true };
+      }
+      return { x: car.x, z: lineZ, turning: true };
+    }
+
+    var gi = Math.round(gate.x / B);
+    var gj = Math.round(gate.z / B);
+    var ci = Math.round(car.x / B);
+    var cj = Math.round(car.z / B);
+    var onXRoad = CityMap.distToRoadAxis(car.z) <= CityMap.HALF_ROAD;
+
+    if (onXRoad && ci !== gi) return { x: gi * B, z: cj * B, turning: true };
+    if (!onXRoad && cj !== gj) return { x: ci * B, z: gj * B, turning: true };
+    return { x: gate.x, z: gate.z, turning: false };
+  };
+
+  AutoDrive.prototype.update = function (game, dt) {
+    var car = game.car;
+    if (!game.gate) return;
+
+    if (car.speed < 2.5) this.stuck += dt;
+    else this.stuck = 0;
+    if (this.stuck > 1.2) {
+      this.stuck = 0;
+      this.backup = 1.2;
+    }
+
+    // 倒车脱困：反向打方向，把车头从墙角里拽出来
+    if (this.backup > 0) {
+      this.backup -= dt;
+      car.throttle = 0;
+      car.brake = 1;
+      car.steer = this.backupSteer;
+      car.handbrake = false;
+      car.wantBoost = false;
+      return;
+    }
+
+    var wp = this.waypoint(game);
+    var bearing = RU.wrapAngle(Math.atan2(wp.z - car.z, wp.x - car.x) - car.yaw);
+    var dist = Math.hypot(wp.x - car.x, wp.z - car.z);
+
+    // 要拐弯就提前减速，否则一定顶到街角
+    var wantSpeed = 50;
+    if (Math.abs(bearing) > 0.4) wantSpeed = 11;
+    else if (wp.turning && dist < 70) wantSpeed = 15;
+    else if (dist < 40) wantSpeed = 22;
+
+    this.backupSteer = bearing >= 0 ? -1 : 1;
+    car.steer = RU.clamp(bearing * 2.6, -1, 1);
+    car.throttle = car.speed < wantSpeed ? 1 : 0;
+    car.brake = car.speed > wantSpeed * 1.4 ? 1 : 0;
+    car.handbrake = Math.abs(bearing) > 0.55 && car.speed > 20;
+    car.wantBoost = Math.abs(bearing) < 0.1 && dist > 130;
+  };
+
+  global.AutoDrive = AutoDrive;
+})(typeof window !== 'undefined' ? window : global);
+
+/**
  * 夜城飙车 - 低多边形跑车模型（THREE）
  */
 (function (global) {
@@ -1536,20 +1629,41 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
       ctx.fillRect(c - solid, 0, solid * 2, SIZE);
 
       // 沥青
-      ctx.fillStyle = '#22232b';
+      ctx.fillStyle = '#2a2c36';
       ctx.fillRect(0, c - halfRoad, SIZE, halfRoad * 2);
       ctx.fillRect(c - halfRoad, 0, halfRoad * 2, SIZE);
 
-      // 沥青噪点
+      // 沥青噪点与补丁，避免路面像一块塑料板
       var i;
-      for (i = 0; i < 2600; i++) {
-        var nx = Math.random() * SIZE;
-        var ny = Math.random() * SIZE;
-        var onRoad = Math.abs(ny - c) < halfRoad || Math.abs(nx - c) < halfRoad;
-        if (!onRoad) continue;
-        ctx.fillStyle = 'rgba(255,255,255,' + (Math.random() * 0.03) + ')';
+      var nx;
+      var ny;
+      for (i = 0; i < 3200; i++) {
+        nx = Math.random() * SIZE;
+        ny = Math.random() * SIZE;
+        if (Math.abs(ny - c) > halfRoad && Math.abs(nx - c) > halfRoad) continue;
+        ctx.fillStyle = 'rgba(255,255,255,' + (Math.random() * 0.035) + ')';
         ctx.fillRect(nx, ny, 2, 2);
       }
+      for (i = 0; i < 14; i++) {
+        nx = Math.random() * SIZE;
+        ny = Math.random() * SIZE;
+        if (Math.abs(ny - c) > halfRoad && Math.abs(nx - c) > halfRoad) continue;
+        ctx.fillStyle = 'rgba(0,0,0,' + (0.1 + Math.random() * 0.16) + ')';
+        ctx.beginPath();
+        ctx.ellipse(nx, ny, 4 * ppm * Math.random() + 2, 3 * ppm * Math.random() + 2,
+          Math.random() * Math.PI, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      // 井盖
+      [[c - halfRoad * 0.55, c + SIZE * 0.28], [c + halfRoad * 0.6, c - SIZE * 0.3]].forEach(function (p) {
+        ctx.fillStyle = '#3a3d47';
+        ctx.beginPath();
+        ctx.arc(p[0], p[1], 0.45 * ppm, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(0,0,0,0.5)';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+      });
 
       // 路缘石
       ctx.strokeStyle = '#454a5a';
@@ -1585,6 +1699,15 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
         ctx.stroke();
       });
       ctx.setLineDash([]);
+
+      // 停止线
+      ctx.fillStyle = 'rgba(226,232,240,0.4)';
+      var stopLen = 0.6 * ppm;
+      var zebraOff = 3.4 * ppm;
+      ctx.fillRect(c + 0.6 * ppm, c - halfRoad - zebraOff - stopLen * 2, halfRoad - ppm, stopLen);
+      ctx.fillRect(c - halfRoad + ppm, c + halfRoad + zebraOff + stopLen, halfRoad - ppm, stopLen);
+      ctx.fillRect(c - halfRoad - zebraOff - stopLen * 2, c - halfRoad + ppm, stopLen, halfRoad - ppm);
+      ctx.fillRect(c + halfRoad + zebraOff + stopLen, c + 0.6 * ppm, stopLen, halfRoad - ppm);
 
       // 人行横道
       ctx.fillStyle = 'rgba(226,232,240,0.55)';
@@ -2190,13 +2313,15 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
       this.sprites.push(sprite);
     }
 
-    var markGeo = new THREE.PlaneGeometry(0.62, 2.2);
+    // 黑胎痕画在几乎全黑的沥青上等于看不见，所以做成霓虹发光的漂移轨迹
+    var markGeo = new THREE.PlaneGeometry(0.7, 2.3);
     markGeo.rotateX(-Math.PI / 2);
     var markTex = streakTexture();
     this.marks = [];
     for (var m = 0; m < MAX_MARKS; m++) {
       var mark = new THREE.Mesh(markGeo, new THREE.MeshBasicMaterial({
-        map: markTex, color: 0x000000, transparent: true, opacity: 0, depthWrite: false
+        map: markTex, color: 0xff2e78, transparent: true, opacity: 0,
+        blending: THREE.AdditiveBlending, depthWrite: false
       }));
       mark.rotation.order = 'YXZ';
       mark.position.y = 0.03;
@@ -2303,7 +2428,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
       m.visible = true;
       m.position.set(d.x, 0.03, d.z);
       m.rotation.y = Math.PI / 2 - d.yaw;
-      m.material.opacity = Math.max(0, Math.min(1, d.life * 1.1) * 0.92 * d.strength);
+      m.material.opacity = Math.max(0, Math.min(1, d.life * 1.2) * 0.5 * d.strength);
     }
   };
 
@@ -2583,10 +2708,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
   var toastTimer = 0;
   var lastTime = 0;
   var running = false;
-  var demoMode = false;
-  var demoStuck = 0;
-  var demoBackup = 0;
-  var demoBackupSteer = 1;
+  var autoDrive = null;
   var stuckTime = 0;
   var hintCooldown = 0;
 
@@ -2893,62 +3015,6 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     }
   }
 
-  /**
-   * 演示模式（打开 index.html#demo）：沿马路网格自动开向下一个光门，
-   * 转急弯时拉手刹漂移。方便快速看效果，也能当作展示动画。
-   */
-  function demoDrive(dt) {
-    var car = game.car;
-    var B = CityMap.BLOCK;
-    var gate = game.gate;
-    if (!gate) return;
-
-    // 顶到墙角就倒车脱困，否则演示会一直卡在那里
-    if (car.speed < 2.5) demoStuck += dt;
-    else demoStuck = 0;
-    if (demoStuck > 1.2) {
-      demoStuck = 0;
-      demoBackup = 1.1;
-    }
-    if (demoBackup > 0) {
-      demoBackup -= dt;
-      car.throttle = 0;
-      car.brake = 1;
-      car.steer = demoBackupSteer;
-      car.handbrake = false;
-      car.wantBoost = false;
-      return;
-    }
-
-    var gi = Math.round(gate.x / B);
-    var gj = Math.round(gate.z / B);
-    var ci = Math.round(car.x / B);
-    var cj = Math.round(car.z / B);
-    var onXRoad = CityMap.distToRoadAxis(car.z) <= CityMap.HALF_ROAD;
-    var wx;
-    var wz;
-    if (onXRoad && ci !== gi) {
-      wx = gi * B;
-      wz = cj * B;
-    } else if (!onXRoad && cj !== gj) {
-      wx = ci * B;
-      wz = gj * B;
-    } else {
-      wx = gate.x;
-      wz = gate.z;
-    }
-
-    var bearing = RU.wrapAngle(Math.atan2(wz - car.z, wx - car.x) - car.yaw);
-    var distW = Math.hypot(wx - car.x, wz - car.z);
-    var wantSpeed = Math.abs(bearing) > 0.45 ? 16 : (distW < 50 ? 26 : 50);
-    demoBackupSteer = bearing >= 0 ? -1 : 1;
-    car.steer = RU.clamp(bearing * 2.6, -1, 1);
-    car.throttle = car.speed < wantSpeed ? 1 : 0;
-    car.brake = car.speed > wantSpeed * 1.4 ? 1 : 0;
-    car.handbrake = Math.abs(bearing) > 0.55 && car.speed > 20;
-    car.wantBoost = Math.abs(bearing) < 0.1 && distW > 130;
-  }
-
   function frame(now) {
     global.requestAnimationFrame(frame);
     if (!lastTime) lastTime = now;
@@ -2959,7 +3025,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     var wasBoosting = game.car.boosting;
     if (game.state === 'playing') {
       applyInput();
-      if (demoMode) demoDrive(dt);
+      if (autoDrive) autoDrive.update(game, dt);
       game.update(dt);
       checkStuck(dt);
       if (game.car.boosting && !wasBoosting) RaceAudio.boost();
@@ -3003,8 +3069,9 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     el['hud-best'].textContent = game.best;
     running = true;
 
-    demoMode = String(global.location.hash || '').indexOf('demo') >= 0;
-    if (demoMode) {
+    // 打开 index.html#demo 就让 AI 自己开，方便看效果
+    if (String(global.location.hash || '').indexOf('demo') >= 0) {
+      autoDrive = new global.AutoDrive();
       startGame('free');
       toast('演示模式：AI 自动驾驶', 2000);
     }

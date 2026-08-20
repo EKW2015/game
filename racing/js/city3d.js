@@ -60,20 +60,41 @@
       ctx.fillRect(c - solid, 0, solid * 2, SIZE);
 
       // 沥青
-      ctx.fillStyle = '#22232b';
+      ctx.fillStyle = '#2a2c36';
       ctx.fillRect(0, c - halfRoad, SIZE, halfRoad * 2);
       ctx.fillRect(c - halfRoad, 0, halfRoad * 2, SIZE);
 
-      // 沥青噪点
+      // 沥青噪点与补丁，避免路面像一块塑料板
       var i;
-      for (i = 0; i < 2600; i++) {
-        var nx = Math.random() * SIZE;
-        var ny = Math.random() * SIZE;
-        var onRoad = Math.abs(ny - c) < halfRoad || Math.abs(nx - c) < halfRoad;
-        if (!onRoad) continue;
-        ctx.fillStyle = 'rgba(255,255,255,' + (Math.random() * 0.03) + ')';
+      var nx;
+      var ny;
+      for (i = 0; i < 3200; i++) {
+        nx = Math.random() * SIZE;
+        ny = Math.random() * SIZE;
+        if (Math.abs(ny - c) > halfRoad && Math.abs(nx - c) > halfRoad) continue;
+        ctx.fillStyle = 'rgba(255,255,255,' + (Math.random() * 0.035) + ')';
         ctx.fillRect(nx, ny, 2, 2);
       }
+      for (i = 0; i < 14; i++) {
+        nx = Math.random() * SIZE;
+        ny = Math.random() * SIZE;
+        if (Math.abs(ny - c) > halfRoad && Math.abs(nx - c) > halfRoad) continue;
+        ctx.fillStyle = 'rgba(0,0,0,' + (0.1 + Math.random() * 0.16) + ')';
+        ctx.beginPath();
+        ctx.ellipse(nx, ny, 4 * ppm * Math.random() + 2, 3 * ppm * Math.random() + 2,
+          Math.random() * Math.PI, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      // 井盖
+      [[c - halfRoad * 0.55, c + SIZE * 0.28], [c + halfRoad * 0.6, c - SIZE * 0.3]].forEach(function (p) {
+        ctx.fillStyle = '#3a3d47';
+        ctx.beginPath();
+        ctx.arc(p[0], p[1], 0.45 * ppm, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(0,0,0,0.5)';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+      });
 
       // 路缘石
       ctx.strokeStyle = '#454a5a';
@@ -109,6 +130,15 @@
         ctx.stroke();
       });
       ctx.setLineDash([]);
+
+      // 停止线
+      ctx.fillStyle = 'rgba(226,232,240,0.4)';
+      var stopLen = 0.6 * ppm;
+      var zebraOff = 3.4 * ppm;
+      ctx.fillRect(c + 0.6 * ppm, c - halfRoad - zebraOff - stopLen * 2, halfRoad - ppm, stopLen);
+      ctx.fillRect(c - halfRoad + ppm, c + halfRoad + zebraOff + stopLen, halfRoad - ppm, stopLen);
+      ctx.fillRect(c - halfRoad - zebraOff - stopLen * 2, c - halfRoad + ppm, stopLen, halfRoad - ppm);
+      ctx.fillRect(c + halfRoad + zebraOff + stopLen, c + 0.6 * ppm, stopLen, halfRoad - ppm);
 
       // 人行横道
       ctx.fillStyle = 'rgba(226,232,240,0.55)';

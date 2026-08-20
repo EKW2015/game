@@ -27,6 +27,7 @@ require(path.join(__dirname, '..', 'racing', 'js', 'citymap.js'));
 require(path.join(__dirname, '..', 'racing', 'js', 'car.js'));
 require(path.join(__dirname, '..', 'racing', 'js', 'traffic.js'));
 require(path.join(__dirname, '..', 'racing', 'js', 'racegame.js'));
+require(path.join(__dirname, '..', 'racing', 'js', 'autodrive.js'));
 
 const RU = global.RU;
 const CityMap = global.CityMap;
@@ -96,56 +97,26 @@ for (let i = 0; i < 60 * 12; i++) car.update(DT);
 check('不会开进建筑里', !CityMap.resolveCircle(car.x, car.z, car.radius - 0.1),
   '(' + car.x.toFixed(1) + ', ' + car.z.toFixed(1) + ')');
 
-/**
- * 沿马路网格导航的自动驾驶：先沿当前这条路开到目标所在的路，再拐弯。
- * 用来验证「光门确实开得到」，顺便当作曼哈顿路线的可达性测试。
- */
-function autopilot(g) {
-  const B = CityMap.BLOCK;
-  const car = g.car;
-  const gi = Math.round(g.gate.x / B);
-  const gj = Math.round(g.gate.z / B);
-  const ci = Math.round(car.x / B);
-  const cj = Math.round(car.z / B);
-  const onXRoad = CityMap.distToRoadAxis(car.z) <= CityMap.HALF_ROAD;
-
-  let wx;
-  let wz;
-  if (onXRoad && ci !== gi) {
-    wx = gi * B;
-    wz = cj * B;
-  } else if (!onXRoad && cj !== gj) {
-    wx = ci * B;
-    wz = gj * B;
-  } else {
-    wx = g.gate.x;
-    wz = g.gate.z;
-  }
-
-  const bearing = RU.wrapAngle(Math.atan2(wz - car.z, wx - car.x) - car.yaw);
-  const distW = Math.hypot(wx - car.x, wz - car.z);
-  const wantSpeed = Math.abs(bearing) > 0.45 ? 16 : (distW < 50 ? 26 : 50);
-  car.steer = RU.clamp(bearing * 2.6, -1, 1);
-  car.throttle = car.speed < wantSpeed ? 1 : 0;
-  car.brake = car.speed > wantSpeed * 1.4 ? 1 : 0;
-  car.handbrake = Math.abs(bearing) > 0.55 && car.speed > 20;
-  car.wantBoost = Math.abs(bearing) < 0.1 && distW > 130;
-}
-
-// ---- 完整一局 ----
+// ---- 完整一局（用游戏里演示模式那套自动驾驶来跑） ----
 console.log('游戏流程');
 const game = new global.RaceGame();
+const pilot = new global.AutoDrive();
 game.start('time');
 let steps = 0;
 let gatesSeen = 0;
 let maxParticles = 0;
 let maxMarks = 0;
+let stallSteps = 0;
+let worstStall = 0;
 while (game.state === 'playing' && steps < 60 * 240) {
-  autopilot(game);
+  pilot.update(game, DT);
   game.update(DT);
   gatesSeen = game.gates;
   maxParticles = Math.max(maxParticles, game.particles.length);
   maxMarks = Math.max(maxMarks, game.marks.length);
+  if (steps > 60 && game.car.speed < 3) stallSteps++;
+  else stallSteps = 0;
+  worstStall = Math.max(worstStall, stallSteps);
   steps++;
 }
 check('计时模式会结束', game.state === 'over', (steps * DT).toFixed(1) + 's');
@@ -157,6 +128,7 @@ check('粒子数量有上限', maxParticles <= 160, '峰值 ' + maxParticles);
 check('会留下胎痕', maxMarks > 0, '峰值 ' + maxMarks);
 check('胎痕数量有上限', maxMarks <= 220, '峰值 ' + maxMarks);
 check('最高分已记录', game.best >= game.score);
+check('不会长时间卡住不动', worstStall * DT < 4.5, '最长停滞 ' + (worstStall * DT).toFixed(1) + 's');
 
 // ---- 自由驾驶模式 ----
 const free = new global.RaceGame();

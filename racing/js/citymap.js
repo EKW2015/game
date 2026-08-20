@@ -115,7 +115,7 @@
         d: span * (0.72 + rnd() * 0.24),
         h: h1,
         style: Math.floor(rnd() * 6),
-        neon: rnd() < 0.55 ? Math.floor(rnd() * 8) : -1
+        neon: rnd() < 0.72 ? Math.floor(rnd() * 8) : -1
       });
       return out;
     }
@@ -134,7 +134,7 @@
         d: vertical ? other : slot,
         h: 18 + Math.pow(rnd(), 2.4) * 150,
         style: Math.floor(rnd() * 6),
-        neon: rnd() < 0.45 ? Math.floor(rnd() * 8) : -1
+        neon: rnd() < 0.6 ? Math.floor(rnd() * 8) : -1
       });
     }
     return out;

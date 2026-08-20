@@ -193,13 +193,15 @@
       this.sprites.push(sprite);
     }
 
-    var markGeo = new THREE.PlaneGeometry(0.62, 2.2);
+    // 黑胎痕画在几乎全黑的沥青上等于看不见，所以做成霓虹发光的漂移轨迹
+    var markGeo = new THREE.PlaneGeometry(0.7, 2.3);
     markGeo.rotateX(-Math.PI / 2);
     var markTex = streakTexture();
     this.marks = [];
     for (var m = 0; m < MAX_MARKS; m++) {
       var mark = new THREE.Mesh(markGeo, new THREE.MeshBasicMaterial({
-        map: markTex, color: 0x000000, transparent: true, opacity: 0, depthWrite: false
+        map: markTex, color: 0xff2e78, transparent: true, opacity: 0,
+        blending: THREE.AdditiveBlending, depthWrite: false
       }));
       mark.rotation.order = 'YXZ';
       mark.position.y = 0.03;
@@ -306,7 +308,7 @@
       m.visible = true;
       m.position.set(d.x, 0.03, d.z);
       m.rotation.y = Math.PI / 2 - d.yaw;
-      m.material.opacity = Math.max(0, Math.min(1, d.life * 1.1) * 0.92 * d.strength);
+      m.material.opacity = Math.max(0, Math.min(1, d.life * 1.2) * 0.5 * d.strength);
     }
   };
 

@@ -24,10 +24,7 @@
   var toastTimer = 0;
   var lastTime = 0;
   var running = false;
-  var demoMode = false;
-  var demoStuck = 0;
-  var demoBackup = 0;
-  var demoBackupSteer = 1;
+  var autoDrive = null;
   var stuckTime = 0;
   var hintCooldown = 0;
 
@@ -334,62 +331,6 @@
     }
   }
 
-  /**
-   * 演示模式（打开 index.html#demo）：沿马路网格自动开向下一个光门，
-   * 转急弯时拉手刹漂移。方便快速看效果，也能当作展示动画。
-   */
-  function demoDrive(dt) {
-    var car = game.car;
-    var B = CityMap.BLOCK;
-    var gate = game.gate;
-    if (!gate) return;
-
-    // 顶到墙角就倒车脱困，否则演示会一直卡在那里
-    if (car.speed < 2.5) demoStuck += dt;
-    else demoStuck = 0;
-    if (demoStuck > 1.2) {
-      demoStuck = 0;
-      demoBackup = 1.1;
-    }
-    if (demoBackup > 0) {
-      demoBackup -= dt;
-      car.throttle = 0;
-      car.brake = 1;
-      car.steer = demoBackupSteer;
-      car.handbrake = false;
-      car.wantBoost = false;
-      return;
-    }
-
-    var gi = Math.round(gate.x / B);
-    var gj = Math.round(gate.z / B);
-    var ci = Math.round(car.x / B);
-    var cj = Math.round(car.z / B);
-    var onXRoad = CityMap.distToRoadAxis(car.z) <= CityMap.HALF_ROAD;
-    var wx;
-    var wz;
-    if (onXRoad && ci !== gi) {
-      wx = gi * B;
-      wz = cj * B;
-    } else if (!onXRoad && cj !== gj) {
-      wx = ci * B;
-      wz = gj * B;
-    } else {
-      wx = gate.x;
-      wz = gate.z;
-    }
-
-    var bearing = RU.wrapAngle(Math.atan2(wz - car.z, wx - car.x) - car.yaw);
-    var distW = Math.hypot(wx - car.x, wz - car.z);
-    var wantSpeed = Math.abs(bearing) > 0.45 ? 16 : (distW < 50 ? 26 : 50);
-    demoBackupSteer = bearing >= 0 ? -1 : 1;
-    car.steer = RU.clamp(bearing * 2.6, -1, 1);
-    car.throttle = car.speed < wantSpeed ? 1 : 0;
-    car.brake = car.speed > wantSpeed * 1.4 ? 1 : 0;
-    car.handbrake = Math.abs(bearing) > 0.55 && car.speed > 20;
-    car.wantBoost = Math.abs(bearing) < 0.1 && distW > 130;
-  }
-
   function frame(now) {
     global.requestAnimationFrame(frame);
     if (!lastTime) lastTime = now;
@@ -400,7 +341,7 @@
     var wasBoosting = game.car.boosting;
     if (game.state === 'playing') {
       applyInput();
-      if (demoMode) demoDrive(dt);
+      if (autoDrive) autoDrive.update(game, dt);
       game.update(dt);
       checkStuck(dt);
       if (game.car.boosting && !wasBoosting) RaceAudio.boost();
@@ -444,8 +385,9 @@
     el['hud-best'].textContent = game.best;
     running = true;
 
-    demoMode = String(global.location.hash || '').indexOf('demo') >= 0;
-    if (demoMode) {
+    // 打开 index.html#demo 就让 AI 自己开，方便看效果
+    if (String(global.location.hash || '').indexOf('demo') >= 0) {
+      autoDrive = new global.AutoDrive();
       startGame('free');
       toast('演示模式：AI 自动驾驶', 2000);
     }
