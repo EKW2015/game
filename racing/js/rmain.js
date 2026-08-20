@@ -28,12 +28,23 @@
   var stuckTime = 0;
   var hintCooldown = 0;
 
+  var PAINTS = [
+    { name: '烈焰红', color: 0xe01b4c, accent: 0x2ee6ff },
+    { name: '霓虹青', color: 0x14c8d8, accent: 0xff2e78 },
+    { name: '暗夜紫', color: 0x7a3cff, accent: 0x39ff88 },
+    { name: '荧光绿', color: 0x39e05a, accent: 0xffd84d },
+    { name: '流光橙', color: 0xff7a1a, accent: 0x2ee6ff },
+    { name: '珠光白', color: 0xe8ecf5, accent: 0x8a5cff }
+  ];
+  var PAINT_KEY = 'nightcity.paint.v1';
+  var paintIndex = 0;
+
   function $(id) { return doc.getElementById(id); }
 
   function cacheElements() {
     ['boot-screen', 'boot-msg', 'game', 'stage', 'hud-time', 'hud-score', 'hud-gates', 'hud-best',
       'hud-speed', 'gauge-fill', 'nitro-fill', 'gate-arrow', 'gate-dist', 'drift-banner', 'drift-score',
-      'combo-badge', 'toast', 'minimap', 'overlay-ready', 'overlay-over', 'overlay-paused',
+      'combo-badge', 'toast', 'minimap', 'paint-swatches', 'overlay-ready', 'overlay-over', 'overlay-paused',
       'overlay-error', 'error-msg', 'result-stats', 'btn-sound', 'btn-cam', 'btn-pause']
       .forEach(function (id) {
         el[id] = $(id);
@@ -45,6 +56,49 @@
     ['overlay-ready', 'overlay-over', 'overlay-paused', 'overlay-error'].forEach(function (id) {
       el[id].classList.toggle('overlay--hidden', id !== name);
     });
+  }
+
+  function hex(value) {
+    return '#' + ('000000' + value.toString(16)).slice(-6);
+  }
+
+  function applyPaint(index, remember) {
+    paintIndex = ((index % PAINTS.length) + PAINTS.length) % PAINTS.length;
+    var paint = PAINTS[paintIndex];
+    if (renderer) renderer.setCarPaint(paint.color, paint.accent);
+    var swatches = el['paint-swatches'].children;
+    for (var i = 0; i < swatches.length; i++) {
+      swatches[i].classList.toggle('swatch--on', i === paintIndex);
+    }
+    if (remember) {
+      try {
+        global.localStorage.setItem(PAINT_KEY, String(paintIndex));
+      } catch (e) { /* 隐私模式下忽略 */ }
+    }
+  }
+
+  function buildPaintPicker() {
+    var host = el['paint-swatches'];
+    PAINTS.forEach(function (paint, i) {
+      var btn = doc.createElement('button');
+      btn.type = 'button';
+      btn.className = 'swatch';
+      btn.title = paint.name;
+      btn.style.background = hex(paint.color);
+      btn.style.color = hex(paint.accent);
+      btn.addEventListener('click', function () {
+        applyPaint(i, true);
+      });
+      host.appendChild(btn);
+    });
+
+    var saved = 0;
+    try {
+      saved = parseInt(global.localStorage.getItem(PAINT_KEY), 10) || 0;
+    } catch (e) {
+      saved = 0;
+    }
+    applyPaint(saved, false);
   }
 
   function toast(text, ms) {
@@ -374,6 +428,7 @@
     }
 
     initGauge();
+    buildPaintPicker();
     bindKeys();
     bindTouch();
     bindButtons();

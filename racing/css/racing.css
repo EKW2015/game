@@ -247,6 +247,21 @@ html, body {
   color: #8f9dc4;
 }
 .keys b { color: var(--cyan); }
+.paint { display: flex; align-items: center; justify-content: center; gap: 12px; margin-bottom: 20px; }
+.paint__label { font-size: 11px; letter-spacing: 3px; color: #7f8bb5; }
+.paint__swatches { display: flex; gap: 9px; }
+.swatch {
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 2px solid rgba(255, 255, 255, 0.22);
+  border-radius: 50%;
+  cursor: pointer;
+  transition: transform 0.12s ease, border-color 0.12s ease;
+}
+.swatch:hover { transform: scale(1.12); }
+.swatch--on { border-color: #fff; box-shadow: 0 0 14px currentColor; transform: scale(1.15); }
+
 .overlay__actions { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
 .btn {
   padding: 12px 22px;

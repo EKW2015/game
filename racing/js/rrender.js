@@ -90,7 +90,7 @@
   };
 
   RaceRenderer.prototype.setupCar = function () {
-    this.carMesh = CarModel.create({ color: 0xe01b4c, accent: 0x2ee6ff, player: true });
+    this.carMesh = CarModel.create({ shape: 'super', color: 0xe01b4c, accent: 0x2ee6ff, player: true });
     this.scene.add(this.carMesh);
 
     // 大灯：两束不投影的聚光灯 + 可见光锥
@@ -247,9 +247,16 @@
     }
   };
 
+  /** 换车漆（开局前选颜色用） */
+  RaceRenderer.prototype.setCarPaint = function (color, accent) {
+    CarModel.repaint(this.carMesh, color, accent);
+  };
+
   RaceRenderer.prototype.syncTraffic = function (cars, dt) {
     while (this.trafficMeshes.length < cars.length) {
-      var mesh = CarModel.create({ color: 0x555a66, accent: 0xff6644 });
+      // 车流混着轿车和小面包，街上才不会全是超跑
+      var shape = this.trafficMeshes.length % 4 === 3 ? 'van' : 'sedan';
+      var mesh = CarModel.create({ shape: shape, color: 0x555a66, accent: 0xff6644 });
       this.scene.add(mesh);
       this.trafficMeshes.push(mesh);
     }
@@ -262,7 +269,7 @@
       m.rotation.y = Math.PI / 2 - c.yaw;
       // 每辆车模型自带独立材质，复用时只要改颜色
       if (m.userData.paintedColor !== c.color) {
-        m.userData.bodyMat.color.setHex(c.color);
+        CarModel.repaint(m, c.color);
         m.userData.paintedColor = c.color;
       }
       var wheels = m.userData.wheels;
