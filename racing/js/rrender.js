@@ -339,8 +339,8 @@
       var targetYaw = car.yaw - driftLean;
       this.camYaw += RU.wrapAngle(targetYaw - this.camYaw) * (1 - Math.exp(-4.2 * dt));
 
-      var dist = 9.5 + speedT * 3.2;
-      var height = 4.1 + speedT * 0.7;
+      var dist = 8.4 + speedT * 3.4;
+      var height = 3.6 + speedT * 0.8;
       var idealX = car.x - Math.cos(this.camYaw) * dist;
       var idealZ = car.z - Math.sin(this.camYaw) * dist;
       var rate = 1 - Math.exp(-9 * dt);

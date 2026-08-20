@@ -14,50 +14,50 @@
   var glowTex = null;
 
   var SHAPES = {
-    /** 玩家超跑：低矮、长车头、宽尾 */
+    /** 玩家超跑：低矮、长车头、宽尾。车身要比轮距窄，轮子才露得出来 */
     super: {
-      width: 1.98,
+      width: 1.6,
       body: [
         [2.36, 0.28], [2.44, 0.44], [2.32, 0.64], [1.60, 0.70], [0.88, 0.80],
         [0.10, 0.86], [-1.10, 0.90], [-1.88, 0.94], [-2.30, 0.86], [-2.44, 0.56],
         [-2.36, 0.28], [-1.20, 0.20], [1.20, 0.20]
       ],
-      canopyWidth: 1.6,
+      canopyWidth: 1.32,
       canopy: [
         [0.94, 0.76], [0.16, 1.22], [-0.72, 1.26], [-1.52, 0.96], [-1.60, 0.76]
       ],
-      taperK: 0.2, taperP: 2.2, haunch: 0.055, haunchZ: 1.42,
-      wheelR: 0.4, wheelW: 0.24, wheelX: 0.88, frontZ: 1.42, rearZ: -1.5,
+      taperK: 0.2, taperP: 2.2, haunch: 0.04, haunchZ: 1.42,
+      wheelR: 0.4, wheelW: 0.26, wheelX: 0.86, frontZ: 1.42, rearZ: -1.5,
       lightY: 0.62, tailY: 0.72, roofSign: false, wing: true, mirrors: true
     },
     /** 车流：普通轿车 */
     sedan: {
-      width: 1.84,
+      width: 1.56,
       body: [
         [2.06, 0.34], [2.14, 0.60], [1.90, 0.84], [1.20, 0.90], [0.72, 0.96],
         [-1.30, 0.98], [-1.92, 0.94], [-2.10, 0.62], [-2.02, 0.34], [-1.0, 0.24], [1.0, 0.24]
       ],
-      canopyWidth: 1.58,
+      canopyWidth: 1.4,
       canopy: [
         [0.78, 0.94], [0.26, 1.40], [-0.88, 1.42], [-1.44, 1.0], [-1.5, 0.94]
       ],
       taperK: 0.16, taperP: 2.6, haunch: 0.02, haunchZ: 1.3,
-      wheelR: 0.36, wheelW: 0.22, wheelX: 0.82, frontZ: 1.3, rearZ: -1.34,
+      wheelR: 0.36, wheelW: 0.22, wheelX: 0.8, frontZ: 1.3, rearZ: -1.34,
       lightY: 0.66, tailY: 0.74, roofSign: false, wing: false, mirrors: true
     },
     /** 车流：小面包 / 出租 */
     van: {
-      width: 1.9,
+      width: 1.66,
       body: [
         [1.92, 0.36], [2.0, 0.68], [1.86, 1.02], [1.3, 1.10], [0.9, 1.16],
         [-1.5, 1.18], [-2.0, 1.12], [-2.12, 0.66], [-2.04, 0.36], [-1.0, 0.26], [1.0, 0.26]
       ],
-      canopyWidth: 1.7,
+      canopyWidth: 1.54,
       canopy: [
         [1.0, 1.14], [0.66, 1.66], [-1.3, 1.68], [-1.86, 1.4], [-1.92, 1.14]
       ],
       taperK: 0.1, taperP: 3, haunch: 0, haunchZ: 1.3,
-      wheelR: 0.38, wheelW: 0.22, wheelX: 0.84, frontZ: 1.32, rearZ: -1.4,
+      wheelR: 0.38, wheelW: 0.22, wheelX: 0.82, frontZ: 1.32, rearZ: -1.4,
       lightY: 0.74, tailY: 0.9, roofSign: true, wing: false, mirrors: true
     }
   };
@@ -207,7 +207,12 @@
     hub.rotateZ(Math.PI / 2);
     var face = new THREE.CircleGeometry(radius - width * 0.66, 20);
     face.rotateY(Math.PI / 2);
-    wheelParts[key] = { tire: tire, hub: hub, face: face };
+
+    // 轮眉：半个开口圆柱罩在轮胎上方，转轴沿车宽方向
+    var fender = new THREE.CylinderGeometry(radius + 0.09, radius + 0.09, width + 0.1, 14, 1, true, 0, Math.PI);
+    fender.rotateZ(Math.PI / 2);
+
+    wheelParts[key] = { tire: tire, hub: hub, face: face, fender: fender };
     return wheelParts[key];
   }
 
@@ -363,6 +368,7 @@
       { x: -cfg.wheelX, z: cfg.rearZ, front: false, side: -1 },
       { x: cfg.wheelX, z: cfg.rearZ, front: false, side: 1 }
     ];
+    var fenderGeo = wheelGeometries(cfg.wheelR, cfg.wheelW).fender;
     for (var i = 0; i < spots.length; i++) {
       var holder = new THREE.Group();
       holder.position.set(spots[i].x, cfg.wheelR, spots[i].z);
@@ -372,6 +378,11 @@
       holder.userData.wheel = wheel;
       car.add(holder);
       wheels.push(holder);
+
+      // 轮眉不跟着轮子转，所以挂在车身上
+      var fender = new THREE.Mesh(fenderGeo, bodyMat);
+      fender.position.set(spots[i].x, cfg.wheelR, spots[i].z);
+      car.add(fender);
     }
 
     car.userData.wheels = wheels;
