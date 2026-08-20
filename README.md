@@ -1,9 +1,12 @@
 # 🎮 小游戏合集
 
-| 游戏 | 单文件（下载双击玩） | 开发版 |
+| 游戏 | 点开就能玩 | 下载双击玩 |
 | --- | --- | --- |
-| 🏎️ 霓虹夜城飙车 3D | [racing.html](https://github.com/EKW2015/game/raw/main/racing.html) | `racing/index.html` |
-| 🦖 恐龙生存 3D | [play.html](https://github.com/EKW2015/game/raw/main/play.html) | `index.html` |
+| 🏎️ 霓虹夜城飙车 3D | [点这里](https://raw.githack.com/EKW2015/game/main/racing.html) | [racing.html](https://github.com/EKW2015/game/blob/main/racing.html) |
+| 🦖 恐龙生存 3D | [点这里](https://raw.githack.com/EKW2015/game/main/play.html) | [play.html](https://github.com/EKW2015/game/blob/main/play.html) |
+
+> ⚠️ 别点 `github.com/.../raw/...` 那种链接。GitHub 把 html 当纯文本发送，浏览器只会显示一堆代码，
+> 游戏跑不起来——之前"打不开"多半就是这个原因。上面第一列的 githack 链接会正常当网页打开。
 
 ---
 
@@ -11,11 +14,19 @@
 
 夜晚的霓虹都市，开着跑车在无限延伸的街道上狂飙：手刹甩尾攒氮气，穿过青色光门换取时间。
 
-### 怎么玩
+### 怎么打开（两种方式，都要用 Chrome）
 
-1. 下载 **https://github.com/EKW2015/game/raw/main/racing.html** （约 750KB）
-2. **双击** `racing.html`（Windows 也可双击 `打开赛车游戏.bat`）
-3. 用 **Chrome** 打开，不要用微信内置浏览器
+**A. 直接在线玩（最省事）**
+
+点 **https://raw.githack.com/EKW2015/game/main/racing.html** ，等几秒加载完就能开车。
+
+**B. 下载到电脑上玩（最稳，断网也能玩）**
+
+1. 打开 **https://github.com/EKW2015/game/blob/main/racing.html**
+2. 点右上角的下载按钮（**Download raw file**，一个向下箭头的图标）
+3. 存下来的 `racing.html` 约 750KB，**双击**它就能玩（Windows 也可双击 `打开赛车游戏.bat`）
+
+手机上用 Chrome 打开方式 A，横屏会自动出现触屏按钮。**不要用微信内置浏览器**，它不支持 3D。
 
 ### 操作
 
@@ -51,7 +62,8 @@
 
 第一人称无限恐龙世界：吃掉比自己小的恐龙，不断进化变大。
 
-- 下载 **https://github.com/EKW2015/game/raw/main/play.html**（约 700KB），双击打开
+- 在线玩：**https://raw.githack.com/EKW2015/game/main/play.html**
+- 或者到 **https://github.com/EKW2015/game/blob/main/play.html** 点 Download raw file 存下来双击
 - 方向键 / WASD 移动，空格咬击
 
 ---
