@@ -220,16 +220,19 @@
     var geos = wheelGeometries(cfg.wheelR, cfg.wheelW);
     var wheel = new THREE.Group();
 
+    // 夜里纯黑的轮胎会和地面糊在一起，所以调到深灰并给一点自发光
     wheel.add(new THREE.Mesh(geos.tire, new THREE.MeshStandardMaterial({
-      color: 0x101218, roughness: 0.92, metalness: 0.05
+      color: 0x3a3e48, roughness: 0.88, metalness: 0.1,
+      emissive: 0x0d0f14, emissiveIntensity: 1
     })));
     wheel.add(new THREE.Mesh(geos.hub, new THREE.MeshStandardMaterial({
-      color: 0x1b1e26, roughness: 0.7, metalness: 0.3
+      color: 0x22262f, roughness: 0.7, metalness: 0.2
     })));
 
+    // 金属度太高又没有环境反射就是一片黑，所以轮圈靠贴图本身的亮度
     var rim = new THREE.Mesh(geos.face, new THREE.MeshStandardMaterial({
-      map: rimTexture(), roughness: 0.34, metalness: 0.9,
-      emissive: 0x141a24, emissiveIntensity: 0.8
+      map: rimTexture(), roughness: 0.36, metalness: 0.35,
+      emissive: 0xffffff, emissiveMap: rimTexture(), emissiveIntensity: 0.45
     }));
     rim.position.x = side * cfg.wheelW * 0.5;
     rim.rotation.y = side > 0 ? 0 : Math.PI;
@@ -306,6 +309,11 @@
     var tailBar = new THREE.Mesh(new THREE.BoxGeometry(cfg.width * 0.82, 0.085, 0.07), tailMat);
     tailBar.position.set(0, cfg.tailY, -noseZ + 0.02);
     car.add(tailBar);
+    for (var tv = -1; tv <= 1; tv += 2) {
+      var tailFin = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.2, 0.07), tailMat);
+      tailFin.position.set(tv * (halfW - 0.14), cfg.tailY - 0.13, -noseZ + 0.04);
+      car.add(tailFin);
+    }
 
     // 后视镜
     if (cfg.mirrors) {
@@ -425,6 +433,18 @@
     return car;
   }
 
+  /** 给车身材质挂上环境反射，车漆和玻璃才有夜城的霓虹倒影 */
+  function applyEnv(car, envMap) {
+    if (!car || !envMap) return;
+    car.traverse(function (child) {
+      var mat = child.material;
+      if (!mat || mat.type !== 'MeshStandardMaterial') return;
+      mat.envMap = envMap;
+      mat.envMapIntensity = 1.4;
+      mat.needsUpdate = true;
+    });
+  }
+
   /** 换车漆：车身颜色与霓虹条一起改 */
   function repaint(car, color, accent) {
     if (!car || !car.userData.bodyMat) return;
@@ -439,6 +459,7 @@
   global.CarModel = {
     create: create,
     repaint: repaint,
+    applyEnv: applyEnv,
     shapes: Object.keys(SHAPES)
   };
 })(window);

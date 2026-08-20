@@ -295,6 +295,48 @@
     });
   }
 
+  /**
+   * 环境反射贴图：夜空 + 地平线城市辉光 + 几团霓虹色块。
+   * 有了它，车漆和玻璃才会有反光——否则金属度高的材质在没有环境光的夜里就是一片黑。
+   */
+  function envTexture() {
+    return canvasTexture(256, 128, function (ctx, w, h) {
+      var grd = ctx.createLinearGradient(0, 0, 0, h);
+      grd.addColorStop(0, '#0a0a16');
+      grd.addColorStop(0.42, '#171130');
+      grd.addColorStop(0.5, '#4a1f48');
+      grd.addColorStop(0.56, '#211230');
+      grd.addColorStop(1, '#08070e');
+      ctx.fillStyle = grd;
+      ctx.fillRect(0, 0, w, h);
+
+      ctx.globalCompositeOperation = 'lighter';
+      var colors = ['#ff2e78', '#2ee6ff', '#ffd84d', '#8a5cff', '#39ff88'];
+      for (var i = 0; i < 26; i++) {
+        var x = Math.random() * w;
+        var y = h * 0.45 + Math.random() * h * 0.3;
+        var r = 6 + Math.random() * 22;
+        var c = colors[Math.floor(Math.random() * colors.length)];
+        var blob = ctx.createRadialGradient(x, y, 0, x, y, r);
+        blob.addColorStop(0, c);
+        blob.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.globalAlpha = 0.35;
+        ctx.fillStyle = blob;
+        ctx.fillRect(x - r, y - r, r * 2, r * 2);
+      }
+      // 地平线一条亮带，车身侧面才有高光
+      ctx.globalAlpha = 0.5;
+      var band = ctx.createLinearGradient(0, h * 0.44, 0, h * 0.54);
+      band.addColorStop(0, 'rgba(120,90,180,0)');
+      band.addColorStop(0.5, 'rgba(200,150,220,0.85)');
+      band.addColorStop(1, 'rgba(120,90,180,0)');
+      ctx.fillStyle = band;
+      ctx.fillRect(0, h * 0.44, w, h * 0.1);
+      ctx.globalAlpha = 1;
+      ctx.globalCompositeOperation = 'source-over';
+    });
+  }
+
   function City3D(scene, renderer) {
     this.scene = scene;
     this.blocks = new Map();
@@ -302,16 +344,27 @@
     this.cell = { i: 9999, j: 9999 };
     this.maxAniso = renderer && renderer.capabilities ? renderer.capabilities.getMaxAnisotropy() : 1;
 
-    this.buildSky();
+    this.buildSky(renderer);
     this.buildGround();
     this.buildMaterials();
     this.buildLamps();
   }
 
-  City3D.prototype.buildSky = function () {
+  City3D.prototype.buildSky = function (renderer) {
     var sky = skyTexture();
     sky.mapping = THREE.EquirectangularReflectionMapping;
     this.scene.background = sky;
+
+    // 只做出反射贴图，交给车辆材质单独使用；直接挂到 scene.environment
+    // 会把整座城市的材质一起提亮，夜晚的气氛就没了
+    if (renderer && THREE.PMREMGenerator) {
+      var env = envTexture();
+      env.mapping = THREE.EquirectangularReflectionMapping;
+      var pmrem = new THREE.PMREMGenerator(renderer);
+      this.envMap = pmrem.fromEquirectangular(env).texture;
+      pmrem.dispose();
+      env.dispose();
+    }
 
     // 星星
     var count = 420;

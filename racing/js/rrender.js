@@ -91,6 +91,7 @@
 
   RaceRenderer.prototype.setupCar = function () {
     this.carMesh = CarModel.create({ shape: 'super', color: 0xe01b4c, accent: 0x2ee6ff, player: true });
+    CarModel.applyEnv(this.carMesh, this.city.envMap);
     this.scene.add(this.carMesh);
 
     // 大灯：两束不投影的聚光灯 + 可见光锥
@@ -257,6 +258,7 @@
       // 车流混着轿车和小面包，街上才不会全是超跑
       var shape = this.trafficMeshes.length % 4 === 3 ? 'van' : 'sedan';
       var mesh = CarModel.create({ shape: shape, color: 0x555a66, accent: 0xff6644 });
+      CarModel.applyEnv(mesh, this.city.envMap);
       this.scene.add(mesh);
       this.trafficMeshes.push(mesh);
     }
