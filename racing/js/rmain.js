@@ -25,6 +25,7 @@
   var lastTime = 0;
   var running = false;
   var autoDrive = null;
+  var crashed = false;
   var stuckTime = 0;
   var hintCooldown = 0;
 
@@ -386,12 +387,22 @@
   }
 
   function frame(now) {
+    if (crashed) return;
     global.requestAnimationFrame(frame);
     if (!lastTime) lastTime = now;
     var dt = Math.min(0.05, (now - lastTime) / 1000);
     lastTime = now;
     if (dt <= 0) return;
 
+    try {
+      step(now, dt);
+    } catch (err) {
+      crashed = true;
+      fail(err);
+    }
+  }
+
+  function step(now, dt) {
     var wasBoosting = game.car.boosting;
     if (game.state === 'playing') {
       applyInput();
@@ -415,27 +426,52 @@
     drawMinimap();
   }
 
+  /** 把失败原因显示在屏幕上，不要让玩家对着加载页干等 */
+  function fail(err) {
+    var reason = String(err && err.message ? err.message : err);
+    var webgl = '未知';
+    try {
+      var probe = doc.createElement('canvas');
+      webgl = (probe.getContext('webgl2') || probe.getContext('webgl')) ? '可用' : '不可用';
+    } catch (e) {
+      webgl = '不可用';
+    }
+    if (el['boot-screen']) el['boot-screen'].classList.add('boot--hidden');
+    if (el['error-msg']) {
+      el['error-msg'].innerHTML = '原因：' + reason +
+        '<br>WebGL（3D 支持）：' + webgl +
+        '<br><br>请改用电脑版 Chrome 打开，并在设置里开启「使用硬件加速」。' +
+        '<br>微信、QQ 内置浏览器不支持 3D。' +
+        '<br><br><span style="font-size:11px;opacity:.6">' + navigator.userAgent + '</span>';
+    }
+    showOverlay('overlay-error');
+  }
+
   function boot() {
     cacheElements();
 
+    // 兜底：万一卡在某个环节，10 秒后至少告诉玩家一句话
+    var watchdog = global.setTimeout(function () {
+      if (!running) fail('加载超时（10 秒）');
+    }, 10000);
+
     try {
       renderer = new RaceRenderer(el['game']);
+      initGauge();
+      buildPaintPicker();
+      bindKeys();
+      bindTouch();
+      bindButtons();
+      resize();
+      global.addEventListener('resize', resize);
+      global.addEventListener('orientationchange', resize);
     } catch (err) {
-      el['boot-screen'].classList.add('boot--hidden');
-      el['error-msg'].textContent = String(err && err.message ? err.message : err);
-      showOverlay('overlay-error');
+      global.clearTimeout(watchdog);
+      fail(err);
       return;
     }
 
-    initGauge();
-    buildPaintPicker();
-    bindKeys();
-    bindTouch();
-    bindButtons();
-    resize();
-    global.addEventListener('resize', resize);
-    global.addEventListener('orientationchange', resize);
-
+    global.clearTimeout(watchdog);
     el['boot-screen'].classList.add('boot--hidden');
     el['hud-best'].textContent = game.best;
     running = true;

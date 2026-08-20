@@ -4,6 +4,19 @@
 (function (global) {
   'use strict';
 
+  // 老浏览器（微信内置、旧安卓 WebView）缺这几个 ES6 内置函数，
+  // 缺了会在第一帧就抛错，画面卡在加载页上什么都不说
+  if (!Math.hypot) {
+    Math.hypot = function (x, y) {
+      return Math.sqrt(x * x + y * y);
+    };
+  }
+  if (!Math.sign) {
+    Math.sign = function (v) {
+      return v > 0 ? 1 : (v < 0 ? -1 : 0);
+    };
+  }
+
   function clamp(v, min, max) {
     return v < min ? min : (v > max ? max : v);
   }

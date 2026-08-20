@@ -339,7 +339,7 @@
 
   function City3D(scene, renderer) {
     this.scene = scene;
-    this.blocks = new Map();
+    this.blocks = {};
     this.order = [];
     this.cell = { i: 9999, j: 9999 };
     this.maxAniso = renderer && renderer.capabilities ? renderer.capabilities.getMaxAnisotropy() : 1;
@@ -431,7 +431,7 @@
       }));
     }
 
-    this.geoCache = new Map();
+    this.geoCache = {};
   };
 
   /** 建筑几何体按尺寸分档缓存，并按面缩放 UV，让窗户密度保持一致 */
@@ -440,7 +440,7 @@
     var qh = quantize(h, 12);
     var qd = quantize(d, 6);
     var key = qw + '_' + qh + '_' + qd;
-    var cached = this.geoCache.get(key);
+    var cached = this.geoCache[key];
     if (cached) return cached;
 
     var geo = new THREE.BoxGeometry(qw, qh, qd);
@@ -460,7 +460,7 @@
       }
     }
     uv.needsUpdate = true;
-    this.geoCache.set(key, geo);
+    this.geoCache[key] = geo;
     return geo;
   };
 
@@ -527,7 +527,7 @@
 
   City3D.prototype.blockGroup = function (i, j) {
     var key = i + ',' + j;
-    var group = this.blocks.get(key);
+    var group = this.blocks[key];
     if (group) return group;
 
     group = new THREE.Group();
@@ -558,14 +558,14 @@
     }
 
     this.scene.add(group);
-    this.blocks.set(key, group);
+    this.blocks[key] = group;
     this.order.push(key);
     if (this.order.length > CACHE_LIMIT) {
       var oldKey = this.order.shift();
-      var old = this.blocks.get(oldKey);
+      var old = this.blocks[oldKey];
       if (old) {
         this.scene.remove(old);
-        this.blocks.delete(oldKey);
+        delete this.blocks[oldKey];
       }
     }
     return group;
@@ -587,16 +587,16 @@
     this.refreshLamps(ci, cj);
 
     var R = VIEW_BLOCKS;
-    var wanted = new Set();
+    var wanted = {};
     for (var i = ci - R; i <= ci + R; i++) {
       for (var j = cj - R; j <= cj + R; j++) {
-        wanted.add(i + ',' + j);
+        wanted[i + ',' + j] = true;
         this.blockGroup(i, j).visible = true;
       }
     }
-    this.blocks.forEach(function (group, key) {
-      if (!wanted.has(key)) group.visible = false;
-    });
+    for (var key in this.blocks) {
+      if (!wanted[key]) this.blocks[key].visible = false;
+    }
   };
 
   global.City3D = City3D;
