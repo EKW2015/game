@@ -1262,6 +1262,24 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
 
   var sharedWheel = null;
   var sharedRim = null;
+  var glowTex = null;
+
+  /** 柔和的圆形渐变，用来做车底霓虹光晕 */
+  function glowTexture() {
+    if (glowTex) return glowTex;
+    var canvas = document.createElement('canvas');
+    canvas.width = 64;
+    canvas.height = 64;
+    var ctx = canvas.getContext('2d');
+    var grd = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
+    grd.addColorStop(0, 'rgba(255,255,255,0.95)');
+    grd.addColorStop(0.45, 'rgba(255,255,255,0.35)');
+    grd.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = grd;
+    ctx.fillRect(0, 0, 64, 64);
+    glowTex = new THREE.CanvasTexture(canvas);
+    return glowTex;
+  }
 
   /** 把方盒前端收窄下压，做出楔形跑车轮廓 */
   function wedgeBox(w, h, l, taper, drop) {
@@ -1321,8 +1339,10 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     var accent = opts.accent == null ? 0x36e2ff : opts.accent;
 
     var car = new THREE.Group();
+    // 夜里全靠环境光，车漆自带一点自发光才不会黑成一团
     var bodyMat = new THREE.MeshStandardMaterial({
-      color: paint, roughness: 0.32, metalness: 0.55
+      color: paint, roughness: 0.32, metalness: 0.55,
+      emissive: new THREE.Color(paint).multiplyScalar(0.16)
     });
     var darkMat = new THREE.MeshStandardMaterial({ color: 0x0d0f14, roughness: 0.6, metalness: 0.3 });
     var glassMat = new THREE.MeshStandardMaterial({
@@ -1407,9 +1427,9 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     if (opts.player) {
       // 车底霓虹光晕
       var glow = new THREE.Mesh(
-        new THREE.PlaneGeometry(3.4, 6.2),
+        new THREE.PlaneGeometry(4.6, 7.4),
         new THREE.MeshBasicMaterial({
-          color: accent, transparent: true, opacity: 0.34,
+          map: glowTexture(), color: accent, transparent: true, opacity: 0.34,
           blending: THREE.AdditiveBlending, depthWrite: false
         })
       );
@@ -1600,47 +1620,49 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
   function facadeTextures(variant) {
     var W = 256;
     var H = 256;
-    var cols = 6;
-    var rows = 8;
+    var cols = 8;
+    var rows = 12;
     var rnd = RU.seeded(1000 + variant * 977);
-    var baseColors = ['#191a22', '#151a20', '#1c1822', '#12161c', '#1a1620', '#171b26'];
-    var litColors = ['#ffd9a0', '#bfe6ff', '#fff3c4', '#a9d0ff', '#ffd0e8', '#d6ffe4'];
-    var lit = [];
+    var baseColors = ['#20212b', '#1b2028', '#24202c', '#191d24', '#221d28', '#1e2230'];
+    var litColors = ['255,214,152', '176,222,255', '255,238,190', '160,196,255', '255,196,224', '196,255,222'];
+    var cells = [];
+
+    var cw = W / cols;
+    var ch = H / rows;
 
     var map = canvasTexture(W, H, function (ctx) {
       ctx.fillStyle = baseColors[variant % baseColors.length];
       ctx.fillRect(0, 0, W, H);
-      var cw = W / cols;
-      var ch = H / rows;
       for (var r = 0; r < rows; r++) {
         for (var c = 0; c < cols; c++) {
-          var on = rnd() < 0.55;
-          lit.push(on ? litColors[Math.floor(rnd() * litColors.length)] : null);
-          ctx.fillStyle = on ? 'rgba(60,66,80,1)' : 'rgba(24,26,34,1)';
-          ctx.fillRect(c * cw + cw * 0.18, r * ch + ch * 0.2, cw * 0.64, ch * 0.5);
+          var on = rnd() < 0.42;
+          cells.push(on ? {
+            color: litColors[Math.floor(rnd() * litColors.length)],
+            alpha: 0.35 + rnd() * 0.55
+          } : null);
+          ctx.fillStyle = on ? 'rgba(70,76,92,1)' : 'rgba(16,18,24,1)';
+          ctx.fillRect(c * cw + cw * 0.2, r * ch + ch * 0.22, cw * 0.6, ch * 0.46);
         }
       }
-      // 楼层分隔线
-      ctx.fillStyle = 'rgba(0,0,0,0.45)';
-      for (var y = 0; y < rows; y++) ctx.fillRect(0, y * ch + ch * 0.78, W, Math.max(1, ch * 0.08));
+      // 楼层分隔线，让高楼有层次
+      ctx.fillStyle = 'rgba(0,0,0,0.5)';
+      for (var y = 0; y < rows; y++) ctx.fillRect(0, y * ch + ch * 0.8, W, Math.max(1, ch * 0.1));
+      ctx.fillStyle = 'rgba(0,0,0,0.3)';
+      for (var x = 0; x < cols; x++) ctx.fillRect(x * cw, 0, Math.max(1, cw * 0.08), H);
     }, true);
 
     var idx = 0;
     var emissive = canvasTexture(W, H, function (ctx) {
       ctx.fillStyle = '#000000';
       ctx.fillRect(0, 0, W, H);
-      var cw = W / cols;
-      var ch = H / rows;
       for (var r = 0; r < rows; r++) {
         for (var c = 0; c < cols; c++) {
-          var color = lit[idx++];
-          if (!color) continue;
-          ctx.fillStyle = color;
-          ctx.globalAlpha = 0.55 + Math.random() * 0.45;
-          ctx.fillRect(c * cw + cw * 0.18, r * ch + ch * 0.2, cw * 0.64, ch * 0.5);
+          var cell = cells[idx++];
+          if (!cell) continue;
+          ctx.fillStyle = 'rgba(' + cell.color + ',' + cell.alpha.toFixed(2) + ')';
+          ctx.fillRect(c * cw + cw * 0.2, r * ch + ch * 0.22, cw * 0.6, ch * 0.46);
         }
       }
-      ctx.globalAlpha = 1;
     }, true);
 
     return { map: map, emissive: emissive };
@@ -1692,15 +1714,17 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     }, true);
   }
 
+  /** 等距柱状投影：贴图上半部分是天顶，正中间(0.5)才是地平线 */
   function skyTexture() {
     return canvasTexture(64, 512, function (ctx, w, h) {
       var grd = ctx.createLinearGradient(0, 0, 0, h);
-      grd.addColorStop(0, '#04040a');
-      grd.addColorStop(0.42, '#0a0a18');
-      grd.addColorStop(0.62, '#1b1230');
-      grd.addColorStop(0.78, '#3a1a3e');
-      grd.addColorStop(0.9, '#5a2340');
-      grd.addColorStop(1, '#1a1024');
+      grd.addColorStop(0, '#03030a');
+      grd.addColorStop(0.3, '#070714');
+      grd.addColorStop(0.42, '#1a1030');
+      grd.addColorStop(0.48, '#3d1740');
+      grd.addColorStop(0.5, '#6b2450');
+      grd.addColorStop(0.54, '#2a1030');
+      grd.addColorStop(1, '#08060f');
       ctx.fillStyle = grd;
       ctx.fillRect(0, 0, w, h);
     });
@@ -2044,28 +2068,44 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
       this.headlights.push(light);
 
       var cone = new THREE.Mesh(
-        new THREE.ConeGeometry(4.6, 34, 14, 1, true),
+        new THREE.ConeGeometry(3.4, 26, 12, 1, true),
         new THREE.MeshBasicMaterial({
-          color: 0xfff2d6, transparent: true, opacity: 0.055,
+          color: 0xfff2d6, transparent: true, opacity: 0.03,
           blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide, fog: false
         })
       );
       cone.rotation.x = -Math.PI / 2;
-      cone.position.set(s * 0.6, 0.55, 19);
+      cone.position.set(s * 0.6, 0.62, 15);
       this.carMesh.add(cone);
     }
+
+    // 跟随车身的补光，否则夜里车只剩一个黑影
+    var fill = new THREE.PointLight(0xbcd0ff, 1.1, 16, 1.4);
+    fill.position.set(0, 3.4, -0.6);
+    this.carMesh.add(fill);
   };
 
   RaceRenderer.prototype.setupGate = function () {
     var group = new THREE.Group();
 
-    var ringGeo = new THREE.TorusGeometry(14, 0.55, 6, 44);
+    var ringGeo = new THREE.TorusGeometry(14, 0.85, 6, 44);
     ringGeo.rotateX(-Math.PI / 2);
     this.gateRing = new THREE.Mesh(ringGeo, new THREE.MeshBasicMaterial({
       color: GATE_COLOR, transparent: true, opacity: 0.95,
       blending: THREE.AdditiveBlending, depthWrite: false, fog: false
     }));
     group.add(this.gateRing);
+
+    // 冲天光柱：楼再高也挡不住，玩家一眼就知道往哪开
+    this.gateBeacon = new THREE.Mesh(
+      new THREE.CylinderGeometry(3.2, 5.5, 600, 12, 1, true),
+      new THREE.MeshBasicMaterial({
+        color: GATE_COLOR, transparent: true, opacity: 0.13,
+        blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide, fog: false
+      })
+    );
+    this.gateBeacon.position.y = 300;
+    group.add(this.gateBeacon);
 
     var pillarMat = new THREE.MeshBasicMaterial({
       color: GATE_COLOR, transparent: true, opacity: 0.22,
@@ -2115,12 +2155,13 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
       this.sprites.push(sprite);
     }
 
-    var markGeo = new THREE.PlaneGeometry(0.34, 1.8);
+    var markGeo = new THREE.PlaneGeometry(0.4, 2.0);
     markGeo.rotateX(-Math.PI / 2);
+    var markTex = softTexture();
     this.marks = [];
     for (var m = 0; m < MAX_MARKS; m++) {
       var mark = new THREE.Mesh(markGeo, new THREE.MeshBasicMaterial({
-        color: 0x0a0a0e, transparent: true, opacity: 0, depthWrite: false
+        map: markTex, color: 0x05050a, transparent: true, opacity: 0, depthWrite: false
       }));
       mark.rotation.order = 'YXZ';
       mark.position.y = 0.03;
@@ -2201,6 +2242,8 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     this.gateCore.position.y = 7 + Math.sin(time * 2) * 0.8;
     var pulse = 0.16 + Math.sin(time * 3) * 0.05;
     this.gatePillars[0].material.opacity = pulse;
+    this.gateBeacon.material.opacity = 0.12 + Math.sin(time * 2.2) * 0.035;
+    this.gateBeacon.rotation.y = time * 0.25;
   };
 
   RaceRenderer.prototype.syncParticles = function (particles) {
@@ -2213,7 +2256,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
       var scale = p.size * (1.6 - p.life * 0.7) * 2.2;
       s.scale.set(scale, scale, 1);
       s.material.color.setHex(p.color);
-      s.material.opacity = Math.max(0, p.life * 0.42);
+      s.material.opacity = Math.max(0, p.life * 0.55);
     }
   };
 
@@ -2225,7 +2268,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
       m.visible = true;
       m.position.set(d.x, 0.03, d.z);
       m.rotation.y = Math.PI / 2 - d.yaw;
-      m.material.opacity = Math.max(0, d.life * 0.55 * d.strength);
+      m.material.opacity = Math.max(0, d.life * 0.85 * d.strength);
     }
   };
 
@@ -2505,6 +2548,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
   var toastTimer = 0;
   var lastTime = 0;
   var running = false;
+  var demoMode = false;
 
   function $(id) { return doc.getElementById(id); }
 
@@ -2797,6 +2841,44 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     }
   }
 
+  /**
+   * 演示模式（打开 index.html#demo）：沿马路网格自动开向下一个光门，
+   * 转急弯时拉手刹漂移。方便快速看效果，也能当作展示动画。
+   */
+  function demoDrive() {
+    var car = game.car;
+    var B = CityMap.BLOCK;
+    var gate = game.gate;
+    if (!gate) return;
+
+    var gi = Math.round(gate.x / B);
+    var gj = Math.round(gate.z / B);
+    var ci = Math.round(car.x / B);
+    var cj = Math.round(car.z / B);
+    var onXRoad = CityMap.distToRoadAxis(car.z) <= CityMap.HALF_ROAD;
+    var wx;
+    var wz;
+    if (onXRoad && ci !== gi) {
+      wx = gi * B;
+      wz = cj * B;
+    } else if (!onXRoad && cj !== gj) {
+      wx = ci * B;
+      wz = gj * B;
+    } else {
+      wx = gate.x;
+      wz = gate.z;
+    }
+
+    var bearing = RU.wrapAngle(Math.atan2(wz - car.z, wx - car.x) - car.yaw);
+    var distW = Math.hypot(wx - car.x, wz - car.z);
+    var wantSpeed = Math.abs(bearing) > 0.45 ? 16 : (distW < 50 ? 26 : 50);
+    car.steer = RU.clamp(bearing * 2.6, -1, 1);
+    car.throttle = car.speed < wantSpeed ? 1 : 0;
+    car.brake = car.speed > wantSpeed * 1.4 ? 1 : 0;
+    car.handbrake = Math.abs(bearing) > 0.55 && car.speed > 20;
+    car.wantBoost = Math.abs(bearing) < 0.1 && distW > 130;
+  }
+
   function frame(now) {
     global.requestAnimationFrame(frame);
     if (!lastTime) lastTime = now;
@@ -2807,6 +2889,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     var wasBoosting = game.car.boosting;
     if (game.state === 'playing') {
       applyInput();
+      if (demoMode) demoDrive();
       game.update(dt);
       if (game.car.boosting && !wasBoosting) RaceAudio.boost();
     }
@@ -2848,6 +2931,13 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     el['boot-screen'].classList.add('boot--hidden');
     el['hud-best'].textContent = game.best;
     running = true;
+
+    demoMode = String(global.location.hash || '').indexOf('demo') >= 0;
+    if (demoMode) {
+      startGame('free');
+      toast('演示模式：AI 自动驾驶', 2000);
+    }
+
     global.requestAnimationFrame(frame);
   }
 

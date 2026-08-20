@@ -6,6 +6,24 @@
 
   var sharedWheel = null;
   var sharedRim = null;
+  var glowTex = null;
+
+  /** 柔和的圆形渐变，用来做车底霓虹光晕 */
+  function glowTexture() {
+    if (glowTex) return glowTex;
+    var canvas = document.createElement('canvas');
+    canvas.width = 64;
+    canvas.height = 64;
+    var ctx = canvas.getContext('2d');
+    var grd = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
+    grd.addColorStop(0, 'rgba(255,255,255,0.95)');
+    grd.addColorStop(0.45, 'rgba(255,255,255,0.35)');
+    grd.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = grd;
+    ctx.fillRect(0, 0, 64, 64);
+    glowTex = new THREE.CanvasTexture(canvas);
+    return glowTex;
+  }
 
   /** 把方盒前端收窄下压，做出楔形跑车轮廓 */
   function wedgeBox(w, h, l, taper, drop) {
@@ -65,8 +83,10 @@
     var accent = opts.accent == null ? 0x36e2ff : opts.accent;
 
     var car = new THREE.Group();
+    // 夜里全靠环境光，车漆自带一点自发光才不会黑成一团
     var bodyMat = new THREE.MeshStandardMaterial({
-      color: paint, roughness: 0.32, metalness: 0.55
+      color: paint, roughness: 0.32, metalness: 0.55,
+      emissive: new THREE.Color(paint).multiplyScalar(0.16)
     });
     var darkMat = new THREE.MeshStandardMaterial({ color: 0x0d0f14, roughness: 0.6, metalness: 0.3 });
     var glassMat = new THREE.MeshStandardMaterial({
@@ -151,9 +171,9 @@
     if (opts.player) {
       // 车底霓虹光晕
       var glow = new THREE.Mesh(
-        new THREE.PlaneGeometry(3.4, 6.2),
+        new THREE.PlaneGeometry(4.6, 7.4),
         new THREE.MeshBasicMaterial({
-          color: accent, transparent: true, opacity: 0.34,
+          map: glowTexture(), color: accent, transparent: true, opacity: 0.34,
           blending: THREE.AdditiveBlending, depthWrite: false
         })
       );

@@ -13,6 +13,15 @@ global.localStorage = {
   setItem: function (k, v) { store[k] = String(v); }
 };
 
+// 固定随机数种子，让城市生成、车流与检查点每次都一样，测试结果可复现
+let seed = 20260820;
+Math.random = function () {
+  seed ^= seed << 13; seed >>>= 0;
+  seed ^= seed >>> 17;
+  seed ^= seed << 5; seed >>>= 0;
+  return seed / 4294967296;
+};
+
 require(path.join(__dirname, '..', 'racing', 'js', 'rutil.js'));
 require(path.join(__dirname, '..', 'racing', 'js', 'citymap.js'));
 require(path.join(__dirname, '..', 'racing', 'js', 'car.js'));
@@ -115,12 +124,12 @@ function autopilot(g) {
 
   const bearing = RU.wrapAngle(Math.atan2(wz - car.z, wx - car.x) - car.yaw);
   const distW = Math.hypot(wx - car.x, wz - car.z);
-  const wantSpeed = Math.abs(bearing) > 0.45 ? 12 : (distW < 45 ? 22 : 42);
+  const wantSpeed = Math.abs(bearing) > 0.45 ? 16 : (distW < 50 ? 26 : 50);
   car.steer = RU.clamp(bearing * 2.6, -1, 1);
   car.throttle = car.speed < wantSpeed ? 1 : 0;
-  car.brake = car.speed > wantSpeed * 1.35 ? 1 : 0;
-  car.handbrake = false;
-  car.wantBoost = Math.abs(bearing) < 0.12 && distW > 120;
+  car.brake = car.speed > wantSpeed * 1.4 ? 1 : 0;
+  car.handbrake = Math.abs(bearing) > 0.55 && car.speed > 20;
+  car.wantBoost = Math.abs(bearing) < 0.1 && distW > 130;
 }
 
 // ---- 完整一局 ----
@@ -129,18 +138,24 @@ const game = new global.RaceGame();
 game.start('time');
 let steps = 0;
 let gatesSeen = 0;
+let maxParticles = 0;
+let maxMarks = 0;
 while (game.state === 'playing' && steps < 60 * 240) {
   autopilot(game);
   game.update(DT);
   gatesSeen = game.gates;
+  maxParticles = Math.max(maxParticles, game.particles.length);
+  maxMarks = Math.max(maxMarks, game.marks.length);
   steps++;
 }
 check('计时模式会结束', game.state === 'over', (steps * DT).toFixed(1) + 's');
 check('自动驾驶能吃到光门', gatesSeen > 0, gatesSeen + ' 个');
 check('得分为正', game.score > 0, game.score);
 check('有车流生成', game.traffic.cars.length > 0, game.traffic.cars.length + ' 辆');
-check('粒子数量有上限', game.particles.length <= 160, game.particles.length);
-check('胎痕数量有上限', game.marks.length <= 220, game.marks.length);
+check('会产生烟雾粒子', maxParticles > 0, '峰值 ' + maxParticles);
+check('粒子数量有上限', maxParticles <= 160, '峰值 ' + maxParticles);
+check('会留下胎痕', maxMarks > 0, '峰值 ' + maxMarks);
+check('胎痕数量有上限', maxMarks <= 220, '峰值 ' + maxMarks);
 check('最高分已记录', game.best >= game.score);
 
 // ---- 自由驾驶模式 ----

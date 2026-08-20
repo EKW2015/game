@@ -155,47 +155,49 @@
   function facadeTextures(variant) {
     var W = 256;
     var H = 256;
-    var cols = 6;
-    var rows = 8;
+    var cols = 8;
+    var rows = 12;
     var rnd = RU.seeded(1000 + variant * 977);
-    var baseColors = ['#191a22', '#151a20', '#1c1822', '#12161c', '#1a1620', '#171b26'];
-    var litColors = ['#ffd9a0', '#bfe6ff', '#fff3c4', '#a9d0ff', '#ffd0e8', '#d6ffe4'];
-    var lit = [];
+    var baseColors = ['#20212b', '#1b2028', '#24202c', '#191d24', '#221d28', '#1e2230'];
+    var litColors = ['255,214,152', '176,222,255', '255,238,190', '160,196,255', '255,196,224', '196,255,222'];
+    var cells = [];
+
+    var cw = W / cols;
+    var ch = H / rows;
 
     var map = canvasTexture(W, H, function (ctx) {
       ctx.fillStyle = baseColors[variant % baseColors.length];
       ctx.fillRect(0, 0, W, H);
-      var cw = W / cols;
-      var ch = H / rows;
       for (var r = 0; r < rows; r++) {
         for (var c = 0; c < cols; c++) {
-          var on = rnd() < 0.55;
-          lit.push(on ? litColors[Math.floor(rnd() * litColors.length)] : null);
-          ctx.fillStyle = on ? 'rgba(60,66,80,1)' : 'rgba(24,26,34,1)';
-          ctx.fillRect(c * cw + cw * 0.18, r * ch + ch * 0.2, cw * 0.64, ch * 0.5);
+          var on = rnd() < 0.42;
+          cells.push(on ? {
+            color: litColors[Math.floor(rnd() * litColors.length)],
+            alpha: 0.35 + rnd() * 0.55
+          } : null);
+          ctx.fillStyle = on ? 'rgba(70,76,92,1)' : 'rgba(16,18,24,1)';
+          ctx.fillRect(c * cw + cw * 0.2, r * ch + ch * 0.22, cw * 0.6, ch * 0.46);
         }
       }
-      // 楼层分隔线
-      ctx.fillStyle = 'rgba(0,0,0,0.45)';
-      for (var y = 0; y < rows; y++) ctx.fillRect(0, y * ch + ch * 0.78, W, Math.max(1, ch * 0.08));
+      // 楼层分隔线，让高楼有层次
+      ctx.fillStyle = 'rgba(0,0,0,0.5)';
+      for (var y = 0; y < rows; y++) ctx.fillRect(0, y * ch + ch * 0.8, W, Math.max(1, ch * 0.1));
+      ctx.fillStyle = 'rgba(0,0,0,0.3)';
+      for (var x = 0; x < cols; x++) ctx.fillRect(x * cw, 0, Math.max(1, cw * 0.08), H);
     }, true);
 
     var idx = 0;
     var emissive = canvasTexture(W, H, function (ctx) {
       ctx.fillStyle = '#000000';
       ctx.fillRect(0, 0, W, H);
-      var cw = W / cols;
-      var ch = H / rows;
       for (var r = 0; r < rows; r++) {
         for (var c = 0; c < cols; c++) {
-          var color = lit[idx++];
-          if (!color) continue;
-          ctx.fillStyle = color;
-          ctx.globalAlpha = 0.55 + Math.random() * 0.45;
-          ctx.fillRect(c * cw + cw * 0.18, r * ch + ch * 0.2, cw * 0.64, ch * 0.5);
+          var cell = cells[idx++];
+          if (!cell) continue;
+          ctx.fillStyle = 'rgba(' + cell.color + ',' + cell.alpha.toFixed(2) + ')';
+          ctx.fillRect(c * cw + cw * 0.2, r * ch + ch * 0.22, cw * 0.6, ch * 0.46);
         }
       }
-      ctx.globalAlpha = 1;
     }, true);
 
     return { map: map, emissive: emissive };
@@ -247,15 +249,17 @@
     }, true);
   }
 
+  /** 等距柱状投影：贴图上半部分是天顶，正中间(0.5)才是地平线 */
   function skyTexture() {
     return canvasTexture(64, 512, function (ctx, w, h) {
       var grd = ctx.createLinearGradient(0, 0, 0, h);
-      grd.addColorStop(0, '#04040a');
-      grd.addColorStop(0.42, '#0a0a18');
-      grd.addColorStop(0.62, '#1b1230');
-      grd.addColorStop(0.78, '#3a1a3e');
-      grd.addColorStop(0.9, '#5a2340');
-      grd.addColorStop(1, '#1a1024');
+      grd.addColorStop(0, '#03030a');
+      grd.addColorStop(0.3, '#070714');
+      grd.addColorStop(0.42, '#1a1030');
+      grd.addColorStop(0.48, '#3d1740');
+      grd.addColorStop(0.5, '#6b2450');
+      grd.addColorStop(0.54, '#2a1030');
+      grd.addColorStop(1, '#08060f');
       ctx.fillStyle = grd;
       ctx.fillRect(0, 0, w, h);
     });

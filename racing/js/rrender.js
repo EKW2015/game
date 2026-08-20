@@ -82,28 +82,44 @@
       this.headlights.push(light);
 
       var cone = new THREE.Mesh(
-        new THREE.ConeGeometry(4.6, 34, 14, 1, true),
+        new THREE.ConeGeometry(3.4, 26, 12, 1, true),
         new THREE.MeshBasicMaterial({
-          color: 0xfff2d6, transparent: true, opacity: 0.055,
+          color: 0xfff2d6, transparent: true, opacity: 0.03,
           blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide, fog: false
         })
       );
       cone.rotation.x = -Math.PI / 2;
-      cone.position.set(s * 0.6, 0.55, 19);
+      cone.position.set(s * 0.6, 0.62, 15);
       this.carMesh.add(cone);
     }
+
+    // 跟随车身的补光，否则夜里车只剩一个黑影
+    var fill = new THREE.PointLight(0xbcd0ff, 1.1, 16, 1.4);
+    fill.position.set(0, 3.4, -0.6);
+    this.carMesh.add(fill);
   };
 
   RaceRenderer.prototype.setupGate = function () {
     var group = new THREE.Group();
 
-    var ringGeo = new THREE.TorusGeometry(14, 0.55, 6, 44);
+    var ringGeo = new THREE.TorusGeometry(14, 0.85, 6, 44);
     ringGeo.rotateX(-Math.PI / 2);
     this.gateRing = new THREE.Mesh(ringGeo, new THREE.MeshBasicMaterial({
       color: GATE_COLOR, transparent: true, opacity: 0.95,
       blending: THREE.AdditiveBlending, depthWrite: false, fog: false
     }));
     group.add(this.gateRing);
+
+    // 冲天光柱：楼再高也挡不住，玩家一眼就知道往哪开
+    this.gateBeacon = new THREE.Mesh(
+      new THREE.CylinderGeometry(3.2, 5.5, 600, 12, 1, true),
+      new THREE.MeshBasicMaterial({
+        color: GATE_COLOR, transparent: true, opacity: 0.13,
+        blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide, fog: false
+      })
+    );
+    this.gateBeacon.position.y = 300;
+    group.add(this.gateBeacon);
 
     var pillarMat = new THREE.MeshBasicMaterial({
       color: GATE_COLOR, transparent: true, opacity: 0.22,
@@ -153,12 +169,13 @@
       this.sprites.push(sprite);
     }
 
-    var markGeo = new THREE.PlaneGeometry(0.34, 1.8);
+    var markGeo = new THREE.PlaneGeometry(0.4, 2.0);
     markGeo.rotateX(-Math.PI / 2);
+    var markTex = softTexture();
     this.marks = [];
     for (var m = 0; m < MAX_MARKS; m++) {
       var mark = new THREE.Mesh(markGeo, new THREE.MeshBasicMaterial({
-        color: 0x0a0a0e, transparent: true, opacity: 0, depthWrite: false
+        map: markTex, color: 0x05050a, transparent: true, opacity: 0, depthWrite: false
       }));
       mark.rotation.order = 'YXZ';
       mark.position.y = 0.03;
@@ -239,6 +256,8 @@
     this.gateCore.position.y = 7 + Math.sin(time * 2) * 0.8;
     var pulse = 0.16 + Math.sin(time * 3) * 0.05;
     this.gatePillars[0].material.opacity = pulse;
+    this.gateBeacon.material.opacity = 0.12 + Math.sin(time * 2.2) * 0.035;
+    this.gateBeacon.rotation.y = time * 0.25;
   };
 
   RaceRenderer.prototype.syncParticles = function (particles) {
@@ -251,7 +270,7 @@
       var scale = p.size * (1.6 - p.life * 0.7) * 2.2;
       s.scale.set(scale, scale, 1);
       s.material.color.setHex(p.color);
-      s.material.opacity = Math.max(0, p.life * 0.42);
+      s.material.opacity = Math.max(0, p.life * 0.55);
     }
   };
 
@@ -263,7 +282,7 @@
       m.visible = true;
       m.position.set(d.x, 0.03, d.z);
       m.rotation.y = Math.PI / 2 - d.yaw;
-      m.material.opacity = Math.max(0, d.life * 0.55 * d.strength);
+      m.material.opacity = Math.max(0, d.life * 0.85 * d.strength);
     }
   };
 
