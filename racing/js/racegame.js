@@ -62,6 +62,7 @@
     this.comboTimer = 0;
     this.driftAccum = 0;
     this.driftTime = 0;
+    this.markDist = 0;
     this.lastDrifting = false;
     this.shake = 0;
     this.gateIndex = 0;
@@ -169,21 +170,30 @@
     this.elapsed += dt;
     this.shake = Math.max(0, this.shake - dt * 2.4);
 
-    // ---- 漂移计分 ----
-    if (car.drifting) {
-      this.driftAccum += car.driftAngle * car.speed * dt * 0.85;
-      this.driftTime += dt;
-      var back = -2.0;
+    // ---- 漂移计分与痕迹 ----
+    var hardBrake = car.brake > 0.5 && car.speed > 18;
+    if (car.drifting || hardBrake) {
+      // 按行驶距离铺胎痕，速度再快也不会断成虚线
+      this.markDist += car.speed * dt;
+      var laying = this.markDist >= 1.1;
+      if (laying) this.markDist = 0;
+
       var fx = Math.cos(car.yaw);
       var fz = Math.sin(car.yaw);
       var rx = -fz;
       var rz = fx;
+      var strength = car.drifting ? RU.clamp(car.driftAngle * 1.8, 0.35, 1) : 0.45;
       for (var s = -1; s <= 1; s += 2) {
-        var wx = car.x + fx * back + rx * s * 0.95;
-        var wz = car.z + fz * back + rz * s * 0.95;
-        if (Math.random() < 0.85) this.spawnSmoke(wx, wz, RU.rand(1.3, 2.6));
-        if (Math.random() < 0.7) this.spawnMark(wx, wz, car.yaw, RU.clamp(car.driftAngle * 1.6, 0.2, 1));
+        var wx = car.x - fx * 2.0 + rx * s * 0.95;
+        var wz = car.z - fz * 2.0 + rz * s * 0.95;
+        if (laying) this.spawnMark(wx, wz, car.yaw, strength);
+        if (car.drifting && Math.random() < 0.8) this.spawnSmoke(wx, wz, RU.rand(1.4, 2.8));
       }
+    }
+
+    if (car.drifting) {
+      this.driftAccum += car.driftAngle * car.speed * dt * 0.85;
+      this.driftTime += dt;
     } else if (this.lastDrifting) {
       if (this.driftAccum > 12) {
         var gained = Math.round(this.driftAccum * this.combo);

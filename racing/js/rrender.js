@@ -27,6 +27,30 @@
     return new THREE.CanvasTexture(canvas);
   }
 
+  /** 细长的胎痕贴图：两侧柔和、中间实心 */
+  function streakTexture() {
+    var canvas = document.createElement('canvas');
+    canvas.width = 32;
+    canvas.height = 64;
+    var ctx = canvas.getContext('2d');
+    var grd = ctx.createLinearGradient(0, 0, 32, 0);
+    grd.addColorStop(0, 'rgba(255,255,255,0)');
+    grd.addColorStop(0.3, 'rgba(255,255,255,0.95)');
+    grd.addColorStop(0.7, 'rgba(255,255,255,0.95)');
+    grd.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = grd;
+    ctx.fillRect(0, 0, 32, 64);
+    var fade = ctx.createLinearGradient(0, 0, 0, 64);
+    fade.addColorStop(0, 'rgba(0,0,0,0.5)');
+    fade.addColorStop(0.25, 'rgba(0,0,0,0)');
+    fade.addColorStop(0.75, 'rgba(0,0,0,0)');
+    fade.addColorStop(1, 'rgba(0,0,0,0.5)');
+    ctx.globalCompositeOperation = 'destination-out';
+    ctx.fillStyle = fade;
+    ctx.fillRect(0, 0, 32, 64);
+    return new THREE.CanvasTexture(canvas);
+  }
+
   function RaceRenderer(canvas) {
     if (typeof THREE === 'undefined') throw new Error('Three.js 未加载');
 
@@ -169,13 +193,13 @@
       this.sprites.push(sprite);
     }
 
-    var markGeo = new THREE.PlaneGeometry(0.4, 2.0);
+    var markGeo = new THREE.PlaneGeometry(0.62, 2.2);
     markGeo.rotateX(-Math.PI / 2);
-    var markTex = softTexture();
+    var markTex = streakTexture();
     this.marks = [];
     for (var m = 0; m < MAX_MARKS; m++) {
       var mark = new THREE.Mesh(markGeo, new THREE.MeshBasicMaterial({
-        map: markTex, color: 0x05050a, transparent: true, opacity: 0, depthWrite: false
+        map: markTex, color: 0x000000, transparent: true, opacity: 0, depthWrite: false
       }));
       mark.rotation.order = 'YXZ';
       mark.position.y = 0.03;
@@ -282,7 +306,7 @@
       m.visible = true;
       m.position.set(d.x, 0.03, d.z);
       m.rotation.y = Math.PI / 2 - d.yaw;
-      m.material.opacity = Math.max(0, d.life * 0.85 * d.strength);
+      m.material.opacity = Math.max(0, Math.min(1, d.life * 1.1) * 0.92 * d.strength);
     }
   };
 

@@ -25,6 +25,11 @@
   var lastTime = 0;
   var running = false;
   var demoMode = false;
+  var demoStuck = 0;
+  var demoBackup = 0;
+  var demoBackupSteer = 1;
+  var stuckTime = 0;
+  var hintCooldown = 0;
 
   function $(id) { return doc.getElementById(id); }
 
@@ -317,15 +322,44 @@
     }
   }
 
+  /** 顶着墙踩油门半天没动？提示玩家有一键回到路面的键 */
+  function checkStuck(dt) {
+    if (hintCooldown > 0) hintCooldown -= dt;
+    if (game.car.speed < 2 && (input.throttle || input.brake)) stuckTime += dt;
+    else stuckTime = 0;
+    if (stuckTime > 2.5 && hintCooldown <= 0) {
+      stuckTime = 0;
+      hintCooldown = 10;
+      toast('卡住了？按 R 回到路面', 1800);
+    }
+  }
+
   /**
    * 演示模式（打开 index.html#demo）：沿马路网格自动开向下一个光门，
    * 转急弯时拉手刹漂移。方便快速看效果，也能当作展示动画。
    */
-  function demoDrive() {
+  function demoDrive(dt) {
     var car = game.car;
     var B = CityMap.BLOCK;
     var gate = game.gate;
     if (!gate) return;
+
+    // 顶到墙角就倒车脱困，否则演示会一直卡在那里
+    if (car.speed < 2.5) demoStuck += dt;
+    else demoStuck = 0;
+    if (demoStuck > 1.2) {
+      demoStuck = 0;
+      demoBackup = 1.1;
+    }
+    if (demoBackup > 0) {
+      demoBackup -= dt;
+      car.throttle = 0;
+      car.brake = 1;
+      car.steer = demoBackupSteer;
+      car.handbrake = false;
+      car.wantBoost = false;
+      return;
+    }
 
     var gi = Math.round(gate.x / B);
     var gj = Math.round(gate.z / B);
@@ -348,6 +382,7 @@
     var bearing = RU.wrapAngle(Math.atan2(wz - car.z, wx - car.x) - car.yaw);
     var distW = Math.hypot(wx - car.x, wz - car.z);
     var wantSpeed = Math.abs(bearing) > 0.45 ? 16 : (distW < 50 ? 26 : 50);
+    demoBackupSteer = bearing >= 0 ? -1 : 1;
     car.steer = RU.clamp(bearing * 2.6, -1, 1);
     car.throttle = car.speed < wantSpeed ? 1 : 0;
     car.brake = car.speed > wantSpeed * 1.4 ? 1 : 0;
@@ -365,8 +400,9 @@
     var wasBoosting = game.car.boosting;
     if (game.state === 'playing') {
       applyInput();
-      if (demoMode) demoDrive();
+      if (demoMode) demoDrive(dt);
       game.update(dt);
+      checkStuck(dt);
       if (game.car.boosting && !wasBoosting) RaceAudio.boost();
     }
     drainEvents();
