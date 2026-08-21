@@ -78,6 +78,10 @@
     this.setupGate();
     this.setupFx();
     this.trafficMeshes = [];
+    this.rivalMeshes = [];
+    this.coinMeshes = [];
+    this.rampMeshes = [];
+    this.lookBack = false;
   }
 
   RaceRenderer.prototype.setupLights = function () {
@@ -89,8 +93,18 @@
     this.moon = moon;
   };
 
-  RaceRenderer.prototype.setupCar = function () {
-    this.carMesh = CarModel.create({ shape: 'super', color: 0xe01b4c, accent: 0x2ee6ff, player: true });
+  /** 换车（车库里选了别的车型）时重建车身网格 */
+  RaceRenderer.prototype.setCarShape = function (shape) {
+    if (this.carShape === shape) return;
+    if (this.carMesh) this.scene.remove(this.carMesh);
+    this.setupCar(shape);
+  };
+
+  RaceRenderer.prototype.setupCar = function (shape) {
+    this.carShape = shape || 'super';
+    this.carMesh = CarModel.create({
+      shape: this.carShape, color: 0xe01b4c, accent: 0x2ee6ff, player: true
+    });
     CarModel.applyEnv(this.carMesh, this.city.envMap);
     this.scene.add(this.carMesh);
 
@@ -214,14 +228,16 @@
 
   RaceRenderer.prototype.updateCar = function (car, dt) {
     var mesh = this.carMesh;
-    mesh.position.set(car.x, 0, car.z);
+    mesh.position.set(car.x, car.y, car.z);
     mesh.rotation.y = Math.PI / 2 - car.yaw;
 
-    // 车身随加速与漂移轻微侧倾
+    // 车身随加速与漂移轻微侧倾；腾空时车头会仰起 / 俯冲
     var roll = RU.clamp(-car.lateralSpeed / 30, -0.5, 0.5) * 0.18;
-    var pitch = RU.clamp(car.forwardSpeed / 60, -1, 1) * 0.02;
+    var pitch = car.airborne
+      ? RU.clamp(car.vy / 26, -0.5, 0.5)
+      : RU.clamp(car.forwardSpeed / 60, -1, 1) * 0.02;
     mesh.rotation.z = RU.damp(mesh.rotation.z, roll, 6, dt);
-    mesh.rotation.x = RU.damp(mesh.rotation.x, pitch, 5, dt);
+    mesh.rotation.x = RU.damp(mesh.rotation.x, pitch, car.airborne ? 3 : 5, dt);
 
     var wheels = mesh.userData.wheels;
     for (var i = 0; i < wheels.length; i++) {
@@ -315,34 +331,144 @@
       var d = marks[i];
       if (!d) { m.visible = false; continue; }
       m.visible = true;
-      m.position.set(d.x, 0.03, d.z);
+      m.position.set(d.x, (d.y || 0) + 0.03, d.z);
       m.rotation.y = Math.PI / 2 - d.yaw;
       m.material.opacity = Math.max(0, Math.min(1, d.life * 1.2) * 0.5 * d.strength);
     }
   };
 
+  var CAM_MODES = ['chase', 'far', 'hood'];
+  var CAM_NAMES = { chase: '跟车视角', far: '远景视角', hood: '车内视角' };
+
   RaceRenderer.prototype.setCamMode = function (mode) {
     this.camMode = mode;
+  };
+
+  /** C 键循环切换视角，返回中文名用于提示 */
+  RaceRenderer.prototype.cycleCamMode = function () {
+    var i = CAM_MODES.indexOf(this.camMode);
+    this.camMode = CAM_MODES[(i + 1) % CAM_MODES.length];
+    return CAM_NAMES[this.camMode];
+  };
+
+  /** T 键回头看 */
+  RaceRenderer.prototype.setLookBack = function (on) {
+    this.lookBack = !!on;
+  };
+
+  /** AI 对手车 */
+  RaceRenderer.prototype.syncRivals = function (rivals, dt) {
+    while (this.rivalMeshes.length < rivals.length) {
+      var mesh = CarModel.create({
+        shape: this.rivalMeshes.length % 2 === 0 ? 'gt' : 'super',
+        color: 0x888888, accent: 0xff6644, player: true
+      });
+      CarModel.applyEnv(mesh, this.city.envMap);
+      this.scene.add(mesh);
+      this.rivalMeshes.push(mesh);
+    }
+    for (var i = 0; i < this.rivalMeshes.length; i++) {
+      var m = this.rivalMeshes[i];
+      var r = rivals[i];
+      if (!r) { m.visible = false; continue; }
+      m.visible = true;
+      m.position.set(r.car.x, r.car.y, r.car.z);
+      m.rotation.y = Math.PI / 2 - r.car.yaw;
+      m.rotation.z = RU.damp(m.rotation.z, RU.clamp(-r.car.lateralSpeed / 30, -0.5, 0.5) * 0.18, 6, dt);
+      if (m.userData.paintedColor !== r.color) {
+        CarModel.repaint(m, r.color, r.color);
+        m.userData.paintedColor = r.color;
+      }
+      var wheels = m.userData.wheels;
+      for (var w = 0; w < wheels.length; w++) {
+        if (wheels[w].userData.front) wheels[w].rotation.y = r.car.steerAngle;
+        wheels[w].userData.wheel.rotation.x -= (r.car.speed / 0.4) * dt;
+      }
+    }
+  };
+
+  /** 金币 */
+  RaceRenderer.prototype.syncCoins = function (coins) {
+    while (this.coinMeshes.length < coins.length) {
+      var geo = new THREE.CylinderGeometry(0.85, 0.85, 0.16, 16);
+      geo.rotateX(Math.PI / 2);
+      var coin = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({
+        color: 0xffcc33, metalness: 0.5, roughness: 0.3,
+        emissive: 0xff9c1a, emissiveIntensity: 1.1
+      }));
+      this.scene.add(coin);
+      this.coinMeshes.push(coin);
+    }
+    for (var i = 0; i < this.coinMeshes.length; i++) {
+      var m = this.coinMeshes[i];
+      var c = coins[i];
+      if (!c) { m.visible = false; continue; }
+      m.visible = true;
+      m.position.set(c.x, 1.1 + Math.sin(c.spin) * 0.18, c.z);
+      m.rotation.y = c.spin;
+    }
+  };
+
+  /** 跳台：按玩家位置流式生成，位置由城市网格决定所以可以缓存 */
+  RaceRenderer.prototype.syncRamps = function (px, pz) {
+    if (!global.Ramps) return;
+    var list = global.Ramps.near(px, pz, 700);
+    var i;
+    while (this.rampMeshes.length < list.length) {
+      var group = new THREE.Group();
+      var shape = new THREE.Shape();
+      shape.moveTo(0, 0);
+      shape.lineTo(global.Ramps.LENGTH, 0);
+      shape.lineTo(global.Ramps.LENGTH, global.Ramps.HEIGHT);
+      shape.closePath();
+      var geo = new THREE.ExtrudeGeometry(shape, { depth: global.Ramps.HALF_WIDTH * 2, bevelEnabled: false });
+      geo.translate(0, 0, -global.Ramps.HALF_WIDTH);
+      geo.rotateY(-Math.PI / 2);
+      var body = new THREE.Mesh(geo, new THREE.MeshLambertMaterial({ color: 0x2f3340 }));
+      group.add(body);
+      // 坡口发光条，远处也能看见
+      var lip = new THREE.Mesh(
+        new THREE.BoxGeometry(global.Ramps.HALF_WIDTH * 2, 0.2, 0.5),
+        new THREE.MeshBasicMaterial({ color: 0xffd84d, transparent: true, opacity: 0.9 })
+      );
+      lip.position.set(0, global.Ramps.HEIGHT + 0.1, global.Ramps.LENGTH);
+      group.add(lip);
+      this.scene.add(group);
+      this.rampMeshes.push(group);
+    }
+    for (i = 0; i < this.rampMeshes.length; i++) {
+      var mesh = this.rampMeshes[i];
+      var ramp = list[i];
+      if (!ramp) { mesh.visible = false; continue; }
+      mesh.visible = true;
+      mesh.position.set(ramp.x, 0, ramp.z);
+      // dir: 0=+x 1=-x 2=+z 3=-z，模型的爬升方向是局部 +Z
+      var yaw = ramp.alongX ? (ramp.sign > 0 ? Math.PI / 2 : -Math.PI / 2) : (ramp.sign > 0 ? 0 : Math.PI);
+      mesh.rotation.y = yaw;
+    }
   };
 
   RaceRenderer.prototype.updateCamera = function (car, dt, shake) {
     var speedT = RU.clamp(car.speed / 60, 0, 1);
 
+    var back = this.lookBack ? Math.PI : 0;
+
     if (this.camMode === 'hood') {
-      var fx = Math.cos(car.yaw);
-      var fz = Math.sin(car.yaw);
-      this.camPos.set(car.x + fx * 0.35, 1.28, car.z + fz * 0.35);
+      var fx = Math.cos(car.yaw + back);
+      var fz = Math.sin(car.yaw + back);
+      this.camPos.set(car.x + fx * 0.35, car.y + 1.28, car.z + fz * 0.35);
       this.camera.position.copy(this.camPos);
-      this.lookAt.set(car.x + fx * 40, 1.3, car.z + fz * 40);
+      this.lookAt.set(car.x + fx * 40, car.y + 1.3, car.z + fz * 40);
       this.fov = RU.damp(this.fov, 74 + speedT * 14, 3, dt);
     } else {
+      var far = this.camMode === 'far';
       // 相机追着车头，但漂移时稍微偏向车身侧面，能看到甩尾
       var driftLean = RU.clamp(car.lateralSpeed / 26, -1, 1) * 0.35;
-      var targetYaw = car.yaw - driftLean;
+      var targetYaw = car.yaw - driftLean + back;
       this.camYaw += RU.wrapAngle(targetYaw - this.camYaw) * (1 - Math.exp(-4.2 * dt));
 
-      var dist = 8.4 + speedT * 3.4;
-      var height = 3.6 + speedT * 0.8;
+      var dist = (far ? 15 : 8.4) + speedT * (far ? 4 : 3.4);
+      var height = (far ? 6.4 : 3.6) + speedT * 0.8 + car.y * 0.8;
       var idealX = car.x - Math.cos(this.camYaw) * dist;
       var idealZ = car.z - Math.sin(this.camYaw) * dist;
       var rate = 1 - Math.exp(-9 * dt);
@@ -351,9 +477,9 @@
       this.camPos.y += (height - this.camPos.y) * rate;
       this.camera.position.copy(this.camPos);
       this.lookAt.set(
-        car.x + Math.cos(car.yaw) * 9,
-        1.7,
-        car.z + Math.sin(car.yaw) * 9
+        car.x + Math.cos(car.yaw + back) * 9,
+        car.y + 1.7,
+        car.z + Math.sin(car.yaw + back) * 9
       );
       this.fov = RU.damp(this.fov, 68 + speedT * 16 + (car.boosting ? 6 : 0), 3.5, dt);
     }
@@ -375,6 +501,7 @@
       this.moon.position.set(car.x - 180, 320, car.z + 120);
     }
     this.city.update(car.x, car.z);
+    this.syncRamps(car.x, car.z);
   };
 
   RaceRenderer.prototype.resize = function (width, height) {

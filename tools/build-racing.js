@@ -11,7 +11,8 @@ const css = fs.readFileSync(path.join(root, 'racing/css/racing.css'), 'utf8');
 const three = fs.readFileSync(path.join(root, 'js/vendor/three.min.js'), 'utf8');
 
 const jsFiles = [
-  'rutil.js', 'citymap.js', 'car.js', 'traffic.js', 'racegame.js', 'autodrive.js',
+  'rutil.js', 'citymap.js', 'ramps.js', 'cars.js', 'car.js', 'traffic.js',
+  'route.js', 'autodrive.js', 'racegame.js',
   'carmodel.js', 'city3d.js', 'rrender.js', 'raudio.js', 'rmain.js'
 ];
 const js = jsFiles.map(function (f) {

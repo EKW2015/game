@@ -11,12 +11,28 @@
   var RU = global.RU;
   var CityMap = global.CityMap;
 
+  var Ramps = global.Ramps;
+
   var WHEELBASE = 3.05;
   var BODY_RADIUS = 2.2;
+  var GRAVITY = 26;
 
-  function Car() {
+  var DEFAULT_STATS = {
+    accel: 15, maxSpeed: 60, grip: 13, brake: 36, turbo: 1.6
+  };
+
+  function Car(stats) {
+    this.stats = {};
+    this.setStats(stats);
+
     this.x = 0;
     this.z = 0;
+    this.y = 0;
+    this.vy = 0;
+    this.groundY = 0;
+    this.airborne = false;
+    this.airTime = 0;
+    this.landImpact = 0;
     this.yaw = 0;
     this.vx = 0;
     this.vz = 0;
@@ -45,9 +61,24 @@
 
   Car.prototype.radius = BODY_RADIUS;
 
+  Car.prototype.setStats = function (stats) {
+    var source = stats || DEFAULT_STATS;
+    this.stats.accel = source.accel || DEFAULT_STATS.accel;
+    this.stats.maxSpeed = source.maxSpeed || DEFAULT_STATS.maxSpeed;
+    this.stats.grip = source.grip || DEFAULT_STATS.grip;
+    this.stats.brake = source.brake || DEFAULT_STATS.brake;
+    this.stats.turbo = source.turbo || DEFAULT_STATS.turbo;
+  };
+
   Car.prototype.reset = function (x, z, yaw) {
     this.x = x;
     this.z = z;
+    this.y = 0;
+    this.vy = 0;
+    this.groundY = 0;
+    this.airborne = false;
+    this.airTime = 0;
+    this.landImpact = 0;
     this.yaw = yaw;
     this.vx = 0;
     this.vz = 0;
@@ -83,6 +114,49 @@
     return { x: -Math.sin(this.yaw), z: Math.cos(this.yaw) };
   };
 
+  /**
+   * 跳台与腾空：跳台表面高度由 Ramps 提供。
+   * 冲上斜坡时记录爬升速率，坡道结束脚下没东西了就带着这个速率起飞。
+   */
+  Car.prototype.updateAir = function (dt) {
+    var ground = Ramps ? Ramps.heightAt(this.x, this.z) : 0;
+    var climb = dt > 0 ? (ground - this.groundY) / dt : 0;
+    this.groundY = ground;
+    this.landImpact = 0;
+
+    if (!this.airborne) {
+      if (ground >= this.y - 0.02) {
+        // 贴着地面（或正沿斜坡爬升）：记下爬升速率，作为冲出坡顶时的起飞速度。
+        // 从侧面切入坡道时高度会瞬间跳变，必须按「速度 × 坡度」限幅，
+        // 否则一帧的高度差会算出几十米每秒的起飞速度，车直接飞上天。
+        var maxClimb = Math.max(1.5, this.speed * 0.4);
+        this.y = ground;
+        this.vy = RU.clamp(climb, -30, maxClimb);
+        return;
+      }
+      // 脚下的坡到头了，带着刚才的爬升速率起飞
+      this.airborne = true;
+      this.airTime = 0;
+    }
+
+    this.airTime += dt;
+    this.vy -= GRAVITY * dt;
+    this.y += this.vy * dt;
+
+    if (this.y <= ground) {
+      this.y = ground;
+      this.landImpact = RU.clamp(-this.vy / 22, 0, 1);
+      this.vy = 0;
+      this.airborne = false;
+      // 落地不稳：速度损失一点，车头也会被带偏
+      if (this.landImpact > 0.15) {
+        this.vx *= 1 - this.landImpact * 0.28;
+        this.vz *= 1 - this.landImpact * 0.28;
+        this.yawRate += (Math.random() - 0.5) * this.landImpact * 1.4;
+      }
+    }
+  };
+
   Car.prototype.update = function (dt) {
     var fx = Math.cos(this.yaw);
     var fz = Math.sin(this.yaw);
@@ -100,14 +174,14 @@
     this.steerAngle = RU.damp(this.steerAngle, this.steer * maxSteer, 11, dt);
 
     // ---- 纵向：引擎 / 刹车 / 阻力 ----
-    var maxV = this.boosting ? 74 : 60;
+    var maxV = this.stats.maxSpeed * (this.boosting ? this.stats.turbo * 0.78 : 1);
     var accel = 0;
-    if (this.throttle > 0) {
+    if (this.throttle > 0 && !this.airborne) {
       var falloff = 1 - Math.pow(RU.clamp(vf / maxV, 0, 1), 1.7);
-      accel += 15 * this.throttle * falloff * (this.boosting ? 1.6 : 1);
+      accel += this.stats.accel * this.throttle * falloff * (this.boosting ? this.stats.turbo : 1);
     }
-    if (this.brake > 0) {
-      if (vf > 0.6) accel -= 36 * this.brake;
+    if (this.brake > 0 && !this.airborne) {
+      if (vf > 0.6) accel -= this.stats.brake * this.brake;
       else accel -= 13 * this.brake;
     }
     if (this.throttle <= 0 && this.brake <= 0 && Math.abs(vf) > 0.2) {
@@ -116,7 +190,7 @@
     accel -= 0.0011 * vf * Math.abs(vf);
 
     this.offRoad = !CityMap.onRoad(this.x, this.z);
-    if (this.offRoad) accel -= Math.sign(vf) * 5.5;
+    if (this.offRoad && !this.airborne) accel -= Math.sign(vf) * 5.5;
 
     vf += accel * dt;
     if (Math.abs(vf) < 0.12 && this.throttle <= 0 && this.brake <= 0) vf = 0;
@@ -132,7 +206,8 @@
     var slipGain = this.handbrake ? 1.0 : 0.34;
     vl -= this.yawRate * vf * dt * slipGain;
 
-    var grip = this.handbrake ? 2.4 : 13;
+    var grip = this.handbrake ? 2.4 : this.stats.grip;
+    if (this.airborne) grip = 0.5;
     if (this.offRoad) grip *= 0.55;
     if (this.throttle > 0.5 && Math.abs(vf) < 22) grip *= 0.85; // 低速大脚油门更容易滑
     vl = RU.damp(vl, 0, grip, dt);
@@ -146,6 +221,8 @@
 
     this.x += this.vx * dt;
     this.z += this.vz * dt;
+
+    this.updateAir(dt);
 
     this.crashImpact = 0;
     var hit = CityMap.resolveCircle(this.x, this.z, BODY_RADIUS);

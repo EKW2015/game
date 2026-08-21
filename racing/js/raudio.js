@@ -153,6 +153,17 @@
       tone(760, 1180, 0.16, 0.16, 'triangle');
       tone(1180, 1560, 0.18, 0.1, 'sine');
     },
+    coin: function () {
+      tone(1180, 1760, 0.09, 0.11, 'square');
+    },
+    beep: function (freq) {
+      tone(freq || 660, null, 0.16, 0.16, 'square');
+    },
+    win: function () {
+      tone(523, null, 0.14, 0.14, 'triangle');
+      tone(659, null, 0.14, 0.14, 'triangle');
+      tone(784, null, 0.3, 0.16, 'triangle');
+    },
     crash: function (strength) {
       burst({ from: 900, to: 90, duration: 0.28, volume: Math.min(0.4, 0.12 + strength * 0.3) });
       tone(120, 55, 0.22, 0.16, 'sawtooth');

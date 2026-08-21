@@ -30,6 +30,38 @@
       wheelR: 0.4, wheelW: 0.26, wheelX: 0.86, frontZ: 1.42, rearZ: -1.5,
       lightY: 0.62, tailY: 0.72, roofSign: false, wing: true, mirrors: true
     },
+    /** GT：车头更长，肩线更厚实 */
+    gt: {
+      width: 1.68,
+      body: [
+        [2.42, 0.30], [2.50, 0.50], [2.36, 0.72], [1.70, 0.78], [0.92, 0.88],
+        [0.10, 0.94], [-1.05, 0.98], [-1.80, 1.00], [-2.24, 0.92], [-2.40, 0.60],
+        [-2.32, 0.30], [-1.20, 0.22], [1.20, 0.22]
+      ],
+      canopyWidth: 1.4,
+      canopy: [
+        [0.98, 0.84], [0.22, 1.30], [-0.66, 1.34], [-1.46, 1.04], [-1.54, 0.84]
+      ],
+      taperK: 0.17, taperP: 2.4, haunch: 0.05, haunchZ: 1.46,
+      wheelR: 0.42, wheelW: 0.28, wheelX: 0.9, frontZ: 1.46, rearZ: -1.54,
+      lightY: 0.7, tailY: 0.8, roofSign: false, wing: true, mirrors: true
+    },
+    /** 超音速：极低极扁，尾翼夸张 */
+    hyper: {
+      width: 1.62,
+      body: [
+        [2.50, 0.24], [2.58, 0.38], [2.44, 0.56], [1.70, 0.60], [0.90, 0.72],
+        [0.05, 0.78], [-1.15, 0.82], [-1.90, 0.86], [-2.34, 0.78], [-2.48, 0.48],
+        [-2.40, 0.24], [-1.20, 0.18], [1.20, 0.18]
+      ],
+      canopyWidth: 1.28,
+      canopy: [
+        [0.92, 0.70], [0.10, 1.10], [-0.80, 1.14], [-1.58, 0.88], [-1.66, 0.70]
+      ],
+      taperK: 0.24, taperP: 2.0, haunch: 0.06, haunchZ: 1.5,
+      wheelR: 0.41, wheelW: 0.3, wheelX: 0.88, frontZ: 1.5, rearZ: -1.56,
+      lightY: 0.54, tailY: 0.66, roofSign: false, wing: true, mirrors: false
+    },
     /** 车流：普通轿车 */
     sedan: {
       width: 1.56,

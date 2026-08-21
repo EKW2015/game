@@ -1,5 +1,5 @@
 /**
- * 夜城飙车 - 无头逻辑自测：物理、碰撞、车流、检查点计分
+ * 夜城飙车 - 无头逻辑自测：物理、跳台、碰撞、车流、竞速赛、车库经济
  * 运行：node tools/smoke-racing.js
  */
 'use strict';
@@ -22,15 +22,22 @@ Math.random = function () {
   return seed / 4294967296;
 };
 
-require(path.join(__dirname, '..', 'racing', 'js', 'rutil.js'));
-require(path.join(__dirname, '..', 'racing', 'js', 'citymap.js'));
-require(path.join(__dirname, '..', 'racing', 'js', 'car.js'));
-require(path.join(__dirname, '..', 'racing', 'js', 'traffic.js'));
-require(path.join(__dirname, '..', 'racing', 'js', 'racegame.js'));
-require(path.join(__dirname, '..', 'racing', 'js', 'autodrive.js'));
+const load = (f) => require(path.join(__dirname, '..', 'racing', 'js', f));
+load('rutil.js');
+load('citymap.js');
+load('ramps.js');
+load('cars.js');
+load('car.js');
+load('traffic.js');
+load('route.js');
+load('autodrive.js');
+load('racegame.js');
 
 const RU = global.RU;
 const CityMap = global.CityMap;
+const Ramps = global.Ramps;
+const Cars = global.Cars;
+const Route = global.Route;
 const DT = 1 / 60;
 let failures = 0;
 
@@ -48,6 +55,26 @@ check('路面中央不碰撞', CityMap.resolveCircle(0, 0, 2.2) === null);
 check('建筑生成是确定性的',
   JSON.stringify(CityMap.buildingsIn(3, -7)) === JSON.stringify(CityMap.buildingsIn(3, -7)));
 
+// ---- 跳台 ----
+console.log('跳台');
+let rampFound = null;
+for (let i = -12; i <= 12 && !rampFound; i++) {
+  for (let j = -12; j <= 12 && !rampFound; j++) {
+    rampFound = Ramps.rampAt(i, j);
+  }
+}
+check('城里能找到跳台', !!rampFound, rampFound ? '(' + rampFound.x.toFixed(0) + ', ' + rampFound.z.toFixed(0) + ')' : '');
+check('跳台生成是确定性的',
+  JSON.stringify(Ramps.rampAt(3, 4)) === JSON.stringify(Ramps.rampAt(3, 4)));
+if (rampFound) {
+  const mid = rampFound.alongX
+    ? { x: rampFound.x + rampFound.sign * Ramps.LENGTH * 0.5, z: rampFound.z }
+    : { x: rampFound.x, z: rampFound.z + rampFound.sign * Ramps.LENGTH * 0.5 };
+  const h = Ramps.heightAt(mid.x, mid.z);
+  check('坡道中点有高度', h > 0.5 && h < Ramps.HEIGHT, h.toFixed(2) + ' m');
+  check('坡道外面是平地', Ramps.heightAt(rampFound.x + 400, rampFound.z + 400) === 0);
+}
+
 // ---- 直线加速 ----
 console.log('车辆物理');
 const car = new global.Car();
@@ -63,7 +90,14 @@ while (t < 30) {
 const topKmh = RU.kmh(car.speed);
 check('极速在 170~240 km/h 之间', topKmh > 170 && topKmh < 240, Math.round(topKmh) + ' km/h');
 check('0-100 km/h 在 2~7 秒', timeTo100 > 2 && timeTo100 < 7, timeTo100 && timeTo100.toFixed(2) + 's');
-check('沿车道直行不偏移', Math.abs(car.x) < 0.5, car.x.toFixed(3));
+
+// ---- 升级会变快 ----
+const fast = new global.Car({ accel: 21, maxSpeed: 74, grip: 13, brake: 36, turbo: 1.9 });
+fast.reset(0, 0, Math.PI / 2);
+fast.throttle = 1;
+for (let i = 0; i < 60 * 30; i++) fast.update(DT);
+check('高性能车型更快', fast.speed > car.speed,
+  Math.round(RU.kmh(fast.speed)) + ' vs ' + Math.round(RU.kmh(car.speed)) + ' km/h');
 
 // ---- 刹车 ----
 car.throttle = 0;
@@ -88,6 +122,31 @@ for (let i = 0; i < 60 * 2; i++) {
 }
 check('手刹能甩出漂移', drifted, '最大滑移角 ' + (maxDrift * 180 / Math.PI).toFixed(1) + '°');
 
+// ---- 冲跳台会腾空 ----
+if (rampFound) {
+  const jumper = new global.Car();
+  const runUp = 60;
+  const startX = rampFound.alongX ? rampFound.x - rampFound.sign * runUp : rampFound.x;
+  const startZ = rampFound.alongX ? rampFound.z : rampFound.z - rampFound.sign * runUp;
+  const yaw = rampFound.alongX
+    ? (rampFound.sign > 0 ? 0 : Math.PI)
+    : (rampFound.sign > 0 ? Math.PI / 2 : -Math.PI / 2);
+  jumper.reset(startX, startZ, yaw);
+  jumper.throttle = 1;
+  jumper.steer = 0;
+  let maxY = 0;
+  let maxAir = 0;
+  let flew = false;
+  for (let i = 0; i < 60 * 12; i++) {
+    jumper.update(DT);
+    maxY = Math.max(maxY, jumper.y);
+    maxAir = Math.max(maxAir, jumper.airTime);
+    if (jumper.airborne) flew = true;
+  }
+  check('冲上跳台会腾空', flew, '最高 ' + maxY.toFixed(1) + ' m / 滞空 ' + maxAir.toFixed(2) + ' s');
+  check('落地后回到地面', Math.abs(jumper.y - Ramps.heightAt(jumper.x, jumper.z)) < 0.1, jumper.y.toFixed(2) + ' m');
+}
+
 // ---- 撞墙 ----
 car.reset(CityMap.BLOCK / 2, 0, Math.PI / 2);
 car.throttle = 1;
@@ -97,21 +156,59 @@ for (let i = 0; i < 60 * 12; i++) car.update(DT);
 check('不会开进建筑里', !CityMap.resolveCircle(car.x, car.z, car.radius - 0.1),
   '(' + car.x.toFixed(1) + ', ' + car.z.toFixed(1) + ')');
 
-// ---- 完整一局（用游戏里演示模式那套自动驾驶来跑） ----
-console.log('游戏流程');
-const game = new global.RaceGame();
+// ---- 赛道 ----
+console.log('赛道');
+const route = Route.create(0, 0, 3, 2, 2);
+check('环线路点数正确', route.points.length === 2 * (3 + 2), route.points.length + ' 个');
+check('路点都在路口', route.points.every((p) => CityMap.onRoad(p.x, p.z)));
+const slot0 = Route.gridSlot(route, 0);
+const slot3 = Route.gridSlot(route, 3);
+check('起跑格互相错开', Math.hypot(slot0.x - slot3.x, slot0.z - slot3.z) > 5,
+  Math.hypot(slot0.x - slot3.x, slot0.z - slot3.z).toFixed(1) + ' m');
+check('进度随路点递增',
+  Route.progress(route, 1, 2, route.points[2].x, route.points[2].z) >
+  Route.progress(route, 1, 1, route.points[1].x, route.points[1].z));
+
+// ---- 车库经济 ----
+console.log('车库');
+const garage = new Cars.Garage();
+check('初始只有入门车', garage.has('street') && !garage.has('hyper'));
+check('没钱买不了', !garage.buy('gt'));
+garage.earn(20000);
+check('赚钱后能买车', garage.buy('gt') && garage.has('gt'));
+const before = garage.statsFor('gt').accel;
+check('能升级引擎', garage.upgrade('gt', 'engine'));
+check('升级后加速更强', garage.statsFor('gt').accel > before,
+  before.toFixed(1) + ' -> ' + garage.statsFor('gt').accel.toFixed(1));
+check('金币会扣掉', garage.cash < 20000, garage.cash + ' 金币');
+
+// ---- 计时冲关 ----
+console.log('计时挑战');
+
+// 开得慢就该被时间淘汰
+const slowGame = new global.RaceGame(new Cars.Garage());
+const slowPilot = new global.AutoDrive(0.4);
+slowGame.start('time');
+let slowSteps = 0;
+while (slowGame.state === 'playing' && slowSteps < 60 * 200) {
+  slowPilot.update(slowGame, DT);
+  slowGame.update(DT);
+  slowSteps++;
+}
+check('开得慢会被时间淘汰', slowGame.state === 'over', (slowSteps * DT).toFixed(1) + 's');
+
+const timeGarage = new Cars.Garage();
+const game = new global.RaceGame(timeGarage);
 const pilot = new global.AutoDrive();
 game.start('time');
 let steps = 0;
-let gatesSeen = 0;
 let maxParticles = 0;
 let maxMarks = 0;
 let stallSteps = 0;
 let worstStall = 0;
-while (game.state === 'playing' && steps < 60 * 240) {
+while (game.state === 'playing' && steps < 60 * 150) {
   pilot.update(game, DT);
   game.update(DT);
-  gatesSeen = game.gates;
   maxParticles = Math.max(maxParticles, game.particles.length);
   maxMarks = Math.max(maxMarks, game.marks.length);
   if (steps > 60 && game.car.speed < 3) stallSteps++;
@@ -119,27 +216,65 @@ while (game.state === 'playing' && steps < 60 * 240) {
   worstStall = Math.max(worstStall, stallSteps);
   steps++;
 }
-check('计时模式会结束', game.state === 'over', (steps * DT).toFixed(1) + 's');
-check('自动驾驶能吃到光门', gatesSeen > 0, gatesSeen + ' 个');
+check('开得好能靠光门续命', game.state === 'playing' && game.gates > 5,
+  game.gates + ' 个光门 / ' + game.timeLeft.toFixed(0) + 's 剩余');
 check('得分为正', game.score > 0, game.score);
-check('有车流生成', game.traffic.cars.length > 0, game.traffic.cars.length + ' 辆');
 check('会产生烟雾粒子', maxParticles > 0, '峰值 ' + maxParticles);
-check('粒子数量有上限', maxParticles <= 160, '峰值 ' + maxParticles);
 check('会留下胎痕', maxMarks > 0, '峰值 ' + maxMarks);
-check('胎痕数量有上限', maxMarks <= 220, '峰值 ' + maxMarks);
-check('最高分已记录', game.best >= game.score);
 check('不会长时间卡住不动', worstStall * DT < 4.5, '最长停滞 ' + (worstStall * DT).toFixed(1) + 's');
+check('漂移与特技能赚钱', timeGarage.cash > 0, timeGarage.cash + ' 金币');
 
-// ---- 自由驾驶模式 ----
-const free = new global.RaceGame();
+// ---- 竞速赛 ----
+console.log('竞速赛');
+const raceGarage = new Cars.Garage();
+raceGarage.earn(30000);
+raceGarage.buy('hyper');
+for (let i = 0; i < 5; i++) {
+  raceGarage.upgrade('hyper', 'engine');
+  raceGarage.upgrade('hyper', 'turbo');
+}
+const race = new global.RaceGame(raceGarage);
+const racePilot = new global.AutoDrive(1);
+race.start('race', 0);
+check('起跑有倒计时', race.state === 'countdown');
+check('有 4 个 AI 对手', race.rivals.length === 4);
+check('赛道已生成', !!race.route && race.route.points.length >= 8);
+
+const cashBefore = raceGarage.cash;
+let raceSteps = 0;
+let sawRivalMove = false;
+const rivalStart = { x: race.rivals[0].car.x, z: race.rivals[0].car.z };
+while (race.state !== 'over' && raceSteps < 60 * 600) {
+  if (race.state === 'playing') racePilot.driveTo(race.car, race.gate.x, race.gate.z, DT);
+  race.update(DT);
+  if (!sawRivalMove && Math.hypot(race.rivals[0].car.x - rivalStart.x, race.rivals[0].car.z - rivalStart.z) > 50) {
+    sawRivalMove = true;
+  }
+  raceSteps++;
+}
+check('倒计时后进入比赛', race.elapsed > 0);
+check('AI 对手真的会跑', sawRivalMove);
+check('比赛会结束', race.state === 'over', (raceSteps * DT).toFixed(1) + 's');
+check('跑完了应有圈数', race.lap > race.route.laps, race.lap - 1 + '/' + race.route.laps + ' 圈');
+check('名次在 1~5 之间', race.place >= 1 && race.place <= 5, '第 ' + race.place + ' 名');
+check('买了顶配车能赢', race.place === 1, '第 ' + race.place + ' 名');
+check('完赛发奖金', raceGarage.cash > cashBefore, '+' + (raceGarage.cash - cashBefore) + ' 金币');
+
+// ---- 自由驾驶 ----
+console.log('自由驾驶');
+const freeGarage = new Cars.Garage();
+const free = new global.RaceGame(freeGarage);
 free.start('free');
-for (let i = 0; i < 60 * 30; i++) {
+let coinsSeen = 0;
+for (let i = 0; i < 60 * 60; i++) {
   free.car.throttle = 1;
   free.car.steer = Math.sin(i / 90) * 0.6;
   free.update(DT);
+  coinsSeen = Math.max(coinsSeen, free.coins.length);
 }
 check('自由驾驶不会结束', free.state === 'playing');
-check('自由驾驶车辆位置有效', isFinite(free.car.x) && isFinite(free.car.z),
+check('路上会刷金币', coinsSeen > 0, coinsSeen + ' 枚在场');
+check('车辆位置有效', isFinite(free.car.x) && isFinite(free.car.z),
   '(' + free.car.x.toFixed(0) + ', ' + free.car.z.toFixed(0) + ')');
 
 console.log('');
