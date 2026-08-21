@@ -49,7 +49,7 @@
     ['boot-screen', 'boot-msg', 'game', 'stage', 'hud-time', 'hud-score', 'hud-place', 'hud-lap',
       'hud-cash', 'hud-best', 'hud-speed', 'gauge-fill', 'nitro-fill', 'gate-arrow', 'gate-dist',
       'drift-banner', 'drift-label', 'drift-score', 'combo-badge', 'toast', 'minimap', 'countdown',
-      'row-time', 'row-place', 'row-lap', 'paint-swatches', 'menu-cash', 'race-laps',
+      'row-time', 'row-place', 'row-lap', 'label-time', 'label-lap', 'paint-swatches', 'menu-cash', 'race-laps',
       'garage-cash', 'garage-cars', 'garage-upgrades', 'garage-current',
       'overlay-ready', 'overlay-garage', 'overlay-over', 'overlay-paused', 'overlay-error',
       'error-msg', 'result-stats', 'over-title', 'btn-sound', 'btn-cam', 'btn-pause']
@@ -276,6 +276,7 @@
       }
       if (!action) return;
       if (action === 'start-race') startGame('race');
+      else if (action === 'start-sprint') startGame('sprint');
       else if (action === 'start-time') startGame('time');
       else if (action === 'start-free') startGame('free');
       else if (action === 'restart') startGame(game.mode);
@@ -323,14 +324,17 @@
   function startGame(mode) {
     RaceAudio.start();
     applyGarageToCar();
-    game.start(mode, mode === 'race' ? raceLevel : 0);
+    game.start(mode, (mode === 'race' || mode === 'sprint') ? raceLevel : 0);
     showOverlay(null);
 
-    el['row-time'].style.display = mode === 'time' ? '' : 'none';
+    el['row-time'].style.display = (mode === 'time' || mode === 'sprint') ? '' : 'none';
     el['row-place'].style.display = mode === 'race' ? '' : 'none';
-    el['row-lap'].style.display = mode === 'race' ? '' : 'none';
+    el['row-lap'].style.display = (mode === 'race' || mode === 'sprint') ? '' : 'none';
+    el['label-time'].textContent = mode === 'sprint' ? '用时' : '时间';
+    el['label-lap'].textContent = mode === 'sprint' ? '门点' : '圈数';
 
     if (mode === 'race') toast('准备起跑！', 900);
+    else if (mode === 'sprint') toast('极速冲刺：一路冲到底！', 1600);
     else if (mode === 'free') toast('自由驾驶：冲跳台、捡金币', 1800);
     else toast('冲向青色光门！', 1500);
   }
@@ -346,6 +350,20 @@
         '奖金 <b>' + game.cashEarned + '</b> 金币<br>' +
         '最高速度 <b>' + kmh + '</b> km/h';
       if (game.place <= 3) raceLevel++;
+    } else if (game.mode === 'sprint') {
+      var medals = { gold: '🥇 金牌', silver: '🥈 银牌', bronze: '🥉 铜牌' };
+      var medal = game.sprintMedal;
+      el['over-title'].textContent = medal ? '冲刺完成！' : '时间到';
+      html = medal
+        ? '<b>' + medals[medal] + '</b><br>'
+        : '<b>未拿到奖牌</b><br>';
+      html += '用时 <b>' + game.elapsed.toFixed(1) + '</b> 秒' +
+        '（金牌 ≤ <b>' + game.sprintPar + '</b> 秒）<br>' +
+        '门点 <b>' + game.gates + '/' + (game.route ? game.route.points.length : 0) + '</b><br>' +
+        '奖金 <b>' + game.cashEarned + '</b> 金币<br>' +
+        '得分 <b>' + game.score + '</b><br>' +
+        '最高速度 <b>' + kmh + '</b> km/h';
+      if (medal === 'gold' || medal === 'silver') raceLevel++;
     } else {
       el['over-title'].textContent = '时间到';
       html = '本局得分 <b>' + game.score + '</b><br>' +
@@ -378,13 +396,17 @@
     el['nitro-fill'].style.width = Math.round(car.nitro * 100) + '%';
 
     el['hud-time'].textContent = game.mode === 'time' ? game.timeLeft.toFixed(1) : game.elapsed.toFixed(1);
-    el['hud-time'].classList.toggle('warn', game.mode === 'time' && game.timeLeft < 8);
+    el['hud-time'].classList.toggle('warn',
+      (game.mode === 'time' && game.timeLeft < 8) ||
+      (game.mode === 'sprint' && game.sprintFailAt > 0 && game.elapsed > game.sprintFailAt - 8));
     el['hud-score'].textContent = game.score;
     el['hud-cash'].textContent = garage.cash;
     el['hud-best'].textContent = game.best;
     if (game.mode === 'race' && game.route) {
       el['hud-place'].textContent = game.place + '/' + (game.rivals.length + 1);
       el['hud-lap'].textContent = Math.min(game.lap, game.route.laps) + '/' + game.route.laps;
+    } else if (game.mode === 'sprint' && game.route) {
+      el['hud-lap'].textContent = Math.min(game.gates, game.route.points.length) + '/' + game.route.points.length;
     }
 
     var dist = Math.round(game.gateDistance());
@@ -548,7 +570,13 @@
       var ev = game.events.shift();
       if (ev.type === 'gate') {
         RaceAudio.gate();
-        toast('光门 +' + ev.value + (game.mode === 'time' ? ' / +' + RaceGame.GATE_TIME + ' 秒' : ''), 1100);
+        if (game.mode === 'time') {
+          toast('光门 +' + ev.value + ' / +' + RaceGame.GATE_TIME + ' 秒', 1100);
+        } else if (game.mode === 'sprint') {
+          toast('冲刺门 +' + ev.value, 900);
+        } else {
+          toast('光门 +' + ev.value, 1100);
+        }
       } else if (ev.type === 'coin') {
         RaceAudio.coin();
       } else if (ev.type === 'stunt') {
@@ -688,7 +716,12 @@
     // 打开 index.html#demo 就让 AI 自己开，方便看效果
     if (String(global.location.hash || '').indexOf('demo') >= 0) {
       autoDrive = new global.AutoDrive();
-      startGame(String(global.location.hash).indexOf('race') >= 0 ? 'race' : 'free');
+      var hash = String(global.location.hash);
+      var demoMode = 'free';
+      if (hash.indexOf('sprint') >= 0) demoMode = 'sprint';
+      else if (hash.indexOf('race') >= 0) demoMode = 'race';
+      else if (hash.indexOf('time') >= 0) demoMode = 'time';
+      startGame(demoMode);
       toast('演示模式：AI 自动驾驶', 2000);
     }
 

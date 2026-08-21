@@ -22,9 +22,9 @@
       <div class="hud" id="hud">
         <div class="hud__topleft">
           <div class="panel">
-            <div class="panel__row" id="row-time"><span class="label">时间</span><strong class="value value--time" id="hud-time">60.0</strong></div>
+            <div class="panel__row" id="row-time"><span class="label" id="label-time">时间</span><strong class="value value--time" id="hud-time">60.0</strong></div>
             <div class="panel__row" id="row-place"><span class="label">名次</span><strong class="value" id="hud-place">1/5</strong></div>
-            <div class="panel__row" id="row-lap"><span class="label">圈数</span><strong class="value" id="hud-lap">1/2</strong></div>
+            <div class="panel__row" id="row-lap"><span class="label" id="label-lap">圈数</span><strong class="value" id="hud-lap">1/2</strong></div>
             <div class="panel__row"><span class="label">得分</span><strong class="value" id="hud-score">0</strong></div>
           </div>
         </div>
@@ -91,13 +91,17 @@
         <div class="overlay__card">
           <h1 class="overlay__title">霓虹夜城飙车</h1>
           <p class="overlay__sub">
-            和 4 个 AI 对手环城竞速，穿光门抢时间，或者在夜城里飞跳台捡金币。<br />
+            和 AI 环城竞速、开环极速冲刺拿奖牌，或者穿光门抢时间、在夜城里飞跳台捡金币。<br />
             赚到的金币可以去车库买车、升级。
           </p>
           <div class="modes">
             <button class="mode" data-action="start-race" type="button">
               <b>🏁 竞速赛</b>
               <i>对抗 4 名 AI，跑 <span id="race-laps">2</span> 圈，按名次拿奖金</i>
+            </button>
+            <button class="mode" data-action="start-sprint" type="button">
+              <b>⚡ 极速冲刺</b>
+              <i>开环门点赛道，比用时拿金银铜牌</i>
             </button>
             <button class="mode" data-action="start-time" type="button">
               <b>⏱ 计时挑战</b>

@@ -260,6 +260,63 @@ check('名次在 1~5 之间', race.place >= 1 && race.place <= 5, '第 ' + race.
 check('买了顶配车能赢', race.place === 1, '第 ' + race.place + ' 名');
 check('完赛发奖金', raceGarage.cash > cashBefore, '+' + (raceGarage.cash - cashBefore) + ' 金币');
 
+// ---- 极速冲刺 ----
+console.log('极速冲刺');
+const sprintRoute = Route.sprint(0);
+check('冲刺路线有足够门点', sprintRoute.points.length >= 10, sprintRoute.points.length + ' 个');
+check('冲刺是开环路线', !!sprintRoute.sprint && sprintRoute.laps === 1);
+check('冲刺有金牌目标时间', sprintRoute.par >= 18, sprintRoute.par + 's');
+check('冲刺门点都在路口', sprintRoute.points.every((p) => CityMap.onRoad(p.x, p.z)));
+
+const sprintGarage = new Cars.Garage();
+sprintGarage.earn(30000);
+sprintGarage.buy('hyper');
+for (let i = 0; i < 5; i++) {
+  sprintGarage.upgrade('hyper', 'engine');
+  sprintGarage.upgrade('hyper', 'turbo');
+}
+const sprint = new global.RaceGame(sprintGarage);
+const sprintPilot = new global.AutoDrive(1);
+sprint.start('sprint', 0);
+check('冲刺有倒计时', sprint.state === 'countdown');
+check('冲刺无 AI 对手', sprint.rivals.length === 0);
+check('冲刺氮气拉满', sprint.car.nitro >= 0.99);
+check('冲刺失败时限合理', sprint.sprintFailAt > sprint.sprintPar, sprint.sprintFailAt.toFixed(1) + 's');
+
+const sprintCashBefore = sprintGarage.cash;
+let sprintSteps = 0;
+while (sprint.state !== 'over' && sprintSteps < 60 * 400) {
+  if (sprint.state === 'playing' && sprint.gate) {
+    sprintPilot.driveTo(sprint.car, sprint.gate.x, sprint.gate.z, DT);
+  }
+  sprint.update(DT);
+  sprintSteps++;
+}
+check('冲刺会结束', sprint.state === 'over', (sprintSteps * DT).toFixed(1) + 's');
+check('冲刺能跑完全部门点', sprint.finished && sprint.gates === sprint.route.points.length,
+  sprint.gates + '/' + sprint.route.points.length);
+check('冲刺奖牌判定有效',
+  !sprint.finished || ['gold', 'silver', 'bronze', ''].indexOf(sprint.sprintMedal) >= 0,
+  sprint.sprintMedal || 'none');
+if (sprint.finished && sprint.sprintMedal) {
+  check('冲刺奖牌发奖金', sprintGarage.cash > sprintCashBefore,
+    '+' + (sprintGarage.cash - sprintCashBefore) + ' 金币');
+} else {
+  check('冲刺未完赛或无牌不强制奖金', true);
+}
+check('金牌阈值正确', sprint.sprintMedalFor(sprint.sprintPar) === 'gold');
+check('银牌阈值正确', sprint.sprintMedalFor(sprint.sprintPar * 1.2) === 'silver');
+check('铜牌阈值正确', sprint.sprintMedalFor(sprint.sprintPar * 1.4) === 'bronze');
+
+// 超时失败
+const failSprint = new global.RaceGame(new Cars.Garage());
+failSprint.start('sprint', 0);
+failSprint.state = 'playing';
+failSprint.countdown = 0;
+failSprint.elapsed = failSprint.sprintFailAt - 0.05;
+failSprint.update(0.1);
+check('冲刺超时会失败', failSprint.state === 'over' && !failSprint.finished);
+
 // ---- 自由驾驶 ----
 console.log('自由驾驶');
 const freeGarage = new Cars.Garage();

@@ -1,10 +1,11 @@
 /**
  * 夜城飙车 - 游戏规则（纯逻辑，不依赖 THREE）
  *
- * 三种模式：
- *   race —— 环城赛道，和 4 个 AI 对手跑 2~3 圈，按名次拿奖金
- *   time —— 计时冲关，穿霓虹光门续命
- *   free —— 自由驾驶，跳台特技、漂移、捡金币
+ * 四种模式：
+ *   race   —— 环城赛道，和 4 个 AI 对手跑 2~3 圈，按名次拿奖金
+ *   sprint —— 极速冲刺，固定门点开环赛道，比用时拿金银铜牌
+ *   time   —— 计时冲关，穿霓虹光门续命
+ *   free   —— 自由驾驶，跳台特技、漂移、捡金币
  */
 (function (global) {
   'use strict';
@@ -31,6 +32,8 @@
   var COIN_VALUE = 25;
   var COIN_TARGET = 10;
   var PRIZES = [1000, 600, 350, 180, 90];
+  // 极速冲刺：金 / 银 / 铜 奖金
+  var SPRINT_PRIZES = { gold: 800, silver: 450, bronze: 200 };
 
   function RaceGame(garage) {
     this.garage = garage || new Cars.Garage();
@@ -104,16 +107,24 @@
     this.finished = false;
     this.route = null;
     this.gate = null;
+    this.sprintPar = 0;
+    this.sprintFailAt = 0;
+    this.sprintMedal = '';
+    this.sprintSpeedScore = 0;
   };
 
   RaceGame.prototype.start = function (mode, level) {
     this.mode = mode || 'time';
     this.level = level || 0;
     this.reset();
-    this.traffic.max = this.mode === 'race' ? 0 : 14;
+    this.traffic.max = (this.mode === 'race' || this.mode === 'sprint') ? 0 : 14;
 
     if (this.mode === 'race') {
       this.setupRace();
+      this.state = 'countdown';
+      this.countdown = 3;
+    } else if (this.mode === 'sprint') {
+      this.setupSprint();
       this.state = 'countdown';
       this.countdown = 3;
     } else {
@@ -246,6 +257,83 @@
       this.cashEarned += prize;
       this.garage.earn(prize);
       this.emit('finish', this.place);
+    }
+  };
+
+  // ---------------- 极速冲刺 ----------------
+
+  RaceGame.prototype.setupSprint = function () {
+    this.route = Route.sprint(this.level);
+    this.sprintPar = this.route.par;
+    this.sprintFailAt = this.route.par * 1.8;
+    this.sprintMedal = '';
+    this.sprintSpeedScore = 0;
+    this.traffic.max = 0;
+    this.traffic.reset();
+
+    var slot = Route.gridSlot(this.route, 0);
+    this.car.reset(slot.x, slot.z, slot.yaw);
+    this.car.nitro = 1;
+    this.wp = 0;
+    this.lap = 1;
+    this.gates = 0;
+    this.updateGateFromRoute();
+  };
+
+  /** 冲刺奖牌：金 ≤ par，银 ≤ 1.25par，铜 ≤ 1.5par */
+  RaceGame.prototype.sprintMedalFor = function (t) {
+    var par = this.sprintPar || 1;
+    if (t <= par) return 'gold';
+    if (t <= par * 1.25) return 'silver';
+    if (t <= par * 1.5) return 'bronze';
+    return '';
+  };
+
+  RaceGame.prototype.updateSprint = function (dt) {
+    var route = this.route;
+    var car = this.car;
+    if (!route) return;
+
+    // 高速段额外得分，鼓励一直踩油门
+    var kmh = RU.kmh(car.speed);
+    if (kmh > 160 && !car.airborne) {
+      var bonus = Math.round((kmh - 160) * dt * 2.2);
+      if (bonus > 0) {
+        this.score += bonus;
+        this.sprintSpeedScore += bonus;
+      }
+    }
+
+    var target = route.points[this.wp % route.points.length];
+    if (Math.hypot(target.x - car.x, target.z - car.z) < route.reach) {
+      this.wp++;
+      this.gates++;
+      this.comboTimer = 5;
+      this.combo = Math.min(9, this.combo + 1);
+      var gateScore = 120 * this.combo + Math.round(kmh * 0.8);
+      this.score += gateScore;
+      car.nitro = Math.min(1, car.nitro + 0.45);
+      this.emit('gate', gateScore);
+
+      if (this.wp >= route.points.length) {
+        this.finished = true;
+        this.state = 'over';
+        this.sprintMedal = this.sprintMedalFor(this.elapsed);
+        var prize = SPRINT_PRIZES[this.sprintMedal] || 0;
+        if (prize > 0) {
+          this.cashEarned += prize;
+          this.garage.earn(prize);
+        }
+        this.emit('finish', this.sprintMedal || 'none');
+        return;
+      }
+      this.updateGateFromRoute();
+    }
+
+    if (this.elapsed >= this.sprintFailAt) {
+      this.state = 'over';
+      this.sprintMedal = '';
+      this.emit('over', this.score);
     }
   };
 
@@ -400,7 +488,7 @@
       if (car.airTime > 0.45) {
         var stunt = Math.round(car.airTime * 120 + RU.kmh(car.speed) * 1.4);
         this.score += stunt;
-        if (this.mode !== 'race') {
+        if (this.mode !== 'race' && this.mode !== 'sprint') {
           this.cashEarned += Math.round(stunt / 8);
           this.garage.earn(Math.round(stunt / 8));
         }
@@ -436,7 +524,7 @@
       if (this.driftAccum > 12) {
         var gained = Math.round(this.driftAccum * this.combo);
         this.score += gained;
-        if (this.mode !== 'race') {
+        if (this.mode !== 'race' && this.mode !== 'sprint') {
           this.cashEarned += Math.round(gained / 10);
           this.garage.earn(Math.round(gained / 10));
         }
@@ -484,6 +572,8 @@
 
     if (this.mode === 'race') {
       this.updateRace(dt);
+    } else if (this.mode === 'sprint') {
+      this.updateSprint(dt);
     } else {
       this.updateCoins(dt);
       this.updateGateMode(dt);
@@ -534,5 +624,6 @@
   global.RaceGame.START_TIME = START_TIME;
   global.RaceGame.GATE_TIME = GATE_TIME;
   global.RaceGame.PRIZES = PRIZES;
+  global.RaceGame.SPRINT_PRIZES = SPRINT_PRIZES;
   global.RaceGame.COIN_VALUE = COIN_VALUE;
 })(typeof window !== 'undefined' ? window : global);

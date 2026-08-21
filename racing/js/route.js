@@ -46,6 +46,56 @@
     return create(i0, j0, w, h, 2 + (n >= 4 ? 1 : 0));
   }
 
+  /**
+   * 极速冲刺路线：一条开环冲刺道，大多笔直偶尔拐弯。
+   * 路点间距是路口，人和 AI 都能顺着马路一口气冲到底。
+   * 返回 { points, reach, length, par } —— par 是金牌目标用时（秒）。
+   */
+  function sprint(level) {
+    var n = Math.max(0, level | 0);
+    var gates = 10 + Math.min(6, n * 2); // 10~16 个门
+    var i = RU.randInt(-4, 4);
+    var j = RU.randInt(-4, 4);
+    // 初始朝向：四向之一
+    var dirs = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+    var dir = dirs[RU.randInt(0, 3)];
+    var points = [{ i: i, j: j }];
+    var straight = 0;
+
+    while (points.length < gates) {
+      // 笔直跑 3~5 格后再允许拐弯，冲刺感才够
+      if (straight >= RU.randInt(3, 5) && Math.random() < 0.55) {
+        // 左转或右转（相对当前方向）
+        dir = Math.random() < 0.5 ? [-dir[1], dir[0]] : [dir[1], -dir[0]];
+        straight = 0;
+      }
+      i += dir[0];
+      j += dir[1];
+      points.push({ i: i, j: j });
+      straight++;
+    }
+
+    var list = points.map(function (p) {
+      return { x: p.i * B, z: p.j * B, i: p.i, j: p.j };
+    });
+
+    // 金牌用时：按路线长度估算，按约 140 km/h 平均速度
+    var dist = 0;
+    for (var k = 1; k < list.length; k++) {
+      dist += Math.hypot(list[k].x - list[k - 1].x, list[k].z - list[k - 1].z);
+    }
+    var par = Math.max(18, Math.round(dist / 38)); // 约 137 km/h 均速
+
+    return {
+      points: list,
+      laps: 1,
+      reach: REACH,
+      length: list.length,
+      par: par,
+      sprint: true
+    };
+  }
+
   /** 起跑格：沿着首条直道排开，避免开局互相碰撞 */
   function gridSlot(route, index) {
     var start = route.points[0];
@@ -82,6 +132,7 @@
   global.Route = {
     create: create,
     forLevel: forLevel,
+    sprint: sprint,
     gridSlot: gridSlot,
     progress: progress,
     REACH: REACH
