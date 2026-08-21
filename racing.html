@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover" />
-    <meta name="description" content="霓虹夜城飙车：3D 无限夜城、漂移甩尾、氮气冲刺、检查点竞速。" />
+    <meta name="description" content="霓虹夜城飙车：3D 无限夜城、AI 对手竞速、跳台特技、漂移甩尾、氮气冲刺。" />
     <meta name="theme-color" content="#0a0714" />
     <title>霓虹夜城飙车 3D</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='14' font-size='14'>🏎️</text></svg>" />
@@ -141,6 +141,7 @@ html, body {
 
 .toast {
   position: absolute;
+  z-index: 30; /* 要盖在车库等覆盖层之上，否则买不起时的提示看不见 */
   top: 44%;
   left: 50%;
   transform: translate(-50%, -50%);
@@ -293,6 +294,66 @@ html, body {
 .result { margin-bottom: 18px; font-size: 15px; line-height: 2; color: #c6d2f2; }
 .result b { color: #fff; font-size: 20px; text-shadow: 0 0 12px var(--cyan); }
 
+/* ---------- 模式选择 ---------- */
+.modes { display: grid; gap: 9px; margin-bottom: 18px; }
+.mode {
+  display: block;
+  width: 100%;
+  padding: 12px 16px;
+  text-align: left;
+  color: #dbe6ff;
+  border: 1px solid rgba(138, 92, 255, 0.45);
+  border-radius: 14px;
+  background: rgba(18, 14, 34, 0.9);
+  cursor: pointer;
+}
+.mode:hover { border-color: var(--cyan); box-shadow: 0 0 18px rgba(46, 230, 255, 0.28); }
+.mode b { display: block; font-size: 17px; margin-bottom: 2px; }
+.mode i { font-style: normal; font-size: 12px; color: #8f9dc4; }
+
+/* ---------- 车库 ---------- */
+.overlay__card--wide { width: min(720px, 100%); max-height: 92vh; overflow-y: auto; }
+.cash { color: #ffd84d; text-shadow: 0 0 12px #ff9c1a; }
+.section { margin: 18px 0 10px; font-size: 14px; letter-spacing: 2px; color: #8f9dc4; font-weight: 600; }
+.section span { color: var(--cyan); }
+.garage { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 9px; }
+.card {
+  padding: 11px 12px;
+  text-align: left;
+  color: #dbe6ff;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 12px;
+  background: rgba(14, 12, 26, 0.9);
+  cursor: pointer;
+}
+.card:hover { border-color: var(--cyan); }
+.card--on { border-color: var(--cyan); box-shadow: 0 0 16px rgba(46, 230, 255, 0.3); }
+.card--locked { opacity: 0.72; }
+.card b { display: block; font-size: 15px; }
+.card i { font-style: normal; display: block; font-size: 11px; color: #8b97c2; margin: 3px 0 6px; }
+.card em { font-style: normal; font-size: 12px; color: #ffd84d; }
+.card .stat { display: block; font-size: 11px; color: #7f8bb5; }
+.upgrades { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 9px; }
+.pips { display: inline-flex; gap: 3px; vertical-align: middle; margin-left: 6px; }
+.pip { width: 9px; height: 9px; border-radius: 50%; background: rgba(255, 255, 255, 0.16); }
+.pip--on { background: var(--cyan); box-shadow: 0 0 8px var(--cyan); }
+
+/* ---------- 起跑倒计时 ---------- */
+.countdown {
+  position: absolute;
+  top: 38%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 96px;
+  font-weight: 800;
+  color: #fff;
+  text-shadow: 0 0 30px var(--pink), 0 0 60px var(--violet);
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+.countdown--on { opacity: 1; }
+.value--cash { color: #ffd84d; text-shadow: 0 0 10px #ff9c1a; }
+
 /* ---------- 触屏控制 ---------- */
 .touch { position: absolute; inset: auto 0 0 0; display: none; padding: 14px; pointer-events: none; }
 .touch__left, .touch__right { position: absolute; bottom: 18px; display: flex; gap: 10px; pointer-events: auto; }
@@ -338,14 +399,16 @@ html, body {
       <div class="hud" id="hud">
         <div class="hud__topleft">
           <div class="panel">
-            <div class="panel__row"><span class="label">时间</span><strong class="value value--time" id="hud-time">62.0</strong></div>
+            <div class="panel__row" id="row-time"><span class="label">时间</span><strong class="value value--time" id="hud-time">60.0</strong></div>
+            <div class="panel__row" id="row-place"><span class="label">名次</span><strong class="value" id="hud-place">1/5</strong></div>
+            <div class="panel__row" id="row-lap"><span class="label">圈数</span><strong class="value" id="hud-lap">1/2</strong></div>
             <div class="panel__row"><span class="label">得分</span><strong class="value" id="hud-score">0</strong></div>
           </div>
         </div>
 
         <div class="hud__topright">
           <div class="panel panel--right">
-            <div class="panel__row"><span class="label">关卡</span><strong class="value" id="hud-gates">0</strong></div>
+            <div class="panel__row"><span class="label">金币</span><strong class="value value--cash" id="hud-cash">0</strong></div>
             <div class="panel__row"><span class="label">最高</span><strong class="value" id="hud-best">0</strong></div>
           </div>
           <div class="tools">
@@ -360,8 +423,10 @@ html, body {
           <div class="guide__dist"><strong id="gate-dist">0</strong> m</div>
         </div>
 
+        <div class="countdown" id="countdown"></div>
+
         <div class="drift" id="drift-banner">
-          <div class="drift__label">DRIFT</div>
+          <div class="drift__label" id="drift-label">DRIFT</div>
           <div class="drift__score" id="drift-score">0</div>
         </div>
 
@@ -402,7 +467,31 @@ html, body {
       <div class="overlay" id="overlay-ready">
         <div class="overlay__card">
           <h1 class="overlay__title">霓虹夜城飙车</h1>
-          <p class="overlay__sub">穿过青色光门，拿时间续命；手刹甩尾攒氮气，速度就是分数。</p>
+          <p class="overlay__sub">
+            和 4 个 AI 对手环城竞速，穿光门抢时间，或者在夜城里飞跳台捡金币。<br />
+            赚到的金币可以去车库买车、升级。
+          </p>
+          <div class="modes">
+            <button class="mode" data-action="start-race" type="button">
+              <b>🏁 竞速赛</b>
+              <i>对抗 4 名 AI，跑 <span id="race-laps">2</span> 圈，按名次拿奖金</i>
+            </button>
+            <button class="mode" data-action="start-time" type="button">
+              <b>⏱ 计时挑战</b>
+              <i>60 秒起步，每穿一个光门 +16 秒</i>
+            </button>
+            <button class="mode" data-action="start-free" type="button">
+              <b>🌃 自由驾驶</b>
+              <i>没有计时，飞跳台、甩尾、捡金币</i>
+            </button>
+          </div>
+          <div class="paint">
+            <span class="paint__label">车漆</span>
+            <div class="paint__swatches" id="paint-swatches"></div>
+          </div>
+          <div class="overlay__actions">
+            <button class="btn" data-action="garage" type="button">🔧 车库（金币 <span id="menu-cash">0</span>）</button>
+          </div>
           <div class="keys">
             <span><b>W / ↑</b> 油门</span>
             <span><b>S / ↓</b> 刹车倒车</span>
@@ -410,27 +499,34 @@ html, body {
             <span><b>空格</b> 手刹漂移</span>
             <span><b>Shift</b> 氮气</span>
             <span><b>C</b> 切换视角</span>
+            <span><b>T</b> 回头看</span>
             <span><b>R</b> 回到路上</span>
             <span><b>P</b> 暂停</span>
           </div>
-          <div class="paint">
-            <span class="paint__label">车漆</span>
-            <div class="paint__swatches" id="paint-swatches"></div>
-          </div>
+        </div>
+      </div>
+
+      <div class="overlay overlay--hidden" id="overlay-garage">
+        <div class="overlay__card overlay__card--wide">
+          <h1 class="overlay__title">车库</h1>
+          <p class="overlay__sub">金币 <b class="cash" id="garage-cash">0</b>　（跑竞速拿奖金、捡金币、漂移和特技都能赚）</p>
+          <div class="garage" id="garage-cars"></div>
+          <h2 class="section">升级 <span id="garage-current"></span></h2>
+          <div class="upgrades" id="garage-upgrades"></div>
           <div class="overlay__actions">
-            <button class="btn btn--primary" data-action="start-time" type="button">计时冲关</button>
-            <button class="btn" data-action="start-free" type="button">自由驾驶</button>
+            <button class="btn btn--primary" data-action="close-garage" type="button">返回</button>
           </div>
         </div>
       </div>
 
       <div class="overlay overlay--hidden" id="overlay-over">
         <div class="overlay__card">
-          <h1 class="overlay__title">时间到</h1>
+          <h1 class="overlay__title" id="over-title">时间到</h1>
           <div class="result" id="result-stats"></div>
           <div class="overlay__actions">
             <button class="btn btn--primary" data-action="restart" type="button">再来一局</button>
-            <button class="btn" data-action="start-free" type="button">自由驾驶</button>
+            <button class="btn" data-action="menu" type="button">返回菜单</button>
+            <button class="btn" data-action="garage" type="button">🔧 车库</button>
           </div>
         </div>
       </div>
@@ -441,6 +537,7 @@ html, body {
           <div class="overlay__actions">
             <button class="btn btn--primary" data-action="resume" type="button">继续飙车</button>
             <button class="btn" data-action="restart" type="button">重新开始</button>
+            <button class="btn" data-action="menu" type="button">返回菜单</button>
           </div>
         </div>
       </div>
@@ -711,6 +808,277 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
 })(typeof window !== 'undefined' ? window : global);
 
 /**
+ * 夜城飙车 - 跳台（纯逻辑，不依赖 THREE）
+ *
+ * 跳台摆在马路正中，位置由路口坐标哈希决定，所以全世界任何时候
+ * 生成结果都一样，物理和渲染不需要同步任何状态。
+ */
+(function (global) {
+  'use strict';
+
+  var RU = global.RU;
+  var CityMap = global.CityMap;
+
+  var B = CityMap.BLOCK;
+  var LENGTH = 15;      // 斜坡长度
+  var HEIGHT = 3.4;     // 坡顶高度
+  var HALF_WIDTH = 6;   // 坡面半宽：两侧各留 7 米，不想飞可以绕过去
+  var DENSITY = 0.2;    // 约 1/5 的路口附近有跳台，开一会儿总能碰上
+  var OFFSET = B * 0.34; // 跳台离路口中心的距离
+
+  /** 该路口是否有跳台，有的话朝向哪 */
+  function rampAt(i, j) {
+    var h = RU.hash2(i, j, 4242);
+    if (h > DENSITY) return null;
+    var pick = RU.hash2(i, j, 991);
+    // 0=+x 1=-x 2=+z 3=-z：车从坡的低端冲上去的方向
+    var dir = Math.floor(pick * 4) % 4;
+    var alongX = dir === 0 || dir === 1;
+    var sign = (dir === 0 || dir === 2) ? 1 : -1;
+    return {
+      i: i, j: j, dir: dir, alongX: alongX, sign: sign,
+      x: i * B + (alongX ? -sign * OFFSET : 0),
+      z: j * B + (alongX ? 0 : -sign * OFFSET),
+      length: LENGTH,
+      height: HEIGHT,
+      halfWidth: HALF_WIDTH
+    };
+  }
+
+  /** 列出某点附近的跳台，供渲染层使用 */
+  function near(x, z, radius) {
+    var out = [];
+    var ci = Math.round(x / B);
+    var cj = Math.round(z / B);
+    var span = Math.ceil(radius / B);
+    for (var i = ci - span; i <= ci + span; i++) {
+      for (var j = cj - span; j <= cj + span; j++) {
+        var ramp = rampAt(i, j);
+        if (!ramp) continue;
+        if (Math.hypot(ramp.x - x, ramp.z - z) > radius) continue;
+        out.push(ramp);
+      }
+    }
+    return out;
+  }
+
+  /** 单个跳台在某点的表面高度，0 表示不在这个跳台上 */
+  function rampHeight(ramp, x, z) {
+    var along;
+    var across;
+    if (ramp.alongX) {
+      along = (x - ramp.x) * ramp.sign;
+      across = z - ramp.z;
+    } else {
+      along = (z - ramp.z) * ramp.sign;
+      across = x - ramp.x;
+    }
+    if (across < -ramp.halfWidth || across > ramp.halfWidth) return 0;
+    if (along < 0 || along > ramp.length) return 0;
+    return (along / ramp.length) * ramp.height;
+  }
+
+  /** 世界任意点的地面高度（只有跳台会抬高地面） */
+  function heightAt(x, z) {
+    var ci = Math.round(x / B);
+    var cj = Math.round(z / B);
+    var best = 0;
+    for (var i = ci - 1; i <= ci + 1; i++) {
+      for (var j = cj - 1; j <= cj + 1; j++) {
+        var ramp = rampAt(i, j);
+        if (!ramp) continue;
+        var h = rampHeight(ramp, x, z);
+        if (h > best) best = h;
+      }
+    }
+    return best;
+  }
+
+  global.Ramps = {
+    LENGTH: LENGTH,
+    HEIGHT: HEIGHT,
+    HALF_WIDTH: HALF_WIDTH,
+    rampAt: rampAt,
+    near: near,
+    heightAt: heightAt
+  };
+})(typeof window !== 'undefined' ? window : global);
+
+/**
+ * 夜城飙车 - 车库：车型数据、升级项、金币与存档（纯逻辑，不依赖 THREE）
+ */
+(function (global) {
+  'use strict';
+
+  var SAVE_KEY = 'nightcity.garage.v1';
+
+  /**
+   * 车型。accel/maxSpeed/grip/brake/turbo 直接喂给车辆物理。
+   * shape 对应 carmodel.js 里的车身轮廓。
+   */
+  var CARS = [
+    {
+      id: 'street', name: '街头轰鸣', desc: '入门好开，转向听话', price: 0,
+      shape: 'super', color: 0xe01b4c,
+      accel: 15, maxSpeed: 60, grip: 13, brake: 36, turbo: 1.6
+    },
+    {
+      id: 'drift', name: '甩尾狂人', desc: '抓地力低，专为漂移', price: 1500,
+      shape: 'super', color: 0x14c8d8,
+      accel: 16, maxSpeed: 62, grip: 9.5, brake: 34, turbo: 1.7
+    },
+    {
+      id: 'gt', name: 'GT 猛兽', desc: '推背感强，尾巴稳', price: 4000,
+      shape: 'gt', color: 0xff7a1a,
+      accel: 18.5, maxSpeed: 66, grip: 14.5, brake: 40, turbo: 1.7
+    },
+    {
+      id: 'hyper', name: '超音速', desc: '极速怪物，需要胆量', price: 9000,
+      shape: 'hyper', color: 0x7a3cff,
+      accel: 21, maxSpeed: 74, grip: 12.5, brake: 42, turbo: 1.9
+    }
+  ];
+
+  /** 升级项：每级的加成与价格 */
+  var UPGRADES = [
+    { id: 'engine', name: '引擎', unit: '加速', max: 5, price: 500, step: 1.15 },
+    { id: 'brake', name: '刹车', unit: '制动', max: 5, price: 350, step: 2.4 },
+    { id: 'tire', name: '轮胎', unit: '抓地', max: 5, price: 400, step: 0.8 },
+    { id: 'turbo', name: '氮气', unit: '极速', max: 5, price: 600, step: 1.6 }
+  ];
+
+  function findCar(id) {
+    for (var i = 0; i < CARS.length; i++) {
+      if (CARS[i].id === id) return CARS[i];
+    }
+    return CARS[0];
+  }
+
+  function upgradePrice(upgrade, level) {
+    return Math.round(upgrade.price * (1 + level * 0.7));
+  }
+
+  function Garage() {
+    this.cash = 0;
+    this.owned = { street: true };
+    this.levels = {};
+    this.selected = 'street';
+    this.paint = 0;
+    this.load();
+  }
+
+  Garage.prototype.load = function () {
+    var raw = null;
+    try {
+      raw = global.localStorage.getItem(SAVE_KEY);
+    } catch (e) {
+      raw = null;
+    }
+    if (!raw) return;
+    try {
+      var data = JSON.parse(raw);
+      this.cash = data.cash || 0;
+      this.owned = data.owned || { street: true };
+      this.levels = data.levels || {};
+      this.selected = data.selected || 'street';
+      this.paint = data.paint || 0;
+      this.owned.street = true;
+    } catch (e) { /* 存档坏了就用默认值 */ }
+  };
+
+  Garage.prototype.save = function () {
+    try {
+      global.localStorage.setItem(SAVE_KEY, JSON.stringify({
+        cash: this.cash, owned: this.owned, levels: this.levels,
+        selected: this.selected, paint: this.paint
+      }));
+    } catch (e) { /* 隐私模式下忽略 */ }
+  };
+
+  Garage.prototype.earn = function (amount) {
+    this.cash += Math.max(0, Math.round(amount));
+    this.save();
+    return this.cash;
+  };
+
+  Garage.prototype.has = function (carId) {
+    return !!this.owned[carId];
+  };
+
+  Garage.prototype.buy = function (carId) {
+    var car = findCar(carId);
+    if (this.has(carId) || this.cash < car.price) return false;
+    this.cash -= car.price;
+    this.owned[carId] = true;
+    this.selected = carId;
+    this.save();
+    return true;
+  };
+
+  Garage.prototype.select = function (carId) {
+    if (!this.has(carId)) return false;
+    this.selected = carId;
+    this.save();
+    return true;
+  };
+
+  Garage.prototype.level = function (carId, upgradeId) {
+    var byCar = this.levels[carId];
+    return (byCar && byCar[upgradeId]) || 0;
+  };
+
+  Garage.prototype.upgrade = function (carId, upgradeId) {
+    var upgrade = null;
+    for (var i = 0; i < UPGRADES.length; i++) {
+      if (UPGRADES[i].id === upgradeId) upgrade = UPGRADES[i];
+    }
+    if (!upgrade) return false;
+    var level = this.level(carId, upgradeId);
+    if (level >= upgrade.max) return false;
+    var price = upgradePrice(upgrade, level);
+    if (this.cash < price) return false;
+
+    this.cash -= price;
+    if (!this.levels[carId]) this.levels[carId] = {};
+    this.levels[carId][upgradeId] = level + 1;
+    this.save();
+    return true;
+  };
+
+  /** 车型基础数据 + 升级加成，得到实际喂给物理的参数 */
+  Garage.prototype.statsFor = function (carId) {
+    var base = findCar(carId);
+    var engine = this.level(carId, 'engine');
+    var brake = this.level(carId, 'brake');
+    var tire = this.level(carId, 'tire');
+    var turbo = this.level(carId, 'turbo');
+    return {
+      id: base.id,
+      name: base.name,
+      shape: base.shape,
+      color: base.color,
+      accel: base.accel + engine * 1.15,
+      maxSpeed: base.maxSpeed + turbo * 1.6,
+      grip: base.grip + tire * 0.8,
+      brake: base.brake + brake * 2.4,
+      turbo: base.turbo + turbo * 0.05
+    };
+  };
+
+  Garage.prototype.stats = function () {
+    return this.statsFor(this.selected);
+  };
+
+  global.Cars = {
+    list: CARS,
+    upgrades: UPGRADES,
+    find: findCar,
+    upgradePrice: upgradePrice,
+    Garage: Garage
+  };
+})(typeof window !== 'undefined' ? window : global);
+
+/**
  * 夜城飙车 - 街机风格车辆物理（纯逻辑，不依赖 THREE）
  *
  * 坐标系与 three.js 一致：x 向右、z 向屏幕外、y 向上。
@@ -723,12 +1091,28 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
   var RU = global.RU;
   var CityMap = global.CityMap;
 
+  var Ramps = global.Ramps;
+
   var WHEELBASE = 3.05;
   var BODY_RADIUS = 2.2;
+  var GRAVITY = 26;
 
-  function Car() {
+  var DEFAULT_STATS = {
+    accel: 15, maxSpeed: 60, grip: 13, brake: 36, turbo: 1.6
+  };
+
+  function Car(stats) {
+    this.stats = {};
+    this.setStats(stats);
+
     this.x = 0;
     this.z = 0;
+    this.y = 0;
+    this.vy = 0;
+    this.groundY = 0;
+    this.airborne = false;
+    this.airTime = 0;
+    this.landImpact = 0;
     this.yaw = 0;
     this.vx = 0;
     this.vz = 0;
@@ -757,9 +1141,24 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
 
   Car.prototype.radius = BODY_RADIUS;
 
+  Car.prototype.setStats = function (stats) {
+    var source = stats || DEFAULT_STATS;
+    this.stats.accel = source.accel || DEFAULT_STATS.accel;
+    this.stats.maxSpeed = source.maxSpeed || DEFAULT_STATS.maxSpeed;
+    this.stats.grip = source.grip || DEFAULT_STATS.grip;
+    this.stats.brake = source.brake || DEFAULT_STATS.brake;
+    this.stats.turbo = source.turbo || DEFAULT_STATS.turbo;
+  };
+
   Car.prototype.reset = function (x, z, yaw) {
     this.x = x;
     this.z = z;
+    this.y = 0;
+    this.vy = 0;
+    this.groundY = 0;
+    this.airborne = false;
+    this.airTime = 0;
+    this.landImpact = 0;
     this.yaw = yaw;
     this.vx = 0;
     this.vz = 0;
@@ -795,6 +1194,49 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     return { x: -Math.sin(this.yaw), z: Math.cos(this.yaw) };
   };
 
+  /**
+   * 跳台与腾空：跳台表面高度由 Ramps 提供。
+   * 冲上斜坡时记录爬升速率，坡道结束脚下没东西了就带着这个速率起飞。
+   */
+  Car.prototype.updateAir = function (dt) {
+    var ground = Ramps ? Ramps.heightAt(this.x, this.z) : 0;
+    var climb = dt > 0 ? (ground - this.groundY) / dt : 0;
+    this.groundY = ground;
+    this.landImpact = 0;
+
+    if (!this.airborne) {
+      if (ground >= this.y - 0.02) {
+        // 贴着地面（或正沿斜坡爬升）：记下爬升速率，作为冲出坡顶时的起飞速度。
+        // 从侧面切入坡道时高度会瞬间跳变，必须按「速度 × 坡度」限幅，
+        // 否则一帧的高度差会算出几十米每秒的起飞速度，车直接飞上天。
+        var maxClimb = Math.max(1.5, this.speed * 0.4);
+        this.y = ground;
+        this.vy = RU.clamp(climb, -30, maxClimb);
+        return;
+      }
+      // 脚下的坡到头了，带着刚才的爬升速率起飞
+      this.airborne = true;
+      this.airTime = 0;
+    }
+
+    this.airTime += dt;
+    this.vy -= GRAVITY * dt;
+    this.y += this.vy * dt;
+
+    if (this.y <= ground) {
+      this.y = ground;
+      this.landImpact = RU.clamp(-this.vy / 22, 0, 1);
+      this.vy = 0;
+      this.airborne = false;
+      // 落地不稳：速度损失一点，车头也会被带偏
+      if (this.landImpact > 0.15) {
+        this.vx *= 1 - this.landImpact * 0.28;
+        this.vz *= 1 - this.landImpact * 0.28;
+        this.yawRate += (Math.random() - 0.5) * this.landImpact * 1.4;
+      }
+    }
+  };
+
   Car.prototype.update = function (dt) {
     var fx = Math.cos(this.yaw);
     var fz = Math.sin(this.yaw);
@@ -812,14 +1254,14 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     this.steerAngle = RU.damp(this.steerAngle, this.steer * maxSteer, 11, dt);
 
     // ---- 纵向：引擎 / 刹车 / 阻力 ----
-    var maxV = this.boosting ? 74 : 60;
+    var maxV = this.stats.maxSpeed * (this.boosting ? this.stats.turbo * 0.78 : 1);
     var accel = 0;
-    if (this.throttle > 0) {
+    if (this.throttle > 0 && !this.airborne) {
       var falloff = 1 - Math.pow(RU.clamp(vf / maxV, 0, 1), 1.7);
-      accel += 15 * this.throttle * falloff * (this.boosting ? 1.6 : 1);
+      accel += this.stats.accel * this.throttle * falloff * (this.boosting ? this.stats.turbo : 1);
     }
-    if (this.brake > 0) {
-      if (vf > 0.6) accel -= 36 * this.brake;
+    if (this.brake > 0 && !this.airborne) {
+      if (vf > 0.6) accel -= this.stats.brake * this.brake;
       else accel -= 13 * this.brake;
     }
     if (this.throttle <= 0 && this.brake <= 0 && Math.abs(vf) > 0.2) {
@@ -828,7 +1270,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     accel -= 0.0011 * vf * Math.abs(vf);
 
     this.offRoad = !CityMap.onRoad(this.x, this.z);
-    if (this.offRoad) accel -= Math.sign(vf) * 5.5;
+    if (this.offRoad && !this.airborne) accel -= Math.sign(vf) * 5.5;
 
     vf += accel * dt;
     if (Math.abs(vf) < 0.12 && this.throttle <= 0 && this.brake <= 0) vf = 0;
@@ -844,7 +1286,8 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     var slipGain = this.handbrake ? 1.0 : 0.34;
     vl -= this.yawRate * vf * dt * slipGain;
 
-    var grip = this.handbrake ? 2.4 : 13;
+    var grip = this.handbrake ? 2.4 : this.stats.grip;
+    if (this.airborne) grip = 0.5;
     if (this.offRoad) grip *= 0.55;
     if (this.throttle > 0.5 && Math.abs(vf) < 22) grip *= 0.85; // 低速大脚油门更容易滑
     vl = RU.damp(vl, 0, grip, dt);
@@ -858,6 +1301,8 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
 
     this.x += this.vx * dt;
     this.z += this.vz * dt;
+
+    this.updateAir(dt);
 
     this.crashImpact = 0;
     var hit = CityMap.resolveCircle(this.x, this.z, BODY_RADIUS);
@@ -1015,7 +1460,202 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
 })(typeof window !== 'undefined' ? window : global);
 
 /**
- * 夜城飙车 - 游戏规则：霓虹检查点、漂移计分、氮气、车流碰撞（纯逻辑）
+ * 夜城飙车 - 竞速赛道（纯逻辑，不依赖 THREE）
+ *
+ * 赛道就是城市网格上的一个矩形环线，路点都落在路口，
+ * 所以人和 AI 都能沿着真实马路跑完一圈。
+ */
+(function (global) {
+  'use strict';
+
+  var RU = global.RU;
+  var CityMap = global.CityMap;
+
+  var B = CityMap.BLOCK;
+  var REACH = 26; // 进入这个半径就算过了这个路点
+
+  /** 生成一条环线：从 (i0,j0) 出发，宽 w 格、高 h 格 */
+  function create(i0, j0, w, h, laps) {
+    // 沿矩形四边逐个路口排点，相邻路点必须是网格上的邻居，AI 才能顺着马路跑
+    var points = [];
+    var i;
+    var j;
+    for (i = 0; i <= w; i++) points.push({ i: i0 + i, j: j0 });
+    for (j = 1; j <= h; j++) points.push({ i: i0 + w, j: j0 + j });
+    for (i = w - 1; i >= 0; i--) points.push({ i: i0 + i, j: j0 + h });
+    for (j = h - 1; j >= 1; j--) points.push({ i: i0, j: j0 + j });
+
+    var list = points.map(function (p) {
+      return { x: p.i * B, z: p.j * B, i: p.i, j: p.j };
+    });
+
+    return {
+      points: list,
+      laps: laps || 2,
+      reach: REACH,
+      length: list.length
+    };
+  }
+
+  /** 随机生成一条赛道（关卡编号决定规模，越往后越长） */
+  function forLevel(level) {
+    var n = Math.max(0, level | 0);
+    var w = 3 + (n % 3);
+    var h = 2 + Math.floor(n / 3) % 3;
+    var i0 = RU.randInt(-6, 6);
+    var j0 = RU.randInt(-6, 6);
+    return create(i0, j0, w, h, 2 + (n >= 4 ? 1 : 0));
+  }
+
+  /** 起跑格：沿着首条直道排开，避免开局互相碰撞 */
+  function gridSlot(route, index) {
+    var start = route.points[0];
+    var next = route.points[1 % route.points.length];
+    var dx = next.x - start.x;
+    var dz = next.z - start.z;
+    var len = Math.hypot(dx, dz) || 1;
+    var fx = dx / len;
+    var fz = dz / len;
+    var rx = -fz;
+    var rz = fx;
+    var row = Math.floor(index / 2);
+    var col = index % 2 === 0 ? -1 : 1;
+    return {
+      x: start.x - fx * (14 + row * 9) + rx * col * 4.5,
+      z: start.z - fz * (14 + row * 9) + rz * col * 4.5,
+      yaw: Math.atan2(fz, fx)
+    };
+  }
+
+  /**
+   * 赛道进度：圈数 * 路点数 + 已过路点数 + 当前段完成比例。
+   * 数值越大排名越前，直接比大小就能排位。
+   */
+  function progress(route, lap, index, x, z) {
+    var target = route.points[index % route.points.length];
+    var prev = route.points[(index - 1 + route.points.length) % route.points.length];
+    var segLen = Math.hypot(target.x - prev.x, target.z - prev.z) || 1;
+    var left = Math.hypot(target.x - x, target.z - z);
+    var frac = RU.clamp(1 - left / segLen, 0, 1);
+    return lap * route.points.length + index + frac;
+  }
+
+  global.Route = {
+    create: create,
+    forLevel: forLevel,
+    gridSlot: gridSlot,
+    progress: progress,
+    REACH: REACH
+  };
+})(typeof window !== 'undefined' ? window : global);
+
+/**
+ * 夜城飙车 - 自动驾驶（AI 对手、演示模式、无头测试共用，不依赖 THREE）
+ *
+ * 走曼哈顿路线：先沿当前这条街开到目标所在的街，再拐弯；
+ * 被挤到人行道上就先回到车道中心，顶住墙超过一会儿就倒车脱困。
+ */
+(function (global) {
+  'use strict';
+
+  var RU = global.RU;
+  var CityMap = global.CityMap;
+
+  function AutoDrive(skill) {
+    this.stuck = 0;
+    this.backup = 0;
+    this.backupSteer = 1;
+    this.skill = skill == null ? 1 : skill;
+  }
+
+  AutoDrive.prototype.reset = function () {
+    this.stuck = 0;
+    this.backup = 0;
+  };
+
+  /** 下一个要开往的路点：先并到目标所在的那条街，再直奔目标 */
+  AutoDrive.prototype.waypoint = function (car, tx, tz) {
+    var B = CityMap.BLOCK;
+
+    // 掉出马路（撞上人行道）时回到最近的车道中心。
+    // 目标要取在前方一段距离上，垂直插回去会直接怼上路缘石。
+    if (!CityMap.onRoad(car.x, car.z)) {
+      var lineX = Math.round(car.x / B) * B;
+      var lineZ = Math.round(car.z / B) * B;
+      var ahead = 34;
+      if (Math.abs(car.x - lineX) < Math.abs(car.z - lineZ)) {
+        var dirZ = Math.sin(car.yaw) >= 0 ? 1 : -1;
+        return { x: lineX, z: car.z + dirZ * ahead, turning: true };
+      }
+      var dirX = Math.cos(car.yaw) >= 0 ? 1 : -1;
+      return { x: car.x + dirX * ahead, z: lineZ, turning: true };
+    }
+
+    var gi = Math.round(tx / B);
+    var gj = Math.round(tz / B);
+    var ci = Math.round(car.x / B);
+    var cj = Math.round(car.z / B);
+    var onXRoad = CityMap.distToRoadAxis(car.z) <= CityMap.HALF_ROAD;
+
+    if (onXRoad && ci !== gi) return { x: gi * B, z: cj * B, turning: true };
+    if (!onXRoad && cj !== gj) return { x: ci * B, z: gj * B, turning: true };
+    return { x: tx, z: tz, turning: false };
+  };
+
+  /** 把车开向 (tx, tz)，直接写 car 的油门 / 刹车 / 方向 */
+  AutoDrive.prototype.driveTo = function (car, tx, tz, dt) {
+    if (car.speed < 2.5) this.stuck += dt;
+    else this.stuck = 0;
+    if (this.stuck > 1.2) {
+      this.stuck = 0;
+      this.backup = 1.2;
+    }
+
+    // 倒车脱困：反向打方向，把车头从墙角里拽出来
+    if (this.backup > 0) {
+      this.backup -= dt;
+      car.throttle = 0;
+      car.brake = 1;
+      car.steer = this.backupSteer;
+      car.handbrake = false;
+      car.wantBoost = false;
+      return;
+    }
+
+    var wp = this.waypoint(car, tx, tz);
+    var bearing = RU.wrapAngle(Math.atan2(wp.z - car.z, wp.x - car.x) - car.yaw);
+    var dist = Math.hypot(wp.x - car.x, wp.z - car.z);
+
+    // 要拐弯就提前减速，否则一定顶到街角
+    var wantSpeed = 50 * this.skill;
+    if (Math.abs(bearing) > 0.4) wantSpeed = 11 * this.skill;
+    else if (wp.turning && dist < 70) wantSpeed = 15 * this.skill;
+    else if (dist < 40) wantSpeed = 22 * this.skill;
+
+    this.backupSteer = bearing >= 0 ? -1 : 1;
+    car.steer = RU.clamp(bearing * 2.6, -1, 1);
+    car.throttle = car.speed < wantSpeed ? 1 : 0;
+    car.brake = car.speed > wantSpeed * 1.4 ? 1 : 0;
+    car.handbrake = Math.abs(bearing) > 0.55 && car.speed > 20;
+    car.wantBoost = Math.abs(bearing) < 0.1 && dist > 130;
+  };
+
+  /** 演示模式：追着玩家当前的目标点开 */
+  AutoDrive.prototype.update = function (game, dt) {
+    var target = game.target();
+    if (target) this.driveTo(game.car, target.x, target.z, dt);
+  };
+
+  global.AutoDrive = AutoDrive;
+})(typeof window !== 'undefined' ? window : global);
+
+/**
+ * 夜城飙车 - 游戏规则（纯逻辑，不依赖 THREE）
+ *
+ * 三种模式：
+ *   race —— 环城赛道，和 4 个 AI 对手跑 2~3 圈，按名次拿奖金
+ *   time —— 计时冲关，穿霓虹光门续命
+ *   free —— 自由驾驶，跳台特技、漂移、捡金币
  */
 (function (global) {
   'use strict';
@@ -1024,6 +1664,9 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
   var CityMap = global.CityMap;
   var Car = global.Car;
   var Traffic = global.Traffic;
+  var Cars = global.Cars;
+  var Route = global.Route;
+  var AutoDrive = global.AutoDrive;
 
   var GATE_RADIUS = 15;
   var GATE_MIN = 200;
@@ -1033,10 +1676,19 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
   var MAX_PARTICLES = 160;
   var MAX_MARKS = 220;
   var BEST_KEY = 'nightcity.best.v1';
+  var RIVAL_COUNT = 4;
+  var RIVAL_COLORS = [0x2ee6ff, 0x39e05a, 0xffd84d, 0xff7a1a, 0xe8ecf5];
+  var RIVAL_NAMES = ['青焰', '毒蛇', '闪电', '夜枭', '铁拳'];
+  var COIN_VALUE = 25;
+  var COIN_TARGET = 10;
+  var PRIZES = [1000, 600, 350, 180, 90];
 
-  function RaceGame() {
-    this.car = new Car();
-    this.traffic = new Traffic(15);
+  function RaceGame(garage) {
+    this.garage = garage || new Cars.Garage();
+    this.car = new Car(this.garage.stats());
+    this.traffic = new Traffic(14);
+    this.rivals = [];
+    this.coins = [];
     this.state = 'ready';
     this.mode = 'time';
     this.events = [];
@@ -1044,8 +1696,10 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     this.marks = [];
     this.gate = null;
     this.gateIndex = 0;
-    this.reset();
+    this.route = null;
+    this.level = 0;
     this.best = this.loadBest();
+    this.reset();
   }
 
   RaceGame.prototype.loadBest = function () {
@@ -1062,17 +1716,25 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     } catch (e) { /* 隐私模式下忽略 */ }
   };
 
+  RaceGame.prototype.emit = function (type, value, text) {
+    this.events.push({ type: type, value: value || 0, text: text || '' });
+  };
+
   RaceGame.prototype.reset = function () {
+    this.car.setStats(this.garage.stats());
     this.car.reset(0, 0, 0);
     this.car.nitro = 0.5;
     this.car.topSpeed = 0;
     this.traffic.reset();
+    this.rivals.length = 0;
+    this.coins.length = 0;
     this.particles.length = 0;
     this.marks.length = 0;
     this.events.length = 0;
     this.timeLeft = START_TIME;
     this.elapsed = 0;
     this.score = 0;
+    this.cashEarned = 0;
     this.gates = 0;
     this.combo = 1;
     this.comboTimer = 0;
@@ -1082,18 +1744,163 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     this.lastDrifting = false;
     this.shake = 0;
     this.gateIndex = 0;
-    this.pickGate(true);
+    this.coinsTaken = 0;
+    this.bestAir = 0;
+    this.countdown = 0;
+    this.lap = 1;
+    this.wp = 0;
+    this.place = 1;
+    this.finishedCount = 0;
+    this.myProgress = 0;
+    this.finished = false;
+    this.route = null;
+    this.gate = null;
   };
 
-  RaceGame.prototype.start = function (mode) {
+  RaceGame.prototype.start = function (mode, level) {
     this.mode = mode || 'time';
+    this.level = level || 0;
     this.reset();
-    this.state = 'playing';
+    this.traffic.max = this.mode === 'race' ? 0 : 14;
+
+    if (this.mode === 'race') {
+      this.setupRace();
+      this.state = 'countdown';
+      this.countdown = 3;
+    } else {
+      this.pickGate(true);
+      this.state = 'playing';
+    }
   };
 
-  RaceGame.prototype.emit = function (type, value) {
-    this.events.push({ type: type, value: value || 0 });
+  // ---------------- 竞速赛 ----------------
+
+  RaceGame.prototype.setupRace = function () {
+    this.route = Route.forLevel(this.level);
+    this.traffic.max = 0;
+    this.traffic.reset();
+
+    var slot = Route.gridSlot(this.route, 0);
+    this.car.reset(slot.x, slot.z, slot.yaw);
+    this.wp = 0;
+    this.lap = 1;
+
+    // AI 难度随关卡上升，但始终留一点余量给玩家
+    var difficulty = 0.82 + Math.min(0.16, this.level * 0.03);
+    for (var r = 0; r < RIVAL_COUNT; r++) {
+      var stats = this.garage.statsFor(r % 2 === 0 ? 'gt' : 'drift');
+      var rival = {
+        name: RIVAL_NAMES[r % RIVAL_NAMES.length],
+        color: RIVAL_COLORS[r % RIVAL_COLORS.length],
+        car: new Car({
+          accel: stats.accel * difficulty,
+          maxSpeed: stats.maxSpeed * difficulty,
+          grip: stats.grip,
+          brake: stats.brake,
+          turbo: stats.turbo
+        }),
+        pilot: new AutoDrive(difficulty + r * 0.02),
+        wp: 0,
+        lap: 1,
+        finished: false,
+        progress: 0
+      };
+      var rslot = Route.gridSlot(this.route, r + 1);
+      rival.car.reset(rslot.x, rslot.z, rslot.yaw);
+      rival.car.nitro = 1;
+      this.rivals.push(rival);
+    }
+    this.updateGateFromRoute();
   };
+
+  RaceGame.prototype.updateGateFromRoute = function () {
+    var p = this.route.points[this.wp % this.route.points.length];
+    this.gate = { x: p.x, z: p.z, radius: this.route.reach, id: this.wp };
+  };
+
+  /** 推进一个车手的赛道进度，返回是否刚刚完赛 */
+  RaceGame.prototype.advanceRacer = function (racer, x, z) {
+    var route = this.route;
+    var target = route.points[racer.wp % route.points.length];
+    var done = false;
+    if (Math.hypot(target.x - x, target.z - z) < route.reach) {
+      racer.wp++;
+      if (racer.wp % route.points.length === 0) {
+        racer.lap++;
+        if (racer.lap > route.laps) done = true;
+      }
+    }
+    // 进度要在完赛那一帧也算出来，否则排名会把刚冲线的车手当成最后一名
+    racer.progress = Route.progress(route, racer.lap, racer.wp, x, z);
+    return done;
+  };
+
+  RaceGame.prototype.updateRace = function (dt) {
+    var route = this.route;
+    var i;
+
+    // 玩家进度
+    var me = { wp: this.wp, lap: this.lap, progress: 0 };
+    var done = this.advanceRacer(me, this.car.x, this.car.z);
+    if (me.wp !== this.wp) {
+      if (me.lap !== this.lap) this.emit('lap', me.lap);
+      this.wp = me.wp;
+      this.lap = me.lap;
+      this.updateGateFromRoute();
+    }
+    this.myProgress = me.progress;
+
+    // 对手
+    for (i = 0; i < this.rivals.length; i++) {
+      var rival = this.rivals[i];
+      if (rival.finished) continue;
+      var target = route.points[rival.wp % route.points.length];
+      rival.pilot.driveTo(rival.car, target.x, target.z, dt);
+      rival.car.update(dt);
+      if (this.advanceRacer(rival, rival.car.x, rival.car.z)) {
+        rival.finished = true;
+        rival.finishPlace = ++this.finishedCount;
+      }
+
+      // 和玩家的碰撞
+      var dx = this.car.x - rival.car.x;
+      var dz = this.car.z - rival.car.z;
+      var d = Math.hypot(dx, dz);
+      var minD = this.car.radius + rival.car.radius + 0.4;
+      if (d < minD && d > 0.0001 && Math.abs(this.car.y - rival.car.y) < 2) {
+        var nx = dx / d;
+        var nz = dz / d;
+        this.car.x += nx * (minD - d) * 0.5;
+        this.car.z += nz * (minD - d) * 0.5;
+        rival.car.x -= nx * (minD - d) * 0.5;
+        rival.car.z -= nz * (minD - d) * 0.5;
+        var rel = Math.abs(this.car.speed - rival.car.speed);
+        this.car.applyImpact(nx, nz, RU.clamp(rel * 0.18, 1, 7));
+        rival.car.applyImpact(-nx, -nz, RU.clamp(rel * 0.18, 1, 7));
+        this.shake = Math.max(this.shake, 0.35);
+        this.emit('crash', 0.4);
+      }
+    }
+
+    // 排名
+    var ahead = 0;
+    for (i = 0; i < this.rivals.length; i++) {
+      if (this.rivals[i].progress > this.myProgress) ahead++;
+    }
+    this.place = ahead + 1;
+
+    if (done) {
+      this.finished = true;
+      this.state = 'over';
+      this.place = ++this.finishedCount;
+      var prize = PRIZES[Math.min(PRIZES.length - 1, this.place - 1)];
+      this.cashEarned += prize;
+      this.garage.earn(prize);
+      this.emit('finish', this.place);
+    }
+  };
+
+  // ---------------- 计时冲关 ----------------
 
   /** 在前方选一个路口作为下一个检查点 */
   RaceGame.prototype.pickGate = function (initial) {
@@ -1120,18 +1927,23 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
       if (initial) score = -Math.abs(d - 260) / 300 + Math.random() * 0.4;
       if (score > bestScore) {
         bestScore = score;
-        best = { x: pos.x, z: pos.z, i: idx.i, j: idx.j };
+        best = { x: pos.x, z: pos.z };
       }
     }
 
     if (!best) {
       var fb = CityMap.nearestIntersection(car.x + fx * 420, car.z + fz * 420);
       var fp = CityMap.intersectionPos(fb.i, fb.j);
-      best = { x: fp.x, z: fp.z, i: fb.i, j: fb.j };
+      best = { x: fp.x, z: fp.z };
     }
 
     this.gateIndex++;
     this.gate = { x: best.x, z: best.z, radius: GATE_RADIUS, id: this.gateIndex };
+  };
+
+  /** 当前该往哪开：竞速看路点，其他模式看光门 */
+  RaceGame.prototype.target = function () {
+    return this.gate;
   };
 
   RaceGame.prototype.gateDistance = function () {
@@ -1139,17 +1951,51 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     return Math.hypot(this.gate.x - this.car.x, this.gate.z - this.car.z);
   };
 
-  /** 检查点相对车头的方位角，用于 HUD 箭头 */
   RaceGame.prototype.gateBearing = function () {
     if (!this.gate) return 0;
     var a = Math.atan2(this.gate.z - this.car.z, this.gate.x - this.car.x);
     return RU.wrapAngle(a - this.car.yaw);
   };
 
+  // ---------------- 金币 ----------------
+
+  RaceGame.prototype.updateCoins = function (dt) {
+    var car = this.car;
+    var i;
+    for (i = this.coins.length - 1; i >= 0; i--) {
+      var c = this.coins[i];
+      c.spin += dt * 3;
+      var d = Math.hypot(c.x - car.x, c.z - car.z);
+      if (d < 5 && Math.abs(car.y - 0.9) < 3.5) {
+        this.coins.splice(i, 1);
+        this.coinsTaken++;
+        this.cashEarned += COIN_VALUE;
+        this.garage.earn(COIN_VALUE);
+        this.emit('coin', COIN_VALUE);
+        continue;
+      }
+      if (d > 560) this.coins.splice(i, 1);
+    }
+
+    while (this.coins.length < COIN_TARGET) {
+      var B = CityMap.BLOCK;
+      var alongX = Math.random() < 0.5;
+      var line = Math.round((alongX ? car.z : car.x) / B) + RU.randInt(-2, 2);
+      var base = alongX ? car.x : car.z;
+      var along = base + (Math.random() < 0.5 ? 1 : -1) * RU.rand(90, 420);
+      var x = alongX ? along : line * B;
+      var z = alongX ? line * B : along;
+      if (!CityMap.onRoad(x, z)) continue;
+      this.coins.push({ x: x, z: z, spin: Math.random() * 6 });
+    }
+  };
+
+  // ---------------- 特效 ----------------
+
   RaceGame.prototype.spawnSmoke = function (x, z, size, color) {
     if (this.particles.length >= MAX_PARTICLES) this.particles.shift();
     this.particles.push({
-      x: x, y: 0.4, z: z,
+      x: x, y: 0.4 + this.car.y, z: z,
       vx: RU.rand(-1.6, 1.6), vy: RU.rand(0.6, 2.2), vz: RU.rand(-1.6, 1.6),
       life: 1, size: size, color: color || 0xbfc6d8
     });
@@ -1157,13 +2003,13 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
 
   RaceGame.prototype.spawnMark = function (x, z, yaw, strength) {
     if (this.marks.length >= MAX_MARKS) this.marks.shift();
-    this.marks.push({ x: x, z: z, yaw: yaw, life: 1, strength: strength });
+    this.marks.push({ x: x, z: z, y: this.car.y, yaw: yaw, life: 1, strength: strength });
   };
 
   RaceGame.prototype.updateFx = function (dt) {
-    var i, p;
+    var i;
     for (i = this.particles.length - 1; i >= 0; i--) {
-      p = this.particles[i];
+      var p = this.particles[i];
       p.life -= dt * 0.85;
       if (p.life <= 0) { this.particles.splice(i, 1); continue; }
       p.x += p.vx * dt;
@@ -1178,7 +2024,18 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     }
   };
 
+  // ---------------- 主更新 ----------------
+
   RaceGame.prototype.update = function (dt) {
+    if (this.state === 'countdown') {
+      var before = Math.ceil(this.countdown);
+      this.countdown -= dt;
+      var after = Math.ceil(this.countdown);
+      if (after !== before) this.emit('countdown', Math.max(0, after));
+      // 起步前只更新对手的物理（它们也在等灯）
+      if (this.countdown <= 0) this.state = 'playing';
+      return;
+    }
     if (this.state !== 'playing') return;
 
     var car = this.car;
@@ -1186,10 +2043,26 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     this.elapsed += dt;
     this.shake = Math.max(0, this.shake - dt * 2.4);
 
+    // ---- 腾空特技 ----
+    if (car.airborne) {
+      this.bestAir = Math.max(this.bestAir, car.airTime);
+    } else if (car.landImpact > 0) {
+      this.shake = Math.max(this.shake, car.landImpact);
+      if (car.airTime > 0.45) {
+        var stunt = Math.round(car.airTime * 120 + RU.kmh(car.speed) * 1.4);
+        this.score += stunt;
+        if (this.mode !== 'race') {
+          this.cashEarned += Math.round(stunt / 8);
+          this.garage.earn(Math.round(stunt / 8));
+        }
+        this.emit('stunt', stunt, '腾空 ' + car.airTime.toFixed(1) + ' 秒');
+      }
+      car.airTime = 0;
+    }
+
     // ---- 漂移计分与痕迹 ----
     var hardBrake = car.brake > 0.5 && car.speed > 18;
-    if (car.drifting || hardBrake) {
-      // 按行驶距离铺胎痕，速度再快也不会断成虚线
+    if ((car.drifting || hardBrake) && !car.airborne) {
       this.markDist += car.speed * dt;
       var laying = this.markDist >= 1.1;
       if (laying) this.markDist = 0;
@@ -1214,6 +2087,10 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
       if (this.driftAccum > 12) {
         var gained = Math.round(this.driftAccum * this.combo);
         this.score += gained;
+        if (this.mode !== 'race') {
+          this.cashEarned += Math.round(gained / 10);
+          this.garage.earn(Math.round(gained / 10));
+        }
         this.emit('drift', gained);
       }
       this.driftAccum = 0;
@@ -1221,7 +2098,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     }
     this.lastDrifting = car.drifting;
 
-    if (car.offRoad && car.speed > 8 && Math.random() < 0.5) {
+    if (car.offRoad && car.speed > 8 && !car.airborne && Math.random() < 0.5) {
       this.spawnSmoke(car.x - Math.cos(car.yaw) * 2, car.z - Math.sin(car.yaw) * 2, RU.rand(1, 2), 0x9a8c74);
     }
 
@@ -1233,7 +2110,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
       for (var k = 0; k < 6; k++) this.spawnSmoke(car.x, car.z, RU.rand(0.8, 1.8), 0xffb347);
     }
 
-    // ---- 车流 ----
+    // ---- 车流（竞速赛里清空，免得挡道） ----
     this.traffic.update(dt, car.x, car.z, car.yaw);
     for (var i = 0; i < this.traffic.cars.length; i++) {
       var t = this.traffic.cars[i];
@@ -1241,7 +2118,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
       var dz = car.z - t.z;
       var d = Math.hypot(dx, dz);
       var minD = car.radius + t.radius + 0.6;
-      if (d < minD && d > 0.0001) {
+      if (d < minD && d > 0.0001 && car.y < 1.6) {
         var nx = dx / d;
         var nz = dz / d;
         car.x += nx * (minD - d);
@@ -1256,18 +2133,11 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
       }
     }
 
-    // ---- 检查点 ----
-    if (this.gate && this.gateDistance() < this.gate.radius) {
-      this.gates++;
-      this.comboTimer = 6;
-      this.combo = Math.min(9, this.combo + 1);
-      var speedBonus = Math.round(RU.kmh(car.speed));
-      var gained2 = 150 * this.combo + speedBonus;
-      this.score += gained2;
-      if (this.mode === 'time') this.timeLeft = Math.min(80, this.timeLeft + GATE_TIME);
-      car.nitro = Math.min(1, car.nitro + 0.34);
-      this.emit('gate', gained2);
-      this.pickGate(false);
+    if (this.mode === 'race') {
+      this.updateRace(dt);
+    } else {
+      this.updateCoins(dt);
+      this.updateGateMode(dt);
     }
 
     if (this.comboTimer > 0) {
@@ -1275,119 +2145,47 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
       if (this.comboTimer <= 0) this.combo = 1;
     }
 
-    if (this.mode === 'time') {
-      this.timeLeft -= dt;
-      if (this.timeLeft <= 0) {
-        this.timeLeft = 0;
-        this.state = 'over';
-        if (this.score > this.best) {
-          this.best = this.score;
-          this.saveBest();
-          this.emit('record', this.score);
-        }
-        this.emit('over', this.score);
-      }
+    this.updateFx(dt);
+  };
+
+  RaceGame.prototype.updateGateMode = function (dt) {
+    var car = this.car;
+
+    if (this.gate && this.gateDistance() < this.gate.radius) {
+      this.gates++;
+      this.comboTimer = 6;
+      this.combo = Math.min(9, this.combo + 1);
+      var gained = 150 * this.combo + Math.round(RU.kmh(car.speed));
+      this.score += gained;
+      if (this.mode === 'time') this.timeLeft = Math.min(80, this.timeLeft + GATE_TIME);
+      car.nitro = Math.min(1, car.nitro + 0.34);
+      this.emit('gate', gained);
+      this.pickGate(false);
     }
 
-    this.updateFx(dt);
+    if (this.mode !== 'time') return;
+
+    this.timeLeft -= dt;
+    if (this.timeLeft <= 0) {
+      this.timeLeft = 0;
+      this.state = 'over';
+      var prize = Math.round(this.score / 12);
+      this.cashEarned += prize;
+      this.garage.earn(prize);
+      if (this.score > this.best) {
+        this.best = this.score;
+        this.saveBest();
+        this.emit('record', this.score);
+      }
+      this.emit('over', this.score);
+    }
   };
 
   global.RaceGame = RaceGame;
   global.RaceGame.START_TIME = START_TIME;
   global.RaceGame.GATE_TIME = GATE_TIME;
-})(typeof window !== 'undefined' ? window : global);
-
-/**
- * 夜城飙车 - 自动驾驶（演示模式 & 无头测试共用，不依赖 THREE）
- *
- * 走曼哈顿路线：先沿当前这条街开到目标所在的街，再拐弯；
- * 被挤到人行道上就先回到车道中心，顶住墙超过一会儿就倒车脱困。
- */
-(function (global) {
-  'use strict';
-
-  var RU = global.RU;
-  var CityMap = global.CityMap;
-
-  function AutoDrive() {
-    this.stuck = 0;
-    this.backup = 0;
-    this.backupSteer = 1;
-  }
-
-  AutoDrive.prototype.reset = function () {
-    this.stuck = 0;
-    this.backup = 0;
-  };
-
-  /** 下一个要开往的路点 */
-  AutoDrive.prototype.waypoint = function (game) {
-    var B = CityMap.BLOCK;
-    var car = game.car;
-    var gate = game.gate;
-
-    // 掉出马路（撞上人行道）时，先垂直回到最近的车道中心
-    if (!CityMap.onRoad(car.x, car.z)) {
-      var lineX = Math.round(car.x / B) * B;
-      var lineZ = Math.round(car.z / B) * B;
-      if (Math.abs(car.x - lineX) < Math.abs(car.z - lineZ)) {
-        return { x: lineX, z: car.z, turning: true };
-      }
-      return { x: car.x, z: lineZ, turning: true };
-    }
-
-    var gi = Math.round(gate.x / B);
-    var gj = Math.round(gate.z / B);
-    var ci = Math.round(car.x / B);
-    var cj = Math.round(car.z / B);
-    var onXRoad = CityMap.distToRoadAxis(car.z) <= CityMap.HALF_ROAD;
-
-    if (onXRoad && ci !== gi) return { x: gi * B, z: cj * B, turning: true };
-    if (!onXRoad && cj !== gj) return { x: ci * B, z: gj * B, turning: true };
-    return { x: gate.x, z: gate.z, turning: false };
-  };
-
-  AutoDrive.prototype.update = function (game, dt) {
-    var car = game.car;
-    if (!game.gate) return;
-
-    if (car.speed < 2.5) this.stuck += dt;
-    else this.stuck = 0;
-    if (this.stuck > 1.2) {
-      this.stuck = 0;
-      this.backup = 1.2;
-    }
-
-    // 倒车脱困：反向打方向，把车头从墙角里拽出来
-    if (this.backup > 0) {
-      this.backup -= dt;
-      car.throttle = 0;
-      car.brake = 1;
-      car.steer = this.backupSteer;
-      car.handbrake = false;
-      car.wantBoost = false;
-      return;
-    }
-
-    var wp = this.waypoint(game);
-    var bearing = RU.wrapAngle(Math.atan2(wp.z - car.z, wp.x - car.x) - car.yaw);
-    var dist = Math.hypot(wp.x - car.x, wp.z - car.z);
-
-    // 要拐弯就提前减速，否则一定顶到街角
-    var wantSpeed = 50;
-    if (Math.abs(bearing) > 0.4) wantSpeed = 11;
-    else if (wp.turning && dist < 70) wantSpeed = 15;
-    else if (dist < 40) wantSpeed = 22;
-
-    this.backupSteer = bearing >= 0 ? -1 : 1;
-    car.steer = RU.clamp(bearing * 2.6, -1, 1);
-    car.throttle = car.speed < wantSpeed ? 1 : 0;
-    car.brake = car.speed > wantSpeed * 1.4 ? 1 : 0;
-    car.handbrake = Math.abs(bearing) > 0.55 && car.speed > 20;
-    car.wantBoost = Math.abs(bearing) < 0.1 && dist > 130;
-  };
-
-  global.AutoDrive = AutoDrive;
+  global.RaceGame.PRIZES = PRIZES;
+  global.RaceGame.COIN_VALUE = COIN_VALUE;
 })(typeof window !== 'undefined' ? window : global);
 
 /**
@@ -1421,6 +2219,38 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
       taperK: 0.2, taperP: 2.2, haunch: 0.04, haunchZ: 1.42,
       wheelR: 0.4, wheelW: 0.26, wheelX: 0.86, frontZ: 1.42, rearZ: -1.5,
       lightY: 0.62, tailY: 0.72, roofSign: false, wing: true, mirrors: true
+    },
+    /** GT：车头更长，肩线更厚实 */
+    gt: {
+      width: 1.68,
+      body: [
+        [2.42, 0.30], [2.50, 0.50], [2.36, 0.72], [1.70, 0.78], [0.92, 0.88],
+        [0.10, 0.94], [-1.05, 0.98], [-1.80, 1.00], [-2.24, 0.92], [-2.40, 0.60],
+        [-2.32, 0.30], [-1.20, 0.22], [1.20, 0.22]
+      ],
+      canopyWidth: 1.4,
+      canopy: [
+        [0.98, 0.84], [0.22, 1.30], [-0.66, 1.34], [-1.46, 1.04], [-1.54, 0.84]
+      ],
+      taperK: 0.17, taperP: 2.4, haunch: 0.05, haunchZ: 1.46,
+      wheelR: 0.42, wheelW: 0.28, wheelX: 0.9, frontZ: 1.46, rearZ: -1.54,
+      lightY: 0.7, tailY: 0.8, roofSign: false, wing: true, mirrors: true
+    },
+    /** 超音速：极低极扁，尾翼夸张 */
+    hyper: {
+      width: 1.62,
+      body: [
+        [2.50, 0.24], [2.58, 0.38], [2.44, 0.56], [1.70, 0.60], [0.90, 0.72],
+        [0.05, 0.78], [-1.15, 0.82], [-1.90, 0.86], [-2.34, 0.78], [-2.48, 0.48],
+        [-2.40, 0.24], [-1.20, 0.18], [1.20, 0.18]
+      ],
+      canopyWidth: 1.28,
+      canopy: [
+        [0.92, 0.70], [0.10, 1.10], [-0.80, 1.14], [-1.58, 0.88], [-1.66, 0.70]
+      ],
+      taperK: 0.24, taperP: 2.0, haunch: 0.06, haunchZ: 1.5,
+      wheelR: 0.41, wheelW: 0.3, wheelX: 0.88, frontZ: 1.5, rearZ: -1.56,
+      lightY: 0.54, tailY: 0.66, roofSign: false, wing: true, mirrors: false
     },
     /** 车流：普通轿车 */
     sedan: {
@@ -2562,6 +3392,10 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     this.setupGate();
     this.setupFx();
     this.trafficMeshes = [];
+    this.rivalMeshes = [];
+    this.coinMeshes = [];
+    this.rampMeshes = [];
+    this.lookBack = false;
   }
 
   RaceRenderer.prototype.setupLights = function () {
@@ -2573,8 +3407,18 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     this.moon = moon;
   };
 
-  RaceRenderer.prototype.setupCar = function () {
-    this.carMesh = CarModel.create({ shape: 'super', color: 0xe01b4c, accent: 0x2ee6ff, player: true });
+  /** 换车（车库里选了别的车型）时重建车身网格 */
+  RaceRenderer.prototype.setCarShape = function (shape) {
+    if (this.carShape === shape) return;
+    if (this.carMesh) this.scene.remove(this.carMesh);
+    this.setupCar(shape);
+  };
+
+  RaceRenderer.prototype.setupCar = function (shape) {
+    this.carShape = shape || 'super';
+    this.carMesh = CarModel.create({
+      shape: this.carShape, color: 0xe01b4c, accent: 0x2ee6ff, player: true
+    });
     CarModel.applyEnv(this.carMesh, this.city.envMap);
     this.scene.add(this.carMesh);
 
@@ -2698,14 +3542,16 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
 
   RaceRenderer.prototype.updateCar = function (car, dt) {
     var mesh = this.carMesh;
-    mesh.position.set(car.x, 0, car.z);
+    mesh.position.set(car.x, car.y, car.z);
     mesh.rotation.y = Math.PI / 2 - car.yaw;
 
-    // 车身随加速与漂移轻微侧倾
+    // 车身随加速与漂移轻微侧倾；腾空时车头会仰起 / 俯冲
     var roll = RU.clamp(-car.lateralSpeed / 30, -0.5, 0.5) * 0.18;
-    var pitch = RU.clamp(car.forwardSpeed / 60, -1, 1) * 0.02;
+    var pitch = car.airborne
+      ? RU.clamp(car.vy / 26, -0.5, 0.5)
+      : RU.clamp(car.forwardSpeed / 60, -1, 1) * 0.02;
     mesh.rotation.z = RU.damp(mesh.rotation.z, roll, 6, dt);
-    mesh.rotation.x = RU.damp(mesh.rotation.x, pitch, 5, dt);
+    mesh.rotation.x = RU.damp(mesh.rotation.x, pitch, car.airborne ? 3 : 5, dt);
 
     var wheels = mesh.userData.wheels;
     for (var i = 0; i < wheels.length; i++) {
@@ -2799,34 +3645,175 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
       var d = marks[i];
       if (!d) { m.visible = false; continue; }
       m.visible = true;
-      m.position.set(d.x, 0.03, d.z);
+      m.position.set(d.x, (d.y || 0) + 0.03, d.z);
       m.rotation.y = Math.PI / 2 - d.yaw;
       m.material.opacity = Math.max(0, Math.min(1, d.life * 1.2) * 0.5 * d.strength);
     }
   };
 
+  var CAM_MODES = ['chase', 'far', 'hood'];
+  var CAM_NAMES = { chase: '跟车视角', far: '远景视角', hood: '车内视角' };
+
   RaceRenderer.prototype.setCamMode = function (mode) {
     this.camMode = mode;
+  };
+
+  /** C 键循环切换视角，返回中文名用于提示 */
+  RaceRenderer.prototype.cycleCamMode = function () {
+    var i = CAM_MODES.indexOf(this.camMode);
+    this.camMode = CAM_MODES[(i + 1) % CAM_MODES.length];
+    return CAM_NAMES[this.camMode];
+  };
+
+  /** T 键回头看 */
+  RaceRenderer.prototype.setLookBack = function (on) {
+    this.lookBack = !!on;
+  };
+
+  /** AI 对手车 */
+  RaceRenderer.prototype.syncRivals = function (rivals, dt) {
+    while (this.rivalMeshes.length < rivals.length) {
+      var mesh = CarModel.create({
+        shape: this.rivalMeshes.length % 2 === 0 ? 'gt' : 'super',
+        color: 0x888888, accent: 0xff6644, player: true
+      });
+      CarModel.applyEnv(mesh, this.city.envMap);
+      this.scene.add(mesh);
+      this.rivalMeshes.push(mesh);
+    }
+    for (var i = 0; i < this.rivalMeshes.length; i++) {
+      var m = this.rivalMeshes[i];
+      var r = rivals[i];
+      if (!r) { m.visible = false; continue; }
+      m.visible = true;
+      m.position.set(r.car.x, r.car.y, r.car.z);
+      m.rotation.y = Math.PI / 2 - r.car.yaw;
+      m.rotation.z = RU.damp(m.rotation.z, RU.clamp(-r.car.lateralSpeed / 30, -0.5, 0.5) * 0.18, 6, dt);
+      if (m.userData.paintedColor !== r.color) {
+        CarModel.repaint(m, r.color, r.color);
+        m.userData.paintedColor = r.color;
+      }
+      var wheels = m.userData.wheels;
+      for (var w = 0; w < wheels.length; w++) {
+        if (wheels[w].userData.front) wheels[w].rotation.y = r.car.steerAngle;
+        wheels[w].userData.wheel.rotation.x -= (r.car.speed / 0.4) * dt;
+      }
+    }
+  };
+
+  /** 金币 */
+  RaceRenderer.prototype.syncCoins = function (coins) {
+    while (this.coinMeshes.length < coins.length) {
+      var geo = new THREE.CylinderGeometry(0.85, 0.85, 0.16, 16);
+      geo.rotateX(Math.PI / 2);
+      var coin = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({
+        color: 0xffcc33, metalness: 0.5, roughness: 0.3,
+        emissive: 0xff9c1a, emissiveIntensity: 1.1
+      }));
+      this.scene.add(coin);
+      this.coinMeshes.push(coin);
+    }
+    for (var i = 0; i < this.coinMeshes.length; i++) {
+      var m = this.coinMeshes[i];
+      var c = coins[i];
+      if (!c) { m.visible = false; continue; }
+      m.visible = true;
+      m.position.set(c.x, 1.1 + Math.sin(c.spin) * 0.18, c.z);
+      m.rotation.y = c.spin;
+    }
+  };
+
+  /** 跳台：按玩家位置流式生成，位置由城市网格决定所以可以缓存 */
+  RaceRenderer.prototype.syncRamps = function (px, pz) {
+    if (!global.Ramps) return;
+    var list = global.Ramps.near(px, pz, 700);
+    var i;
+    while (this.rampMeshes.length < list.length) {
+      var group = new THREE.Group();
+      var shape = new THREE.Shape();
+      shape.moveTo(0, 0);
+      shape.lineTo(global.Ramps.LENGTH, 0);
+      shape.lineTo(global.Ramps.LENGTH, global.Ramps.HEIGHT);
+      shape.closePath();
+      var geo = new THREE.ExtrudeGeometry(shape, { depth: global.Ramps.HALF_WIDTH * 2, bevelEnabled: false });
+      geo.translate(0, 0, -global.Ramps.HALF_WIDTH);
+      geo.rotateY(-Math.PI / 2);
+      var body = new THREE.Mesh(geo, new THREE.MeshLambertMaterial({ color: 0x2f3340 }));
+      group.add(body);
+      // 坡口发光条 + 两侧光柱 + 坡面箭头，远处就能认出来
+      var lip = new THREE.Mesh(
+        new THREE.BoxGeometry(global.Ramps.HALF_WIDTH * 2, 0.25, 0.6),
+        new THREE.MeshBasicMaterial({ color: 0xffd84d, fog: false })
+      );
+      lip.position.set(0, global.Ramps.HEIGHT + 0.12, global.Ramps.LENGTH);
+      group.add(lip);
+
+      // 光柱要细、而且要架高：相机贴着地面追车，粗光柱会被穿进去糊满屏幕
+      for (var s = -1; s <= 1; s += 2) {
+        var post = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.3, 0.3, 12, 6, 1, true),
+          new THREE.MeshBasicMaterial({
+            color: 0xffd84d, transparent: true, opacity: 0.3,
+            blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide, fog: false
+          })
+        );
+        post.position.set(s * global.Ramps.HALF_WIDTH, 12, global.Ramps.LENGTH);
+        group.add(post);
+      }
+
+      var slope = Math.atan2(global.Ramps.HEIGHT, global.Ramps.LENGTH);
+      for (var a = 0; a < 3; a++) {
+        var arrow = new THREE.Mesh(
+          new THREE.ConeGeometry(1.5, 2.6, 3),
+          new THREE.MeshBasicMaterial({
+            color: 0xffd84d, transparent: true, opacity: 0.75,
+            blending: THREE.AdditiveBlending, depthWrite: false, fog: false
+          })
+        );
+        arrow.rotation.x = Math.PI / 2 - slope;
+        var t = 0.3 + a * 0.25;
+        arrow.position.set(0, global.Ramps.HEIGHT * t + 0.25, global.Ramps.LENGTH * t);
+        group.add(arrow);
+      }
+      this.scene.add(group);
+      this.rampMeshes.push(group);
+    }
+    for (i = 0; i < this.rampMeshes.length; i++) {
+      var mesh = this.rampMeshes[i];
+      var ramp = list[i];
+      if (!ramp) { mesh.visible = false; continue; }
+      mesh.visible = true;
+      mesh.position.set(ramp.x, 0, ramp.z);
+      // dir: 0=+x 1=-x 2=+z 3=-z，模型的爬升方向是局部 +Z
+      var yaw = ramp.alongX ? (ramp.sign > 0 ? Math.PI / 2 : -Math.PI / 2) : (ramp.sign > 0 ? 0 : Math.PI);
+      mesh.rotation.y = yaw;
+    }
   };
 
   RaceRenderer.prototype.updateCamera = function (car, dt, shake) {
     var speedT = RU.clamp(car.speed / 60, 0, 1);
 
+    var back = this.lookBack ? Math.PI : 0;
+
     if (this.camMode === 'hood') {
-      var fx = Math.cos(car.yaw);
-      var fz = Math.sin(car.yaw);
-      this.camPos.set(car.x + fx * 0.35, 1.28, car.z + fz * 0.35);
+      var fx = Math.cos(car.yaw + back);
+      var fz = Math.sin(car.yaw + back);
+      this.camPos.set(car.x + fx * 0.35, car.y + 1.28, car.z + fz * 0.35);
       this.camera.position.copy(this.camPos);
-      this.lookAt.set(car.x + fx * 40, 1.3, car.z + fz * 40);
+      this.lookAt.set(car.x + fx * 40, car.y + 1.3, car.z + fz * 40);
       this.fov = RU.damp(this.fov, 74 + speedT * 14, 3, dt);
     } else {
+      var far = this.camMode === 'far';
       // 相机追着车头，但漂移时稍微偏向车身侧面，能看到甩尾
       var driftLean = RU.clamp(car.lateralSpeed / 26, -1, 1) * 0.35;
-      var targetYaw = car.yaw - driftLean;
-      this.camYaw += RU.wrapAngle(targetYaw - this.camYaw) * (1 - Math.exp(-4.2 * dt));
+      var targetYaw = car.yaw - driftLean + back;
+      // 差得越多转得越快：回头看时半圈要立刻甩过去，否则会以为按键没生效
+      var yawDiff = RU.wrapAngle(targetYaw - this.camYaw);
+      var yawRate = Math.abs(yawDiff) > 1 ? 18 : 4.2;
+      this.camYaw += yawDiff * (1 - Math.exp(-yawRate * dt));
 
-      var dist = 8.4 + speedT * 3.4;
-      var height = 3.6 + speedT * 0.8;
+      var dist = (far ? 15 : 8.4) + speedT * (far ? 4 : 3.4);
+      var height = (far ? 6.4 : 3.6) + speedT * 0.8 + car.y * 0.8;
       var idealX = car.x - Math.cos(this.camYaw) * dist;
       var idealZ = car.z - Math.sin(this.camYaw) * dist;
       var rate = 1 - Math.exp(-9 * dt);
@@ -2835,9 +3822,9 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
       this.camPos.y += (height - this.camPos.y) * rate;
       this.camera.position.copy(this.camPos);
       this.lookAt.set(
-        car.x + Math.cos(car.yaw) * 9,
-        1.7,
-        car.z + Math.sin(car.yaw) * 9
+        car.x + Math.cos(car.yaw + back) * 9,
+        car.y + 1.7,
+        car.z + Math.sin(car.yaw + back) * 9
       );
       this.fov = RU.damp(this.fov, 68 + speedT * 16 + (car.boosting ? 6 : 0), 3.5, dt);
     }
@@ -2859,6 +3846,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
       this.moon.position.set(car.x - 180, 320, car.z + 120);
     }
     this.city.update(car.x, car.z);
+    this.syncRamps(car.x, car.z);
   };
 
   RaceRenderer.prototype.resize = function (width, height) {
@@ -3029,6 +4017,17 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
       tone(760, 1180, 0.16, 0.16, 'triangle');
       tone(1180, 1560, 0.18, 0.1, 'sine');
     },
+    coin: function () {
+      tone(1180, 1760, 0.09, 0.11, 'square');
+    },
+    beep: function (freq) {
+      tone(freq || 660, null, 0.16, 0.16, 'square');
+    },
+    win: function () {
+      tone(523, null, 0.14, 0.14, 'triangle');
+      tone(659, null, 0.14, 0.14, 'triangle');
+      tone(784, null, 0.3, 0.16, 'triangle');
+    },
     crash: function (strength) {
       burst({ from: 900, to: 90, duration: 0.28, volume: Math.min(0.4, 0.12 + strength * 0.3) });
       tone(120, 55, 0.22, 0.16, 'sawtooth');
@@ -3056,35 +4055,27 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
 })(window);
 
 /**
- * 夜城飙车 - 输入、HUD、小地图与主循环
+ * 夜城飙车 - 输入、菜单、车库、HUD 与主循环
  */
 (function (global) {
   'use strict';
 
   var RU = global.RU;
   var CityMap = global.CityMap;
+  var Cars = global.Cars;
   var RaceGame = global.RaceGame;
   var RaceRenderer = global.RaceRenderer;
   var RaceAudio = global.RaceAudio;
+  var Ramps = global.Ramps;
 
   var doc = global.document;
-  var game = new RaceGame();
+  var garage = new Cars.Garage();
+  var game = new RaceGame(garage);
   var renderer = null;
   var input = {
     throttle: false, brake: false, left: false, right: false,
     handbrake: false, boost: false
   };
-
-  var el = {};
-  var gaugeLength = 0;
-  var driftTimer = 0;
-  var toastTimer = 0;
-  var lastTime = 0;
-  var running = false;
-  var autoDrive = null;
-  var crashed = false;
-  var stuckTime = 0;
-  var hintCooldown = 0;
 
   var PAINTS = [
     { name: '烈焰红', color: 0xe01b4c, accent: 0x2ee6ff },
@@ -3094,69 +4085,46 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     { name: '流光橙', color: 0xff7a1a, accent: 0x2ee6ff },
     { name: '珠光白', color: 0xe8ecf5, accent: 0x8a5cff }
   ];
-  var PAINT_KEY = 'nightcity.paint.v1';
-  var paintIndex = 0;
+
+  var el = {};
+  var gaugeLength = 0;
+  var driftTimer = 0;
+  var toastTimer = 0;
+  var countdownTimer = 0;
+  var lastTime = 0;
+  var running = false;
+  var crashed = false;
+  var autoDrive = null;
+  var stuckTime = 0;
+  var hintCooldown = 0;
+  var raceLevel = 0;
 
   function $(id) { return doc.getElementById(id); }
 
   function cacheElements() {
-    ['boot-screen', 'boot-msg', 'game', 'stage', 'hud-time', 'hud-score', 'hud-gates', 'hud-best',
-      'hud-speed', 'gauge-fill', 'nitro-fill', 'gate-arrow', 'gate-dist', 'drift-banner', 'drift-score',
-      'combo-badge', 'toast', 'minimap', 'paint-swatches', 'overlay-ready', 'overlay-over', 'overlay-paused',
-      'overlay-error', 'error-msg', 'result-stats', 'btn-sound', 'btn-cam', 'btn-pause']
+    ['boot-screen', 'boot-msg', 'game', 'stage', 'hud-time', 'hud-score', 'hud-place', 'hud-lap',
+      'hud-cash', 'hud-best', 'hud-speed', 'gauge-fill', 'nitro-fill', 'gate-arrow', 'gate-dist',
+      'drift-banner', 'drift-label', 'drift-score', 'combo-badge', 'toast', 'minimap', 'countdown',
+      'row-time', 'row-place', 'row-lap', 'paint-swatches', 'menu-cash', 'race-laps',
+      'garage-cash', 'garage-cars', 'garage-upgrades', 'garage-current',
+      'overlay-ready', 'overlay-garage', 'overlay-over', 'overlay-paused', 'overlay-error',
+      'error-msg', 'result-stats', 'over-title', 'btn-sound', 'btn-cam', 'btn-pause']
       .forEach(function (id) {
         el[id] = $(id);
       });
     el.map = el['minimap'].getContext('2d');
   }
 
+  var OVERLAYS = ['overlay-ready', 'overlay-garage', 'overlay-over', 'overlay-paused', 'overlay-error'];
+
   function showOverlay(name) {
-    ['overlay-ready', 'overlay-over', 'overlay-paused', 'overlay-error'].forEach(function (id) {
+    OVERLAYS.forEach(function (id) {
       el[id].classList.toggle('overlay--hidden', id !== name);
     });
   }
 
   function hex(value) {
     return '#' + ('000000' + value.toString(16)).slice(-6);
-  }
-
-  function applyPaint(index, remember) {
-    paintIndex = ((index % PAINTS.length) + PAINTS.length) % PAINTS.length;
-    var paint = PAINTS[paintIndex];
-    if (renderer) renderer.setCarPaint(paint.color, paint.accent);
-    var swatches = el['paint-swatches'].children;
-    for (var i = 0; i < swatches.length; i++) {
-      swatches[i].classList.toggle('swatch--on', i === paintIndex);
-    }
-    if (remember) {
-      try {
-        global.localStorage.setItem(PAINT_KEY, String(paintIndex));
-      } catch (e) { /* 隐私模式下忽略 */ }
-    }
-  }
-
-  function buildPaintPicker() {
-    var host = el['paint-swatches'];
-    PAINTS.forEach(function (paint, i) {
-      var btn = doc.createElement('button');
-      btn.type = 'button';
-      btn.className = 'swatch';
-      btn.title = paint.name;
-      btn.style.background = hex(paint.color);
-      btn.style.color = hex(paint.accent);
-      btn.addEventListener('click', function () {
-        applyPaint(i, true);
-      });
-      host.appendChild(btn);
-    });
-
-    var saved = 0;
-    try {
-      saved = parseInt(global.localStorage.getItem(PAINT_KEY), 10) || 0;
-    } catch (e) {
-      saved = 0;
-    }
-    applyPaint(saved, false);
   }
 
   function toast(text, ms) {
@@ -3169,6 +4137,126 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     var w = el['stage'].clientWidth || global.innerWidth;
     var h = el['stage'].clientHeight || global.innerHeight;
     if (renderer) renderer.resize(w, h);
+  }
+
+  // ---------------- 车漆 ----------------
+  function applyPaint(index, remember) {
+    var i = ((index % PAINTS.length) + PAINTS.length) % PAINTS.length;
+    garage.paint = i;
+    var paint = PAINTS[i];
+    if (renderer) renderer.setCarPaint(paint.color, paint.accent);
+    var swatches = el['paint-swatches'].children;
+    for (var s = 0; s < swatches.length; s++) {
+      swatches[s].classList.toggle('swatch--on', s === i);
+    }
+    if (remember) garage.save();
+  }
+
+  function buildPaintPicker() {
+    PAINTS.forEach(function (paint, i) {
+      var btn = doc.createElement('button');
+      btn.type = 'button';
+      btn.className = 'swatch';
+      btn.title = paint.name;
+      btn.style.background = hex(paint.color);
+      btn.style.color = hex(paint.accent);
+      btn.addEventListener('click', function () {
+        applyPaint(i, true);
+      });
+      el['paint-swatches'].appendChild(btn);
+    });
+    applyPaint(garage.paint, false);
+  }
+
+  // ---------------- 车库 ----------------
+  function bar(label, value, max) {
+    var filled = Math.round(RU.clamp(value / max, 0, 1) * 5);
+    var pips = '';
+    for (var i = 0; i < 5; i++) {
+      pips += '<i class="pip' + (i < filled ? ' pip--on' : '') + '"></i>';
+    }
+    return '<span class="stat">' + label + '<span class="pips">' + pips + '</span></span>';
+  }
+
+  function renderGarage() {
+    el['garage-cash'].textContent = garage.cash;
+    el['menu-cash'].textContent = garage.cash;
+    el['hud-cash'].textContent = garage.cash;
+
+    var carsHtml = '';
+    Cars.list.forEach(function (car) {
+      var owned = garage.has(car.id);
+      var picked = garage.selected === car.id;
+      var stats = garage.statsFor(car.id);
+      carsHtml += '<button class="card' + (picked ? ' card--on' : '') + (owned ? '' : ' card--locked') +
+        '" type="button" data-car="' + car.id + '">' +
+        '<b>' + car.name + (picked ? ' ✓' : '') + '</b>' +
+        '<i>' + car.desc + '</i>' +
+        bar('加速', stats.accel, 26) +
+        bar('极速', stats.maxSpeed, 82) +
+        bar('抓地', stats.grip, 20) +
+        '<em>' + (owned ? (picked ? '使用中' : '点击选用') : '🔒 ' + car.price + ' 金币') + '</em>' +
+        '</button>';
+    });
+    el['garage-cars'].innerHTML = carsHtml;
+
+    var current = Cars.find(garage.selected);
+    el['garage-current'].textContent = current.name;
+    var upHtml = '';
+    Cars.upgrades.forEach(function (up) {
+      var level = garage.level(garage.selected, up.id);
+      var full = level >= up.max;
+      var price = Cars.upgradePrice(up, level);
+      upHtml += '<button class="card" type="button" data-upgrade="' + up.id + '">' +
+        '<b>' + up.name + '</b>' +
+        '<i>' + up.unit + ' Lv.' + level + ' / ' + up.max + '</i>' +
+        bar('等级', level, up.max) +
+        '<em>' + (full ? '已满级' : price + ' 金币升一级') + '</em>' +
+        '</button>';
+    });
+    el['garage-upgrades'].innerHTML = upHtml;
+  }
+
+  function applyGarageToCar() {
+    game.car.setStats(garage.stats());
+    if (renderer) renderer.setCarShape(garage.stats().shape);
+    applyPaint(garage.paint, false);
+  }
+
+  function bindGarage() {
+    el['garage-cars'].addEventListener('click', function (e) {
+      var node = e.target;
+      while (node && node !== el['garage-cars'] && !node.getAttribute('data-car')) node = node.parentNode;
+      var id = node && node.getAttribute && node.getAttribute('data-car');
+      if (!id) return;
+      if (garage.has(id)) {
+        garage.select(id);
+        toast('已选择 ' + Cars.find(id).name, 1000);
+      } else if (garage.buy(id)) {
+        RaceAudio.gate();
+        toast('买到了 ' + Cars.find(id).name + '！', 1400);
+      } else {
+        toast('金币不够，还差 ' + (Cars.find(id).price - garage.cash), 1600);
+        return;
+      }
+      applyGarageToCar();
+      renderGarage();
+    });
+
+    el['garage-upgrades'].addEventListener('click', function (e) {
+      var node = e.target;
+      while (node && node !== el['garage-upgrades'] && !node.getAttribute('data-upgrade')) node = node.parentNode;
+      var id = node && node.getAttribute && node.getAttribute('data-upgrade');
+      if (!id) return;
+      if (garage.upgrade(garage.selected, id)) {
+        RaceAudio.gate();
+        toast('升级成功', 900);
+        applyGarageToCar();
+      } else {
+        toast('金币不够或已满级', 1400);
+      }
+      renderGarage();
+    });
   }
 
   // ---------------- 输入 ----------------
@@ -3190,12 +4278,13 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
         return;
       }
       if (e.code === 'KeyC') toggleCamera();
-      else if (e.code === 'KeyR') {
+      else if (e.code === 'KeyT') {
+        if (renderer) renderer.setLookBack(true);
+      } else if (e.code === 'KeyR') {
         game.car.respawnOnRoad();
         toast('回到路面', 700);
       } else if (e.code === 'KeyP' || e.code === 'Escape') togglePause();
       else if (e.code === 'KeyM') toggleSound();
-      else if (e.code === 'Enter' && game.state !== 'playing') startGame('time');
     });
 
     doc.addEventListener('keyup', function (e) {
@@ -3203,11 +4292,14 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
       if (action) {
         input[action] = false;
         e.preventDefault();
+      } else if (e.code === 'KeyT' && renderer) {
+        renderer.setLookBack(false);
       }
     });
 
     global.addEventListener('blur', function () {
-      Object.keys(input).forEach(function (k) { input[k] = false; });
+      for (var k in input) input[k] = false;
+      if (renderer) renderer.setLookBack(false);
     });
   }
 
@@ -3232,12 +4324,23 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
 
   function bindButtons() {
     doc.addEventListener('click', function (e) {
-      var action = e.target.getAttribute && e.target.getAttribute('data-action');
+      var node = e.target;
+      while (node && !node.getAttribute) node = node.parentNode;
+      var action = node && node.getAttribute('data-action');
+      if (!action && node && node.parentNode && node.parentNode.getAttribute) {
+        action = node.parentNode.getAttribute('data-action');
+      }
       if (!action) return;
-      if (action === 'start-time') startGame('time');
+      if (action === 'start-race') startGame('race');
+      else if (action === 'start-time') startGame('time');
       else if (action === 'start-free') startGame('free');
       else if (action === 'restart') startGame(game.mode);
       else if (action === 'resume') togglePause();
+      else if (action === 'menu') openMenu();
+      else if (action === 'garage') {
+        renderGarage();
+        showOverlay('overlay-garage');
+      } else if (action === 'close-garage') openMenu();
     });
 
     el['btn-sound'].addEventListener('click', toggleSound);
@@ -3252,36 +4355,63 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
 
   function toggleCamera() {
     if (!renderer) return;
-    var mode = renderer.camMode === 'chase' ? 'hood' : 'chase';
-    renderer.setCamMode(mode);
-    toast(mode === 'hood' ? '车内视角' : '跟车视角', 800);
+    toast(renderer.cycleCamMode(), 800);
   }
 
   function togglePause() {
-    if (game.state === 'playing') {
+    if (game.state === 'playing' || game.state === 'countdown') {
+      game.pausedFrom = game.state;
       game.state = 'paused';
       showOverlay('overlay-paused');
     } else if (game.state === 'paused') {
-      game.state = 'playing';
+      game.state = game.pausedFrom || 'playing';
       showOverlay(null);
     }
   }
 
+  function openMenu() {
+    game.state = 'ready';
+    el['menu-cash'].textContent = garage.cash;
+    el['race-laps'].textContent = 2;
+    showOverlay('overlay-ready');
+  }
+
   function startGame(mode) {
     RaceAudio.start();
-    game.start(mode);
+    applyGarageToCar();
+    game.start(mode, mode === 'race' ? raceLevel : 0);
     showOverlay(null);
-    el['hud-time'].parentNode.style.opacity = mode === 'free' ? 0.35 : 1;
-    toast(mode === 'free' ? '自由驾驶：随便逛' : '冲向青色光门！', 1500);
+
+    el['row-time'].style.display = mode === 'time' ? '' : 'none';
+    el['row-place'].style.display = mode === 'race' ? '' : 'none';
+    el['row-lap'].style.display = mode === 'race' ? '' : 'none';
+
+    if (mode === 'race') toast('准备起跑！', 900);
+    else if (mode === 'free') toast('自由驾驶：冲跳台、捡金币', 1800);
+    else toast('冲向青色光门！', 1500);
   }
 
   function gameOver() {
     var kmh = Math.round(RU.kmh(game.car.topSpeed));
-    el['result-stats'].innerHTML =
-      '本局得分 <b>' + game.score + '</b><br>' +
-      '通过光门 <b>' + game.gates + '</b> 个<br>' +
-      '最高速度 <b>' + kmh + '</b> km/h<br>' +
-      '历史最高 <b>' + game.best + '</b>';
+    var html = '';
+    if (game.mode === 'race') {
+      var names = ['🥇 第一名', '🥈 第二名', '🥉 第三名', '第四名', '第五名'];
+      el['over-title'].textContent = game.place <= 3 ? '冲线！' : '完赛';
+      html = '<b>' + names[Math.min(4, game.place - 1)] + '</b><br>' +
+        '用时 <b>' + game.elapsed.toFixed(1) + '</b> 秒<br>' +
+        '奖金 <b>' + game.cashEarned + '</b> 金币<br>' +
+        '最高速度 <b>' + kmh + '</b> km/h';
+      if (game.place <= 3) raceLevel++;
+    } else {
+      el['over-title'].textContent = '时间到';
+      html = '本局得分 <b>' + game.score + '</b><br>' +
+        '通过光门 <b>' + game.gates + '</b> 个<br>' +
+        '赚到 <b>' + game.cashEarned + '</b> 金币<br>' +
+        '最高速度 <b>' + kmh + '</b> km/h<br>' +
+        '历史最高 <b>' + game.best + '</b>';
+    }
+    el['result-stats'].innerHTML = html;
+    renderGarage();
     showOverlay('overlay-over');
   }
 
@@ -3298,16 +4428,20 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     var speed = RU.kmh(car.speed);
     el['hud-speed'].textContent = Math.round(speed);
 
-    var t = RU.clamp(speed / 260, 0, 1);
+    var t = RU.clamp(speed / 280, 0, 1);
     el['gauge-fill'].style.strokeDashoffset = gaugeLength * (1 - t);
     el['gauge-fill'].style.stroke = car.boosting ? '#ff2e78' : (speed > 200 ? '#ffd84d' : '#2ee6ff');
     el['nitro-fill'].style.width = Math.round(car.nitro * 100) + '%';
 
-    el['hud-time'].textContent = game.mode === 'free' ? '∞' : game.timeLeft.toFixed(1);
+    el['hud-time'].textContent = game.mode === 'time' ? game.timeLeft.toFixed(1) : game.elapsed.toFixed(1);
     el['hud-time'].classList.toggle('warn', game.mode === 'time' && game.timeLeft < 8);
     el['hud-score'].textContent = game.score;
-    el['hud-gates'].textContent = game.gates;
+    el['hud-cash'].textContent = garage.cash;
     el['hud-best'].textContent = game.best;
+    if (game.mode === 'race' && game.route) {
+      el['hud-place'].textContent = game.place + '/' + (game.rivals.length + 1);
+      el['hud-lap'].textContent = Math.min(game.lap, game.route.laps) + '/' + game.route.laps;
+    }
 
     var dist = Math.round(game.gateDistance());
     el['gate-dist'].textContent = dist;
@@ -3317,8 +4451,14 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
 
     var driftLive = Math.round(game.driftAccum * game.combo);
     if (car.drifting && driftLive > 0) {
-      el['drift-banner'].classList.add('drift--on');
+      el['drift-label'].textContent = 'DRIFT';
       el['drift-score'].textContent = '+' + driftLive;
+      el['drift-banner'].classList.add('drift--on');
+      driftTimer = 0.6;
+    } else if (car.airborne && car.airTime > 0.3) {
+      el['drift-label'].textContent = 'AIR';
+      el['drift-score'].textContent = car.airTime.toFixed(1) + 's';
+      el['drift-banner'].classList.add('drift--on');
       driftTimer = 0.6;
     } else if (driftTimer > 0) {
       driftTimer -= dt;
@@ -3327,6 +4467,17 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
 
     el['combo-badge'].textContent = 'x' + game.combo;
     el['combo-badge'].classList.toggle('combo--on', game.combo > 1);
+
+    if (game.state === 'countdown') {
+      var n = Math.ceil(game.countdown);
+      el['countdown'].textContent = n > 0 ? String(n) : 'GO!';
+      el['countdown'].classList.add('countdown--on');
+      countdownTimer = 0.8;
+    } else if (countdownTimer > 0) {
+      countdownTimer -= dt;
+      el['countdown'].textContent = 'GO!';
+      if (countdownTimer <= 0) el['countdown'].classList.remove('countdown--on');
+    }
 
     if (toastTimer > 0) {
       toastTimer -= dt;
@@ -3341,6 +4492,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     var scale = 0.115;
     var car = game.car;
     var B = CityMap.BLOCK;
+    var i;
 
     ctx.clearRect(0, 0, size, size);
     ctx.fillStyle = 'rgba(6,8,18,0.75)';
@@ -3351,7 +4503,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     var cj = Math.round(car.z / B);
     ctx.strokeStyle = 'rgba(46,230,255,0.28)';
     ctx.lineWidth = 3;
-    for (var i = ci - range; i <= ci + range; i++) {
+    for (i = ci - range; i <= ci + range; i++) {
       var sx = half + (i * B - car.x) * scale;
       ctx.beginPath();
       ctx.moveTo(sx, 0);
@@ -3366,14 +4518,54 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
       ctx.stroke();
     }
 
+    // 赛道环线
+    if (game.route) {
+      ctx.strokeStyle = 'rgba(255,216,77,0.85)';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      for (i = 0; i <= game.route.points.length; i++) {
+        var p = game.route.points[i % game.route.points.length];
+        var px = half + (p.x - car.x) * scale;
+        var py = half + (p.z - car.z) * scale;
+        if (i === 0) ctx.moveTo(px, py);
+        else ctx.lineTo(px, py);
+      }
+      ctx.stroke();
+    }
+
+    // 金币
+    ctx.fillStyle = '#ffd84d';
+    for (i = 0; i < game.coins.length; i++) {
+      ctx.fillRect(half + (game.coins[i].x - car.x) * scale - 1.5,
+        half + (game.coins[i].z - car.z) * scale - 1.5, 3, 3);
+    }
+
+    // 对手
+    for (i = 0; i < game.rivals.length; i++) {
+      var r = game.rivals[i];
+      ctx.fillStyle = '#ff6b6b';
+      ctx.beginPath();
+      ctx.arc(half + (r.car.x - car.x) * scale, half + (r.car.z - car.z) * scale, 3, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
     // 车流
-    ctx.fillStyle = 'rgba(255,120,120,0.85)';
-    for (var t = 0; t < game.traffic.cars.length; t++) {
-      var c = game.traffic.cars[t];
+    ctx.fillStyle = 'rgba(255,120,120,0.7)';
+    for (i = 0; i < game.traffic.cars.length; i++) {
+      var c = game.traffic.cars[i];
       ctx.fillRect(half + (c.x - car.x) * scale - 1.5, half + (c.z - car.z) * scale - 1.5, 3, 3);
     }
 
-    // 下一个光门
+    // 跳台
+    if (Ramps) {
+      var ramps = Ramps.near(car.x, car.z, half / scale);
+      ctx.fillStyle = 'rgba(120,220,255,0.9)';
+      for (i = 0; i < ramps.length; i++) {
+        ctx.fillRect(half + (ramps[i].x - car.x) * scale - 2, half + (ramps[i].z - car.z) * scale - 2, 4, 4);
+      }
+    }
+
+    // 目标点
     if (game.gate) {
       var gx = RU.clamp(half + (game.gate.x - car.x) * scale, 6, size - 6);
       var gy = RU.clamp(half + (game.gate.z - car.z) * scale, 6, size - 6);
@@ -3381,11 +4573,6 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
       ctx.beginPath();
       ctx.arc(gx, gy, 4.5, 0, Math.PI * 2);
       ctx.fill();
-      ctx.strokeStyle = 'rgba(57,255,136,0.5)';
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.arc(gx, gy, 8, 0, Math.PI * 2);
-      ctx.stroke();
     }
 
     // 玩家
@@ -3418,12 +4605,26 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
       if (ev.type === 'gate') {
         RaceAudio.gate();
         toast('光门 +' + ev.value + (game.mode === 'time' ? ' / +' + RaceGame.GATE_TIME + ' 秒' : ''), 1100);
+      } else if (ev.type === 'coin') {
+        RaceAudio.coin();
+      } else if (ev.type === 'stunt') {
+        RaceAudio.gate();
+        toast(ev.text + '  +' + ev.value, 1300);
       } else if (ev.type === 'drift') {
         RaceAudio.drift();
       } else if (ev.type === 'crash') {
         RaceAudio.crash(ev.value);
+      } else if (ev.type === 'lap') {
+        RaceAudio.gate();
+        toast('第 ' + ev.value + ' 圈', 1200);
+      } else if (ev.type === 'countdown') {
+        if (ev.value > 0) RaceAudio.beep(660);
+        else RaceAudio.beep(1180);
       } else if (ev.type === 'record') {
         toast('新纪录！', 1600);
+      } else if (ev.type === 'finish') {
+        RaceAudio.win();
+        gameOver();
       } else if (ev.type === 'over') {
         RaceAudio.over();
         gameOver();
@@ -3443,6 +4644,36 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     }
   }
 
+  function step(now, dt) {
+    var wasBoosting = game.car.boosting;
+    if (game.state === 'playing' || game.state === 'countdown') {
+      applyInput();
+      if (autoDrive) autoDrive.update(game, dt);
+      if (game.state === 'countdown') {
+        game.car.throttle = 0;
+        game.car.brake = 1;
+      }
+      game.update(dt);
+      if (game.car.boosting && !wasBoosting) RaceAudio.boost();
+      checkStuck(dt);
+    }
+    drainEvents();
+
+    RaceAudio.update(game.car, dt);
+    renderer.updateCar(game.car, dt);
+    renderer.syncTraffic(game.traffic.cars, dt);
+    renderer.syncRivals(game.rivals, dt);
+    renderer.syncCoins(game.coins);
+    renderer.updateGate(game.gate, now / 1000);
+    renderer.syncParticles(game.particles);
+    renderer.syncMarks(game.marks);
+    renderer.updateCamera(game.car, dt, game.shake);
+    renderer.render();
+
+    updateHud(dt);
+    drawMinimap();
+  }
+
   function frame(now) {
     if (crashed) return;
     global.requestAnimationFrame(frame);
@@ -3457,30 +4688,6 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
       crashed = true;
       fail(err);
     }
-  }
-
-  function step(now, dt) {
-    var wasBoosting = game.car.boosting;
-    if (game.state === 'playing') {
-      applyInput();
-      if (autoDrive) autoDrive.update(game, dt);
-      game.update(dt);
-      checkStuck(dt);
-      if (game.car.boosting && !wasBoosting) RaceAudio.boost();
-    }
-    drainEvents();
-
-    RaceAudio.update(game.car, dt);
-    renderer.updateCar(game.car, dt);
-    renderer.syncTraffic(game.traffic.cars, dt);
-    renderer.updateGate(game.gate, now / 1000);
-    renderer.syncParticles(game.particles);
-    renderer.syncMarks(game.marks);
-    renderer.updateCamera(game.car, dt, game.shake);
-    renderer.render();
-
-    updateHud(dt);
-    drawMinimap();
   }
 
   /** 把失败原因显示在屏幕上，不要让玩家对着加载页干等 */
@@ -3507,7 +4714,6 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
   function boot() {
     cacheElements();
 
-    // 兜底：万一卡在某个环节，10 秒后至少告诉玩家一句话
     var watchdog = global.setTimeout(function () {
       if (!running) fail('加载超时（10 秒）');
     }, 10000);
@@ -3516,9 +4722,12 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
       renderer = new RaceRenderer(el['game']);
       initGauge();
       buildPaintPicker();
+      renderGarage();
+      applyGarageToCar();
       bindKeys();
       bindTouch();
       bindButtons();
+      bindGarage();
       resize();
       global.addEventListener('resize', resize);
       global.addEventListener('orientationchange', resize);
@@ -3530,13 +4739,12 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
 
     global.clearTimeout(watchdog);
     el['boot-screen'].classList.add('boot--hidden');
-    el['hud-best'].textContent = game.best;
     running = true;
 
     // 打开 index.html#demo 就让 AI 自己开，方便看效果
     if (String(global.location.hash || '').indexOf('demo') >= 0) {
       autoDrive = new global.AutoDrive();
-      startGame('free');
+      startGame(String(global.location.hash).indexOf('race') >= 0 ? 'race' : 'free');
       toast('演示模式：AI 自动驾驶', 2000);
     }
 
@@ -3551,6 +4759,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
 
   global.NightCity = {
     game: game,
+    garage: garage,
     isRunning: function () { return running; }
   };
 })(window);
