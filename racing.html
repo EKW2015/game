@@ -141,6 +141,7 @@ html, body {
 
 .toast {
   position: absolute;
+  z-index: 30; /* 要盖在车库等覆盖层之上，否则买不起时的提示看不见 */
   top: 44%;
   left: 50%;
   transform: translate(-50%, -50%);
@@ -822,7 +823,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
   var LENGTH = 15;      // 斜坡长度
   var HEIGHT = 3.4;     // 坡顶高度
   var HALF_WIDTH = 6;   // 坡面半宽：两侧各留 7 米，不想飞可以绕过去
-  var DENSITY = 0.12;   // 大约 1/8 的路口附近有跳台
+  var DENSITY = 0.2;    // 约 1/5 的路口附近有跳台，开一会儿总能碰上
   var OFFSET = B * 0.34; // 跳台离路口中心的距离
 
   /** 该路口是否有跳台，有的话朝向哪 */
@@ -1765,7 +1766,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     if (this.mode === 'race') {
       this.setupRace();
       this.state = 'countdown';
-      this.countdown = 3.2;
+      this.countdown = 3;
     } else {
       this.pickGate(true);
       this.state = 'playing';
@@ -3739,13 +3740,40 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
       geo.rotateY(-Math.PI / 2);
       var body = new THREE.Mesh(geo, new THREE.MeshLambertMaterial({ color: 0x2f3340 }));
       group.add(body);
-      // 坡口发光条，远处也能看见
+      // 坡口发光条 + 两侧光柱 + 坡面箭头，远处就能认出来
       var lip = new THREE.Mesh(
-        new THREE.BoxGeometry(global.Ramps.HALF_WIDTH * 2, 0.2, 0.5),
-        new THREE.MeshBasicMaterial({ color: 0xffd84d, transparent: true, opacity: 0.9 })
+        new THREE.BoxGeometry(global.Ramps.HALF_WIDTH * 2, 0.25, 0.6),
+        new THREE.MeshBasicMaterial({ color: 0xffd84d, fog: false })
       );
-      lip.position.set(0, global.Ramps.HEIGHT + 0.1, global.Ramps.LENGTH);
+      lip.position.set(0, global.Ramps.HEIGHT + 0.12, global.Ramps.LENGTH);
       group.add(lip);
+
+      for (var s = -1; s <= 1; s += 2) {
+        var post = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.5, 0.8, 26, 8, 1, true),
+          new THREE.MeshBasicMaterial({
+            color: 0xffd84d, transparent: true, opacity: 0.16,
+            blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide, fog: false
+          })
+        );
+        post.position.set(s * global.Ramps.HALF_WIDTH, 13, global.Ramps.LENGTH);
+        group.add(post);
+      }
+
+      var slope = Math.atan2(global.Ramps.HEIGHT, global.Ramps.LENGTH);
+      for (var a = 0; a < 3; a++) {
+        var arrow = new THREE.Mesh(
+          new THREE.ConeGeometry(1.5, 2.6, 3),
+          new THREE.MeshBasicMaterial({
+            color: 0xffd84d, transparent: true, opacity: 0.75,
+            blending: THREE.AdditiveBlending, depthWrite: false, fog: false
+          })
+        );
+        arrow.rotation.x = Math.PI / 2 - slope;
+        var t = 0.3 + a * 0.25;
+        arrow.position.set(0, global.Ramps.HEIGHT * t + 0.25, global.Ramps.LENGTH * t);
+        group.add(arrow);
+      }
       this.scene.add(group);
       this.rampMeshes.push(group);
     }
@@ -3778,7 +3806,10 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
       // 相机追着车头，但漂移时稍微偏向车身侧面，能看到甩尾
       var driftLean = RU.clamp(car.lateralSpeed / 26, -1, 1) * 0.35;
       var targetYaw = car.yaw - driftLean + back;
-      this.camYaw += RU.wrapAngle(targetYaw - this.camYaw) * (1 - Math.exp(-4.2 * dt));
+      // 差得越多转得越快：回头看时半圈要立刻甩过去，否则会以为按键没生效
+      var yawDiff = RU.wrapAngle(targetYaw - this.camYaw);
+      var yawRate = Math.abs(yawDiff) > 1 ? 18 : 4.2;
+      this.camYaw += yawDiff * (1 - Math.exp(-yawRate * dt));
 
       var dist = (far ? 15 : 8.4) + speedT * (far ? 4 : 3.4);
       var height = (far ? 6.4 : 3.6) + speedT * 0.8 + car.y * 0.8;

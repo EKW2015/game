@@ -115,7 +115,7 @@
     if (this.mode === 'race') {
       this.setupRace();
       this.state = 'countdown';
-      this.countdown = 3.2;
+      this.countdown = 3;
     } else {
       this.pickGate(true);
       this.state = 'playing';

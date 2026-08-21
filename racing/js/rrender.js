@@ -426,13 +426,40 @@
       geo.rotateY(-Math.PI / 2);
       var body = new THREE.Mesh(geo, new THREE.MeshLambertMaterial({ color: 0x2f3340 }));
       group.add(body);
-      // 坡口发光条，远处也能看见
+      // 坡口发光条 + 两侧光柱 + 坡面箭头，远处就能认出来
       var lip = new THREE.Mesh(
-        new THREE.BoxGeometry(global.Ramps.HALF_WIDTH * 2, 0.2, 0.5),
-        new THREE.MeshBasicMaterial({ color: 0xffd84d, transparent: true, opacity: 0.9 })
+        new THREE.BoxGeometry(global.Ramps.HALF_WIDTH * 2, 0.25, 0.6),
+        new THREE.MeshBasicMaterial({ color: 0xffd84d, fog: false })
       );
-      lip.position.set(0, global.Ramps.HEIGHT + 0.1, global.Ramps.LENGTH);
+      lip.position.set(0, global.Ramps.HEIGHT + 0.12, global.Ramps.LENGTH);
       group.add(lip);
+
+      for (var s = -1; s <= 1; s += 2) {
+        var post = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.5, 0.8, 26, 8, 1, true),
+          new THREE.MeshBasicMaterial({
+            color: 0xffd84d, transparent: true, opacity: 0.16,
+            blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide, fog: false
+          })
+        );
+        post.position.set(s * global.Ramps.HALF_WIDTH, 13, global.Ramps.LENGTH);
+        group.add(post);
+      }
+
+      var slope = Math.atan2(global.Ramps.HEIGHT, global.Ramps.LENGTH);
+      for (var a = 0; a < 3; a++) {
+        var arrow = new THREE.Mesh(
+          new THREE.ConeGeometry(1.5, 2.6, 3),
+          new THREE.MeshBasicMaterial({
+            color: 0xffd84d, transparent: true, opacity: 0.75,
+            blending: THREE.AdditiveBlending, depthWrite: false, fog: false
+          })
+        );
+        arrow.rotation.x = Math.PI / 2 - slope;
+        var t = 0.3 + a * 0.25;
+        arrow.position.set(0, global.Ramps.HEIGHT * t + 0.25, global.Ramps.LENGTH * t);
+        group.add(arrow);
+      }
       this.scene.add(group);
       this.rampMeshes.push(group);
     }
@@ -465,7 +492,10 @@
       // 相机追着车头，但漂移时稍微偏向车身侧面，能看到甩尾
       var driftLean = RU.clamp(car.lateralSpeed / 26, -1, 1) * 0.35;
       var targetYaw = car.yaw - driftLean + back;
-      this.camYaw += RU.wrapAngle(targetYaw - this.camYaw) * (1 - Math.exp(-4.2 * dt));
+      // 差得越多转得越快：回头看时半圈要立刻甩过去，否则会以为按键没生效
+      var yawDiff = RU.wrapAngle(targetYaw - this.camYaw);
+      var yawRate = Math.abs(yawDiff) > 1 ? 18 : 4.2;
+      this.camYaw += yawDiff * (1 - Math.exp(-yawRate * dt));
 
       var dist = (far ? 15 : 8.4) + speedT * (far ? 4 : 3.4);
       var height = (far ? 6.4 : 3.6) + speedT * 0.8 + car.y * 0.8;
