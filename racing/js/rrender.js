@@ -434,15 +434,16 @@
       lip.position.set(0, global.Ramps.HEIGHT + 0.12, global.Ramps.LENGTH);
       group.add(lip);
 
+      // 光柱要细、而且要架高：相机贴着地面追车，粗光柱会被穿进去糊满屏幕
       for (var s = -1; s <= 1; s += 2) {
         var post = new THREE.Mesh(
-          new THREE.CylinderGeometry(0.5, 0.8, 26, 8, 1, true),
+          new THREE.CylinderGeometry(0.3, 0.3, 12, 6, 1, true),
           new THREE.MeshBasicMaterial({
-            color: 0xffd84d, transparent: true, opacity: 0.16,
+            color: 0xffd84d, transparent: true, opacity: 0.3,
             blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide, fog: false
           })
         );
-        post.position.set(s * global.Ramps.HALF_WIDTH, 13, global.Ramps.LENGTH);
+        post.position.set(s * global.Ramps.HALF_WIDTH, 12, global.Ramps.LENGTH);
         group.add(post);
       }
 
