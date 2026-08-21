@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <meta name="description" content="霓虹夜城飙车：3D 无限夜城、AI 对手竞速、跳台特技、漂移甩尾、氮气冲刺。" />
+    <meta name="theme-color" content="#0a0714" />
+    <title>霓虹夜城飙车 3D</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='14' font-size='14'>🏎️</text></svg>" />
+    <link rel="stylesheet" href="css/racing.css" />
+  </head>
+  <body>
+    <div id="boot-screen" class="boot">
+      <div class="boot__logo">🏎️</div>
+      <div class="boot__title">霓虹夜城飙车</div>
+      <div class="boot__msg" id="boot-msg">正在点亮城市霓虹…</div>
+    </div>
+
+    <div class="stage" id="stage">
+      <canvas id="game" class="stage__canvas"></canvas>
+
+      <div class="hud" id="hud">
+        <div class="hud__topleft">
+          <div class="panel">
+            <div class="panel__row" id="row-time"><span class="label" id="label-time">时间</span><strong class="value value--time" id="hud-time">60.0</strong></div>
+            <div class="panel__row" id="row-place"><span class="label">名次</span><strong class="value" id="hud-place">1/5</strong></div>
+            <div class="panel__row" id="row-lap"><span class="label" id="label-lap">圈数</span><strong class="value" id="hud-lap">1/2</strong></div>
+            <div class="panel__row"><span class="label">得分</span><strong class="value" id="hud-score">0</strong></div>
+          </div>
+        </div>
+
+        <div class="hud__topright">
+          <div class="panel panel--right">
+            <div class="panel__row"><span class="label">金币</span><strong class="value value--cash" id="hud-cash">0</strong></div>
+            <div class="panel__row"><span class="label">最高</span><strong class="value" id="hud-best">0</strong></div>
+          </div>
+          <div class="tools">
+            <button class="tool" id="btn-sound" type="button">🔊 音效</button>
+            <button class="tool" id="btn-cam" type="button">🎥 视角</button>
+            <button class="tool" id="btn-pause" type="button">⏸ 暂停</button>
+          </div>
+        </div>
+
+        <div class="hud__guide">
+          <div class="guide__arrow" id="gate-arrow">➤</div>
+          <div class="guide__dist"><strong id="gate-dist">0</strong> m</div>
+        </div>
+
+        <div class="countdown" id="countdown"></div>
+
+        <div class="drift" id="drift-banner">
+          <div class="drift__label" id="drift-label">DRIFT</div>
+          <div class="drift__score" id="drift-score">0</div>
+        </div>
+
+        <div class="combo" id="combo-badge">x1</div>
+        <div class="toast" id="toast"></div>
+
+        <canvas class="minimap" id="minimap" width="150" height="150"></canvas>
+
+        <div class="dash">
+          <svg class="dash__gauge" viewBox="0 0 140 140">
+            <path class="dash__track" id="gauge-track" d="M 24 116 A 65 65 0 1 1 116 116" />
+            <path class="dash__fill" id="gauge-fill" d="M 24 116 A 65 65 0 1 1 116 116" />
+          </svg>
+          <div class="dash__readout">
+            <strong id="hud-speed">0</strong>
+            <span>km/h</span>
+          </div>
+          <div class="nitro">
+            <div class="nitro__label">氮气</div>
+            <div class="nitro__bar"><i id="nitro-fill"></i></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="touch" id="touch-controls" aria-hidden="true">
+        <div class="touch__left">
+          <button class="tbtn" data-hold="left" type="button">◀</button>
+          <button class="tbtn" data-hold="right" type="button">▶</button>
+        </div>
+        <div class="touch__right">
+          <button class="tbtn tbtn--drift" data-hold="handbrake" type="button">漂移</button>
+          <button class="tbtn tbtn--brake" data-hold="brake" type="button">刹车</button>
+          <button class="tbtn tbtn--gas" data-hold="throttle" type="button">油门</button>
+          <button class="tbtn tbtn--boost" data-hold="boost" type="button">氮气</button>
+        </div>
+      </div>
+
+      <div class="overlay" id="overlay-ready">
+        <div class="overlay__card">
+          <h1 class="overlay__title">霓虹夜城飙车</h1>
+          <p class="overlay__sub">
+            和 AI 环城竞速、开环极速冲刺拿奖牌，或者穿光门抢时间、在夜城里飞跳台捡金币。<br />
+            赚到的金币可以去车库买车、升级。
+          </p>
+          <div class="modes">
+            <button class="mode" data-action="start-race" type="button">
+              <b>🏁 竞速赛</b>
+              <i>对抗 4 名 AI，跑 <span id="race-laps">2</span> 圈，按名次拿奖金</i>
+            </button>
+            <button class="mode" data-action="start-sprint" type="button">
+              <b>⚡ 极速冲刺</b>
+              <i>开环门点赛道，比用时拿金银铜牌</i>
+            </button>
+            <button class="mode" data-action="start-time" type="button">
+              <b>⏱ 计时挑战</b>
+              <i>60 秒起步，每穿一个光门 +16 秒</i>
+            </button>
+            <button class="mode" data-action="start-free" type="button">
+              <b>🌃 自由驾驶</b>
+              <i>没有计时，飞跳台、甩尾、捡金币</i>
+            </button>
+          </div>
+          <div class="paint">
+            <span class="paint__label">车漆</span>
+            <div class="paint__swatches" id="paint-swatches"></div>
+          </div>
+          <div class="overlay__actions">
+            <button class="btn" data-action="garage" type="button">🔧 车库（金币 <span id="menu-cash">0</span>）</button>
+          </div>
+          <div class="keys">
+            <span><b>W / ↑</b> 油门</span>
+            <span><b>S / ↓</b> 刹车倒车</span>
+            <span><b>A D / ← →</b> 转向</span>
+            <span><b>空格</b> 手刹漂移</span>
+            <span><b>Shift</b> 氮气</span>
+            <span><b>C</b> 切换视角</span>
+            <span><b>T</b> 回头看</span>
+            <span><b>R</b> 回到路上</span>
+            <span><b>P</b> 暂停</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="overlay overlay--hidden" id="overlay-garage">
+        <div class="overlay__card overlay__card--wide">
+          <h1 class="overlay__title">车库</h1>
+          <p class="overlay__sub">金币 <b class="cash" id="garage-cash">0</b>　（跑竞速拿奖金、捡金币、漂移和特技都能赚）</p>
+          <div class="garage" id="garage-cars"></div>
+          <h2 class="section">升级 <span id="garage-current"></span></h2>
+          <div class="upgrades" id="garage-upgrades"></div>
+          <div class="overlay__actions">
+            <button class="btn btn--primary" data-action="close-garage" type="button">返回</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="overlay overlay--hidden" id="overlay-over">
+        <div class="overlay__card">
+          <h1 class="overlay__title" id="over-title">时间到</h1>
+          <div class="result" id="result-stats"></div>
+          <div class="overlay__actions">
+            <button class="btn btn--primary" data-action="restart" type="button">再来一局</button>
+            <button class="btn" data-action="menu" type="button">返回菜单</button>
+            <button class="btn" data-action="garage" type="button">🔧 车库</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="overlay overlay--hidden" id="overlay-paused">
+        <div class="overlay__card">
+          <h1 class="overlay__title">已暂停</h1>
+          <div class="overlay__actions">
+            <button class="btn btn--primary" data-action="resume" type="button">继续飙车</button>
+            <button class="btn" data-action="restart" type="button">重新开始</button>
+            <button class="btn" data-action="menu" type="button">返回菜单</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="overlay overlay--hidden" id="overlay-error">
+        <div class="overlay__card">
+          <h1 class="overlay__title">3D 加载失败</h1>
+          <p class="overlay__sub" id="error-msg">请用 Chrome 浏览器打开，并确认已开启硬件加速。</p>
+        </div>
+      </div>
+    </div>
+
+    <script src="../js/vendor/three.min.js"></script>
+    <script src="js/rutil.js"></script>
+    <script src="js/citymap.js"></script>
+    <script src="js/ramps.js"></script>
+    <script src="js/cars.js"></script>
+    <script src="js/car.js"></script>
+    <script src="js/traffic.js"></script>
+    <script src="js/route.js"></script>
+    <script src="js/autodrive.js"></script>
+    <script src="js/racegame.js"></script>
+    <script src="js/carmodel.js"></script>
+    <script src="js/city3d.js"></script>
+    <script src="js/rrender.js"></script>
+    <script src="js/raudio.js"></script>
+    <script src="js/rmain.js"></script>
+  </body>
+</html>
