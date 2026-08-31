@@ -30,6 +30,7 @@
       info: '瞄准黄球，空格一杆推进右下角袋',
       shots: 3,
       need: 1,
+      aimPocket: 5,
       cue: { x: 240, y: 180 },
       balls: [{ id: 1, x: 700, y: 350 }]
     },

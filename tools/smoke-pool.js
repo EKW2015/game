@@ -115,6 +115,31 @@ assert(P.LEVELS && P.LEVELS.length >= 5, 'challenge has several levels');
 assert(P.LEVELS[0].balls.length >= 1 && P.LEVELS[0].need === 1, 'first level is a single pocket');
 assert(P.LEVELS[0].cue.x > 0, 'first level has a cue spot');
 
+/* 第一关：对准右下角袋的默认中杆应能打进，且白球不进 */
+(function () {
+  var L = P.LEVELS[0];
+  var cue = P.makeBall(0, L.cue.x, L.cue.y, 'cue', '#fff', '');
+  var obj = P.makeBall(1, L.balls[0].x, L.balls[0].y, 'solid', '#fc0', 1);
+  var balls = [cue, obj];
+  var pk = P.POCKETS[L.aimPocket];
+  var toPk = P.norm(P.sub(pk, obj));
+  var ghost = P.sub(obj, P.scale(toPk, cue.r + obj.r));
+  var aim = P.norm(P.sub(ghost, cue));
+  var power = 220 + 78 * 9;
+  var steps = 0;
+  cue.vx = aim.x * power;
+  cue.vy = aim.y * power;
+  while (P.anyMoving(balls) && steps < 5000) {
+    P.integrate(balls, 1 / 60);
+    P.hitCushions(balls);
+    P.collideBalls(balls);
+    P.pocketBalls(balls);
+    steps++;
+  }
+  assert(obj.pocketed, 'level 1 default shot pockets the yellow');
+  assert(!cue.pocketed, 'level 1 default shot does not scratch');
+})();
+
 if (failed) {
   console.error(failed + ' failed');
   process.exit(1);

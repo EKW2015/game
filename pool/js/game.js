@@ -112,6 +112,7 @@
     this.keys = { left: false, right: false, up: false, down: false, shift: false };
     this.menuOpen = false;
     this.dragging = false;
+    this.aimLocked = this.mode === 'challenge';
     this.placing = false;
     this.placeAnywhere = false;
     this.firstHit = null;
@@ -164,12 +165,46 @@
       this.balls.push(Pool.makeBall(id, spec.x, spec.y, group, COLORS[id], id));
     }
     first = this.balls[1];
-    if (first) {
-      this.aimX = first.x - cue.x;
-      this.aimY = first.y - cue.y;
-      var n = Pool.norm({ x: this.aimX, y: this.aimY });
-      this.aimX = n.x || 1;
-      this.aimY = n.y || 0;
+    if (first) this.aimAtPocket(cue, first, L.aimPocket);
+    this.aimLocked = true;
+  };
+
+  Table.prototype.aimAtPocket = function (cue, ball, pocketIndex) {
+    var pk, i, ghost, n, toPk, score, best = null, bestScore = -1e9;
+    if (pocketIndex != null && Pool.POCKETS[pocketIndex]) {
+      pk = Pool.POCKETS[pocketIndex];
+    } else {
+      for (i = 0; i < Pool.POCKETS.length; i++) {
+        pk = Pool.POCKETS[i];
+        toPk = Pool.norm(Pool.sub(pk, ball));
+        ghost = Pool.sub(ball, Pool.scale(toPk, cue.r + ball.r));
+        n = Pool.norm(Pool.sub(ghost, cue));
+        if (!n.x && !n.y) continue;
+        score = Pool.dot(n, toPk) * 100 - Pool.dist(ball, pk) * 0.03;
+        if (score > bestScore) {
+          bestScore = score;
+          best = pk;
+        }
+      }
+      pk = best || Pool.POCKETS[5];
+    }
+    toPk = Pool.norm(Pool.sub(pk, ball));
+    ghost = Pool.sub(ball, Pool.scale(toPk, cue.r + ball.r));
+    n = Pool.norm(Pool.sub(ghost, cue));
+    this.aimX = n.x || 1;
+    this.aimY = n.y || 0;
+  };
+
+  Table.prototype.reaimRemaining = function () {
+    var cue = this.cue();
+    var i, b, L;
+    if (!cue || cue.pocketed) return;
+    L = Pool.LEVELS[this.levelIndex];
+    for (i = 1; i < this.balls.length; i++) {
+      b = this.balls[i];
+      if (b.pocketed) continue;
+      this.aimAtPocket(cue, b, L && L.aimPocket);
+      return;
     }
   };
 
@@ -313,6 +348,7 @@
     var ang = Math.atan2(this.aimY, this.aimX) + delta;
     this.aimX = Math.cos(ang);
     this.aimY = Math.sin(ang);
+    this.aimLocked = true;
   };
 
   Table.prototype.applyHolds = function (dt) {
@@ -418,6 +454,7 @@
       return;
     }
     if (!this.canAim() || !cue) return;
+    this.aimLocked = false;
     this.updateAim(p, cue);
     this.dragging = true;
     this.pull = 8;
@@ -431,7 +468,7 @@
     if (this.dragging) {
       var away = Pool.dot(Pool.sub(cue, p), Pool.norm({ x: this.aimX, y: this.aimY }));
       this.pull = Pool.clamp(away, 8, 180);
-    } else {
+    } else if (!this.aimLocked) {
       this.updateAim(p, cue);
     }
   };
@@ -580,6 +617,8 @@
       this.msg = '白球进袋了！方向键摆好再空格';
     } else {
       this.phase = 'aim';
+      this.aimLocked = true;
+      this.reaimRemaining();
       this.msg = n ? ('打进 ' + n + ' 颗！空格继续') : '没进，再瞄准一次';
     }
     if (this.cleared >= this.need) {
