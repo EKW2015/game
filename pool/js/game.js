@@ -170,7 +170,7 @@
       if (ev.code === 'Space') {
         if (self.canAim()) {
           ev.preventDefault();
-          self.shoot(self.pull > 12 ? self.pull : 88);
+          self.shoot(self.pull > 12 ? self.pull : 125);
         }
       } else if (ev.code === 'ArrowLeft' || ev.code === 'KeyA') {
         self.rotateAim(-0.06);
