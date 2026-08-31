@@ -10,7 +10,7 @@ const root = path.join(__dirname, '..');
 const dir = path.join(root, 'pool');
 const css = fs.readFileSync(path.join(dir, 'css/pool.css'), 'utf8');
 const jsFiles = [
-  'physics.js', 'audio.js', 'rules.js', 'ai.js', 'render.js', 'game.js', 'main.js'
+  'physics.js', 'audio.js', 'rules.js', 'ai.js', 'render.js', 'levels.js', 'game.js', 'main.js'
 ];
 const js = jsFiles.map(function (f) {
   return fs.readFileSync(path.join(dir, 'js', f), 'utf8');

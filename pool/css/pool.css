@@ -189,7 +189,9 @@ canvas {
   cursor: pointer;
 }
 
-.mode:hover, .play { background: #c9a24a; color: #1a1008; border-color: transparent; }
+.mode.hidden { display: none; }
+
+.stars { letter-spacing: 0.12em; color: var(--gold); font-size: 22px; }
 
 .pad {
   width: min(1100px, 100%);

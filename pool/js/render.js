@@ -232,11 +232,72 @@
     ctx.fill();
   }
 
+  function drawTrail(ctx, b, C) {
+    if (!b.trail || b.trail.length < 2 || b.pocketed) return;
+    var i, p, a;
+    for (i = 0; i < b.trail.length; i++) {
+      p = b.trail[i];
+      a = (i + 1) / b.trail.length * 0.28;
+      ctx.beginPath();
+      ctx.arc(C + p.x, C + p.y, b.r * 0.55, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(255,255,255,' + a + ')';
+      ctx.fill();
+    }
+  }
+
+  function drawSparks(ctx, sparks, C) {
+    var i, s;
+    for (i = 0; i < sparks.length; i++) {
+      s = sparks[i];
+      ctx.globalAlpha = Math.max(0, s.life);
+      ctx.fillStyle = s.color || '#ffe08a';
+      ctx.beginPath();
+      ctx.arc(C + s.x, C + s.y, s.r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  function drawPops(ctx, pops, C) {
+    var i, p;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    for (i = 0; i < pops.length; i++) {
+      p = pops[i];
+      ctx.globalAlpha = Math.max(0, p.life);
+      ctx.fillStyle = p.color || '#ffe08a';
+      ctx.font = 'bold ' + (p.size || 18) + 'px sans-serif';
+      ctx.fillText(p.text, C + p.x, C + p.y);
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  function drawHudStrip(ctx, table, C) {
+    if (table.mode !== 'challenge' && table.mode !== 'practice') return;
+    ctx.fillStyle = 'rgba(0,0,0,0.38)';
+    roundRect(ctx, C + Pool.TW - 168, C + 10, 156, table.mode === 'challenge' ? 54 : 36, 8);
+    ctx.fill();
+    ctx.fillStyle = '#ffe08a';
+    ctx.font = 'bold 16px sans-serif';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'top';
+    ctx.fillText('分 ' + (table.score || 0), C + Pool.TW - 156, C + 16);
+    if (table.mode === 'challenge') {
+      ctx.fillStyle = '#f3ead8';
+      ctx.font = '12px sans-serif';
+      ctx.fillText('杆 ' + table.shotsUsed + '/' + table.maxShots + '  进 ' + table.cleared + '/' + table.need, C + Pool.TW - 156, C + 38);
+    }
+  }
+
   Pool.Render = {
     drawTable: drawTable,
     drawBall: drawBall,
+    drawTrail: drawTrail,
     drawCue: drawCue,
     drawAim: drawAim,
-    drawPower: drawPower
+    drawPower: drawPower,
+    drawSparks: drawSparks,
+    drawPops: drawPops,
+    drawHudStrip: drawHudStrip
   };
 })(typeof window !== 'undefined' ? window : global);

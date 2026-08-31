@@ -39,18 +39,24 @@
     doc.getElementById('p0-name').textContent = g.names[0] || '玩家 1';
     doc.getElementById('p1-name').textContent = g.names[1] || '玩家 2';
     doc.getElementById('p0-group').textContent = g.mode === 'practice'
-      ? '任意球'
-      : (g.openTable ? '尚未分色' : Pool.Rules.groupLabel(a0));
+      ? ('任意球 · 分 ' + (g.score || 0))
+      : g.mode === 'challenge'
+        ? (g.levelName + ' · 分 ' + (g.score || 0))
+        : (g.openTable ? '尚未分色' : Pool.Rules.groupLabel(a0));
     doc.getElementById('p1-group').textContent = g.mode === 'practice'
       ? '—'
-      : (g.openTable ? '尚未分色' : Pool.Rules.groupLabel(a1));
+      : g.mode === 'challenge'
+        ? ('第 ' + ((g.levelIndex || 0) + 1) + '/' + Pool.LEVELS.length + ' 关')
+        : (g.openTable ? '尚未分色' : Pool.Rules.groupLabel(a1));
 
-    p0balls.innerHTML = a0 ? ballsOf(g, a0) : ballsOf(g, 'solid') + ballsOf(g, 'stripe');
-    if (g.mode === 'practice') p1balls.innerHTML = '';
+    p0balls.innerHTML = g.mode === 'challenge'
+      ? ballsOf(g, 'solid') + ballsOf(g, 'stripe') + ballsOf(g, 'eight')
+      : a0 ? ballsOf(g, a0) : ballsOf(g, 'solid') + ballsOf(g, 'stripe');
+    if (g.mode === 'practice' || g.mode === 'challenge') p1balls.innerHTML = '';
     else p1balls.innerHTML = a1 ? ballsOf(g, a1) : '';
 
     p0.classList.toggle('active', g.turn === 0 && g.winner < 0);
-    p1.classList.toggle('active', g.turn === 1 && g.winner < 0 && g.mode !== 'practice');
+    p1.classList.toggle('active', g.turn === 1 && g.winner < 0 && g.mode !== 'practice' && g.mode !== 'challenge');
 
     var shoot = doc.getElementById('btn-shoot');
     var pad = doc.getElementById('pad');
@@ -67,13 +73,27 @@
     else if (g.isAiTurn()) t = '电脑瞄准中…';
     turnEl.innerHTML = '<strong>' + t + '</strong>';
 
+    var nextBtn = doc.getElementById('btn-next');
     if (g.winner >= 0) {
       overlay.classList.remove('hidden');
-      overlayTitle.textContent = g.mode === 'vsai'
-        ? (g.winner === 0 ? '你赢了！' : '电脑赢了')
-        : g.names[g.winner] + ' 获胜';
-      overlayMsg.textContent = '再来一局，或换个模式。';
+      if (g.mode === 'challenge') {
+        overlayTitle.textContent = g.winner === 0 ? g.msg : '再试一次';
+        overlayMsg.textContent = g.winner === 0
+          ? ('得分 ' + g.score + (g.stars ? '　' + '★'.repeat(g.stars) : '') + '。回车下一关，4 重试。')
+          : '按 4 重试本关，或换模式。';
+        if (nextBtn) {
+          nextBtn.classList.toggle('hidden', !(g.winner === 0 && g.levelIndex < Pool.LEVELS.length - 1));
+        }
+      } else {
+        overlayTitle.textContent = g.mode === 'vsai'
+          ? (g.winner === 0 ? '你赢了！' : '电脑赢了')
+          : g.names[g.winner] + ' 获胜';
+        overlayMsg.textContent = '再来一局，或换个模式。';
+        if (nextBtn) nextBtn.classList.add('hidden');
+      }
       modes.style.display = '';
+    } else if (nextBtn) {
+      nextBtn.classList.add('hidden');
     }
   }
 
@@ -83,14 +103,28 @@
       table = new Pool.Table(canvas, { onHud: renderHud });
     }
     table.menuOpen = false;
-    table.reset(mode);
+    if (mode === 'challenge-next') {
+      if (!table.nextLevel()) {
+        overlay.classList.remove('hidden');
+        overlayTitle.textContent = '全部通关！';
+        overlayMsg.textContent = '总分 ' + table.score + '。按 4 再闯一次。';
+        renderHud(table);
+        return;
+      }
+      renderHud(table);
+      return;
+    }
+    if (mode === 'challenge') {
+      if (!(table.mode === 'challenge' && table.winner === 1)) table.levelIndex = 0;
+    }
+    table.reset(mode, { fresh: mode === 'challenge' && table.winner !== 1 });
     renderHud(table);
   }
 
   function openMenu() {
     overlay.classList.remove('hidden');
     overlayTitle.textContent = '八球台球';
-    overlayMsg.textContent = '没有鼠标也能玩：按 1 对战电脑，2 双人，3 练习。方向键瞄准，空格击打。';
+    overlayMsg.textContent = '按 4 闯关（推荐）。1 对战电脑，2 双人，3 练习。方向键瞄准，空格击打。';
     modes.style.display = '';
     if (table) table.menuOpen = true;
   }
@@ -114,6 +148,10 @@
       if (ev.code === 'Digit1' || ev.key === '1') start('vsai');
       else if (ev.code === 'Digit2' || ev.key === '2') start('hotseat');
       else if (ev.code === 'Digit3' || ev.key === '3') start('practice');
+      else if (ev.code === 'Digit4' || ev.key === '4') start('challenge');
+      else if (ev.code === 'Enter' && table && table.mode === 'challenge' && table.winner === 0) {
+        start('challenge-next');
+      }
       return;
     }
     if (ev.code === 'Escape' || ev.code === 'KeyM') {

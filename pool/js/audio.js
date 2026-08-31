@@ -55,6 +55,15 @@
     pocket: function () {
       beep(220, 0.18, 'sine', 0.09, 90);
     },
+    combo: function (n) {
+      beep(330, 0.1, 'sine', 0.07);
+      setTimeout(function () { beep(440 + n * 40, 0.16, 'sine', 0.08); }, 70);
+    },
+    star: function () {
+      beep(523, 0.1, 'sine', 0.07);
+      setTimeout(function () { beep(659, 0.12, 'sine', 0.07); }, 90);
+      setTimeout(function () { beep(784, 0.22, 'sine', 0.09); }, 180);
+    },
     win: function () {
       beep(440, 0.15, 'sine', 0.08);
       setTimeout(function () { beep(554, 0.18, 'sine', 0.08); }, 120);

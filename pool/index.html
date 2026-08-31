@@ -22,11 +22,13 @@
         <canvas id="table" width="868" height="468" aria-label="台球桌"></canvas>
         <div class="overlay" id="overlay">
           <h2 id="overlay-title">八球台球</h2>
-          <p id="overlay-msg">没有鼠标也能玩：按 1 对战电脑，2 双人，3 练习。开局后用方向键瞄准、空格击打。手机请点下面的大按钮。</p>
+          <p id="overlay-msg">按 4 开始闯关（最好玩）。没有鼠标：方向键瞄准，空格击打。1 对战电脑，2 双人，3 练习。</p>
           <div class="modes" id="modes">
-            <button class="mode play" type="button" data-mode="vsai">对战电脑</button>
+            <button class="mode play" type="button" data-mode="challenge">闯关挑战</button>
+            <button class="mode" type="button" data-mode="vsai">对战电脑</button>
             <button class="mode" type="button" data-mode="hotseat">双人对战</button>
             <button class="mode" type="button" data-mode="practice">练习模式</button>
+            <button class="mode play hidden" type="button" data-mode="challenge-next" id="btn-next">下一关</button>
           </div>
         </div>
       </div>
@@ -56,10 +58,8 @@
       </div>
 
       <p class="help">
-        <strong>不用鼠标：</strong>方向键或 WASD 瞄准和调力道，空格或回车击打。
-        也可按住屏幕上的「左转 / 右转 / 力道 / 击打」。
-        白球入袋时用方向键移动白球，再按空格放下。
-        选模式可按键盘 1 / 2 / 3，按 M 或 Esc 打开菜单。
+        <strong>闯关最好玩：</strong>按 4 开始。方向键瞄准，空格击打。进袋有连击加分。
+        过关后按回车进下一关。M 打开菜单。
       </p>
     </div>
 
@@ -68,6 +68,7 @@
     <script src="js/rules.js"></script>
     <script src="js/ai.js"></script>
     <script src="js/render.js"></script>
+    <script src="js/levels.js"></script>
     <script src="js/game.js"></script>
     <script src="js/main.js"></script>
   </body>

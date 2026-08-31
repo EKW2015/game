@@ -110,6 +110,11 @@ function assert(cond, msg) {
   assert(shot && isFinite(shot.ax) && shot.power > 0, 'AI returns a shot');
 })();
 
+require(path.join(root, 'levels.js'));
+assert(P.LEVELS && P.LEVELS.length >= 5, 'challenge has several levels');
+assert(P.LEVELS[0].balls.length >= 1 && P.LEVELS[0].need === 1, 'first level is a single pocket');
+assert(P.LEVELS[0].cue.x > 0, 'first level has a cue spot');
+
 if (failed) {
   console.error(failed + ' failed');
   process.exit(1);
