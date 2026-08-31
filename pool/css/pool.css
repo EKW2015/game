@@ -191,7 +191,54 @@ canvas {
 
 .mode:hover, .play { background: #c9a24a; color: #1a1008; border-color: transparent; }
 
+.pad {
+  width: min(1100px, 100%);
+  display: grid;
+  grid-template-columns: repeat(4, 1fr) 1.4fr;
+  gap: 8px;
+}
+
+.pad__btn, .pad__shoot {
+  font: inherit;
+  border-radius: 12px;
+  border: 1px solid rgba(228, 194, 122, 0.35);
+  background: #2a1a10;
+  color: var(--ink);
+  cursor: pointer;
+  padding: 12px 8px;
+  line-height: 1.25;
+  min-height: 58px;
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.pad__btn small, .pad__shoot small {
+  display: block;
+  color: var(--muted);
+  font-size: 11px;
+  margin-top: 2px;
+}
+
+.pad__btn:active, .pad__btn.is-down {
+  background: #5b3318;
+  border-color: var(--gold);
+}
+
+.pad__shoot {
+  background: #c9a24a;
+  color: #1a1008;
+  font-weight: 700;
+  border-color: transparent;
+}
+
+.pad__shoot:active { filter: brightness(1.08); }
+
+.pad.is-place .pad__shoot { background: #7ecb8a; }
+
 @media (max-width: 720px) {
   .hud { grid-template-columns: 1fr; }
   .turn { min-height: 56px; }
+  .pad { grid-template-columns: 1fr 1fr; }
+  .pad__shoot { grid-column: 1 / -1; min-height: 64px; font-size: 18px; }
 }

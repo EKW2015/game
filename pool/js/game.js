@@ -106,14 +106,16 @@
     this.phase = 'aim';
     this.aimX = 1;
     this.aimY = 0;
-    this.pull = 0;
+    this.pull = 100;
+    this.keys = { left: false, right: false, up: false, down: false, shift: false };
+    this.menuOpen = false;
     this.dragging = false;
     this.placing = false;
     this.placeAnywhere = false;
     this.firstHit = null;
     this.shotPocketed = [];
     this.cuePocketed = false;
-    this.msg = '瞄准后拉杆击打';
+    this.msg = '方向键瞄准，空格击打';
     this.winner = -1;
     this.foulReason = '';
     this.aiTimer = 0;
@@ -167,21 +169,48 @@
     global.addEventListener('touchmove', move, { passive: false });
     global.addEventListener('touchend', up);
     global.addEventListener('keydown', function (ev) {
-      if (ev.code === 'Space') {
-        if (self.canAim()) {
-          ev.preventDefault();
-          self.shoot(self.pull > 12 ? self.pull : 125);
-        }
-      } else if (ev.code === 'ArrowLeft' || ev.code === 'KeyA') {
-        self.rotateAim(-0.06);
-      } else if (ev.code === 'ArrowRight' || ev.code === 'KeyD') {
-        self.rotateAim(0.06);
-      } else if (ev.code === 'ArrowUp' || ev.code === 'KeyW') {
-        if (self.canAim()) self.pull = Pool.clamp(self.pull + 8, 8, 180);
-      } else if (ev.code === 'ArrowDown' || ev.code === 'KeyS') {
-        if (self.canAim()) self.pull = Pool.clamp(self.pull - 8, 8, 180);
-      }
+      self.onKey(ev, true);
     });
+    global.addEventListener('keyup', function (ev) {
+      self.onKey(ev, false);
+    });
+    global.addEventListener('blur', function () {
+      self.keys.left = self.keys.right = self.keys.up = self.keys.down = false;
+    });
+  };
+
+  Table.prototype.keyName = function (code) {
+    if (code === 'ArrowLeft' || code === 'KeyA' || code === 'KeyQ') return 'left';
+    if (code === 'ArrowRight' || code === 'KeyD' || code === 'KeyE') return 'right';
+    if (code === 'ArrowUp' || code === 'KeyW') return 'up';
+    if (code === 'ArrowDown' || code === 'KeyS') return 'down';
+    if (code === 'ShiftLeft' || code === 'ShiftRight') return 'shift';
+    return '';
+  };
+
+  Table.prototype.onKey = function (ev, down) {
+    var name = this.keyName(ev.code);
+    if (name) {
+      this.keys[name] = down;
+      if (down && (name === 'left' || name === 'right' || name === 'up' || name === 'down')) {
+        ev.preventDefault();
+      }
+    }
+    if (!down) return;
+    if (ev.repeat) return;
+    if (this.menuOpen) return;
+    if (ev.code === 'Space' || ev.code === 'Enter') {
+      ev.preventDefault();
+      Pool.Sfx.unlock();
+      if (this.canPlace()) this.confirmPlace();
+      else if (this.canAim()) this.shoot(this.pull > 12 ? this.pull : 125);
+    }
+  };
+
+  Table.prototype.setHold = function (name, down) {
+    if (this.keys[name] === undefined) return;
+    this.keys[name] = !!down;
+    Pool.Sfx.unlock();
   };
 
   Table.prototype.rotateAim = function (delta) {
@@ -189,6 +218,83 @@
     var ang = Math.atan2(this.aimY, this.aimX) + delta;
     this.aimX = Math.cos(ang);
     this.aimY = Math.sin(ang);
+  };
+
+  Table.prototype.applyHolds = function (dt) {
+    var cue, speed, nx, ny, x, y;
+    if (this.canAim()) {
+      speed = this.keys.shift ? 0.7 : 2.3;
+      if (this.keys.left) this.rotateAim(-speed * dt);
+      if (this.keys.right) this.rotateAim(speed * dt);
+      if (this.keys.up) this.pull = Pool.clamp(this.pull + 160 * dt, 8, 180);
+      if (this.keys.down) this.pull = Pool.clamp(this.pull - 160 * dt, 8, 180);
+    }
+    if (this.canPlace()) {
+      cue = this.cue();
+      if (!cue) return;
+      nx = (this.keys.right ? 1 : 0) - (this.keys.left ? 1 : 0);
+      ny = (this.keys.down ? 1 : 0) - (this.keys.up ? 1 : 0);
+      if (!nx && !ny) return;
+      x = cue.x + nx * 140 * dt;
+      y = cue.y + ny * 140 * dt;
+      this.moveCueTo(x, y, false);
+    }
+  };
+
+  Table.prototype.moveCueTo = function (x, y, snap) {
+    var cue = this.cue();
+    if (!cue) return false;
+    if (this.placeAnywhere) {
+      x = Pool.clamp(x, Pool.R + 1, Pool.TW - Pool.R - 1);
+    } else {
+      x = Pool.clamp(x, Pool.R + 1, Pool.TW * 0.25);
+    }
+    y = Pool.clamp(y, Pool.R + 1, Pool.TH - Pool.R - 1);
+    if (Pool.overlapsAny(this.balls, x, y, Pool.R, cue)) {
+      if (snap) {
+        this.msg = '这里没空位，换个位置放下白球';
+        this.emit();
+      }
+      return false;
+    }
+    cue.x = x;
+    cue.y = y;
+    cue.vx = 0;
+    cue.vy = 0;
+    cue.pocketed = false;
+    return true;
+  };
+
+  Table.prototype.confirmPlace = function () {
+    var cue = this.cue();
+    if (!this.canPlace() || !cue) return;
+    if (!this.moveCueTo(cue.x, cue.y, true)) return;
+    this.phase = 'aim';
+    this.pull = 100;
+    this.msg = '自由球已放好，方向键瞄准，空格击打';
+    this.emit();
+  };
+
+  Table.prototype.autoPlaceCue = function () {
+    var spots = [
+      { x: Pool.TW * 0.22, y: Pool.TH * 0.5 },
+      { x: Pool.TW * 0.22, y: Pool.TH * 0.32 },
+      { x: Pool.TW * 0.22, y: Pool.TH * 0.68 },
+      { x: Pool.TW * 0.18, y: Pool.TH * 0.5 },
+      { x: Pool.TW * 0.5, y: Pool.TH * 0.5 }
+    ];
+    var i;
+    this.placeAnywhere = true;
+    for (i = 0; i < spots.length; i++) {
+      if (this.moveCueTo(spots[i].x, spots[i].y, false)) {
+        this.phase = 'aim';
+        this.pull = 100;
+        this.emit();
+        return;
+      }
+    }
+    this.phase = 'aim';
+    this.emit();
   };
 
   Table.prototype.pointer = function (ev) {
@@ -199,7 +305,11 @@
   };
 
   Table.prototype.canAim = function () {
-    return this.phase === 'aim' && this.winner < 0 && !this.isAiTurn();
+    return this.phase === 'aim' && this.winner < 0 && !this.isAiTurn() && !this.menuOpen;
+  };
+
+  Table.prototype.canPlace = function () {
+    return this.phase === 'place' && this.winner < 0 && !this.isAiTurn() && !this.menuOpen;
   };
 
   Table.prototype.isAiTurn = function () {
@@ -235,7 +345,7 @@
     if (!this.dragging) return;
     this.dragging = false;
     if (this.canAim() && this.pull > 10) this.shoot(this.pull);
-    this.pull = 0;
+    else if (this.pull < 20) this.pull = 100;
   };
 
   Table.prototype.updateAim = function (p, cue) {
@@ -248,25 +358,9 @@
   };
 
   Table.prototype.tryPlace = function (p) {
-    var cue = this.cue();
-    var x = Pool.clamp(p.x, Pool.R + 1, Pool.TW * 0.25);
-    var y = Pool.clamp(p.y, Pool.R + 1, Pool.TH - Pool.R - 1);
-    if (this.placeAnywhere) {
-      x = Pool.clamp(p.x, Pool.R + 1, Pool.TW - Pool.R - 1);
-    }
-    if (Pool.overlapsAny(this.balls, x, y, Pool.R, cue)) {
-      this.msg = '这里没空位，换个位置放下白球';
-      this.emit();
-      return;
-    }
-    cue.x = x;
-    cue.y = y;
-    cue.vx = 0;
-    cue.vy = 0;
-    cue.pocketed = false;
-    this.phase = 'aim';
-    this.msg = '自由球已放好，请击打';
-    this.emit();
+    if (!this.canPlace()) return;
+    if (!this.moveCueTo(p.x, p.y, true)) return;
+    this.confirmPlace();
   };
 
   Table.prototype.shoot = function (pull) {
@@ -364,7 +458,7 @@
       this.phase = this.cuePocketed ? 'place' : 'aim';
       this.placeAnywhere = true;
       this.turn = 0;
-      this.msg = this.cuePocketed ? '白球入袋，点击开球区放置' : (result.ownIn ? '打进了！继续' : '继续练习');
+      this.msg = this.cuePocketed ? '白球入袋，方向键移动白球，空格放下' : (result.ownIn ? '打进了！空格继续' : '方向键瞄准，空格击打');
       this.emit();
       return;
     }
@@ -373,23 +467,27 @@
       this.turn = 1 - this.turn;
       this.phase = 'place';
       this.placeAnywhere = true;
-      this.msg = '犯规：' + result.reason + '。对方自由球';
+      this.msg = '犯规：' + result.reason + '。方向键移动白球，空格放下';
       Pool.Sfx.foul();
     } else if (result.ownIn) {
       this.phase = 'aim';
-      this.msg = '打进了，继续击打';
+      this.msg = '打进了，空格继续击打';
     } else {
       this.turn = 1 - this.turn;
       this.phase = 'aim';
-      this.msg = '交换击打';
+      this.msg = '换人：方向键瞄准，空格击打';
     }
     this.emit();
   };
 
   Table.prototype.update = function (dt) {
+    this.applyHolds(dt);
     if (this.phase === 'rolling') {
       this.stepPhysics(dt);
       if (!Pool.anyMoving(this.balls)) this.finishShot();
+    }
+    if (this.phase === 'place' && this.isAiTurn()) {
+      this.autoPlaceCue();
     }
     if (this.phase === 'aim' && this.isAiTurn() && this.winner < 0) {
       this.aiTimer += dt;
@@ -426,7 +524,7 @@
     if (this.phase === 'aim' && cue && !cue.pocketed && this.winner < 0 && !this.isAiTurn()) {
       Pool.Render.drawAim(ctx, cue, this.aimX, this.aimY, this.balls, C);
       Pool.Render.drawCue(ctx, cue, this.aimX, this.aimY, this.pull, C);
-      if (this.dragging) Pool.Render.drawPower(ctx, this.pull, C);
+      Pool.Render.drawPower(ctx, this.pull, C);
     }
     for (i = 0; i < this.balls.length; i++) Pool.Render.drawBall(ctx, this.balls[i], C);
   };

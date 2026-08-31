@@ -199,9 +199,56 @@ canvas {
 
 .mode:hover, .play { background: #c9a24a; color: #1a1008; border-color: transparent; }
 
+.pad {
+  width: min(1100px, 100%);
+  display: grid;
+  grid-template-columns: repeat(4, 1fr) 1.4fr;
+  gap: 8px;
+}
+
+.pad__btn, .pad__shoot {
+  font: inherit;
+  border-radius: 12px;
+  border: 1px solid rgba(228, 194, 122, 0.35);
+  background: #2a1a10;
+  color: var(--ink);
+  cursor: pointer;
+  padding: 12px 8px;
+  line-height: 1.25;
+  min-height: 58px;
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.pad__btn small, .pad__shoot small {
+  display: block;
+  color: var(--muted);
+  font-size: 11px;
+  margin-top: 2px;
+}
+
+.pad__btn:active, .pad__btn.is-down {
+  background: #5b3318;
+  border-color: var(--gold);
+}
+
+.pad__shoot {
+  background: #c9a24a;
+  color: #1a1008;
+  font-weight: 700;
+  border-color: transparent;
+}
+
+.pad__shoot:active { filter: brightness(1.08); }
+
+.pad.is-place .pad__shoot { background: #7ecb8a; }
+
 @media (max-width: 720px) {
   .hud { grid-template-columns: 1fr; }
   .turn { min-height: 56px; }
+  .pad { grid-template-columns: 1fr 1fr; }
+  .pad__shoot { grid-column: 1 / -1; min-height: 64px; font-size: 18px; }
 }
 </style>
   </head>
@@ -219,13 +266,21 @@ canvas {
         <canvas id="table" width="868" height="468" aria-label="台球桌"></canvas>
         <div class="overlay" id="overlay">
           <h2 id="overlay-title">八球台球</h2>
-          <p id="overlay-msg">鼠标（或手指）指向要打的方向，按住往后拉杆，松手击打。先打进全色或花色就归你，清完再打 8 号。</p>
+          <p id="overlay-msg">没有鼠标也能玩：按 1 对战电脑，2 双人，3 练习。开局后用方向键瞄准、空格击打。手机请点下面的大按钮。</p>
           <div class="modes" id="modes">
             <button class="mode play" type="button" data-mode="vsai">对战电脑</button>
             <button class="mode" type="button" data-mode="hotseat">双人对战</button>
             <button class="mode" type="button" data-mode="practice">练习模式</button>
           </div>
         </div>
+      </div>
+
+      <div class="pad" id="pad">
+        <button class="pad__btn" type="button" data-hold="left">◀ 左转<br><small>A / ←</small></button>
+        <button class="pad__btn" type="button" data-hold="right">右转 ▶<br><small>D / →</small></button>
+        <button class="pad__btn" type="button" data-hold="down">力道－<br><small>S / ↓</small></button>
+        <button class="pad__btn" type="button" data-hold="up">力道＋<br><small>W / ↑</small></button>
+        <button class="pad__shoot" type="button" id="btn-shoot">击打<br><small>空格</small></button>
       </div>
 
       <div class="hud">
@@ -245,9 +300,10 @@ canvas {
       </div>
 
       <p class="help">
-        瞄准白球前方 · 按住往后拉杆，松手出杆（也可按空格击打）。
-        白球入袋或先碰到对方球算犯规，对方自由球。
-        把己方球打完后，再把 8 号打进就赢；8 号进早了则判负。
+        <strong>不用鼠标：</strong>方向键或 WASD 瞄准和调力道，空格或回车击打。
+        也可按住屏幕上的「左转 / 右转 / 力道 / 击打」。
+        白球入袋时用方向键移动白球，再按空格放下。
+        选模式可按键盘 1 / 2 / 3。
       </p>
     </div>
 
@@ -1187,14 +1243,16 @@ canvas {
     this.phase = 'aim';
     this.aimX = 1;
     this.aimY = 0;
-    this.pull = 0;
+    this.pull = 100;
+    this.keys = { left: false, right: false, up: false, down: false, shift: false };
+    this.menuOpen = false;
     this.dragging = false;
     this.placing = false;
     this.placeAnywhere = false;
     this.firstHit = null;
     this.shotPocketed = [];
     this.cuePocketed = false;
-    this.msg = '瞄准后拉杆击打';
+    this.msg = '方向键瞄准，空格击打';
     this.winner = -1;
     this.foulReason = '';
     this.aiTimer = 0;
@@ -1248,21 +1306,48 @@ canvas {
     global.addEventListener('touchmove', move, { passive: false });
     global.addEventListener('touchend', up);
     global.addEventListener('keydown', function (ev) {
-      if (ev.code === 'Space') {
-        if (self.canAim()) {
-          ev.preventDefault();
-          self.shoot(self.pull > 12 ? self.pull : 125);
-        }
-      } else if (ev.code === 'ArrowLeft' || ev.code === 'KeyA') {
-        self.rotateAim(-0.06);
-      } else if (ev.code === 'ArrowRight' || ev.code === 'KeyD') {
-        self.rotateAim(0.06);
-      } else if (ev.code === 'ArrowUp' || ev.code === 'KeyW') {
-        if (self.canAim()) self.pull = Pool.clamp(self.pull + 8, 8, 180);
-      } else if (ev.code === 'ArrowDown' || ev.code === 'KeyS') {
-        if (self.canAim()) self.pull = Pool.clamp(self.pull - 8, 8, 180);
-      }
+      self.onKey(ev, true);
     });
+    global.addEventListener('keyup', function (ev) {
+      self.onKey(ev, false);
+    });
+    global.addEventListener('blur', function () {
+      self.keys.left = self.keys.right = self.keys.up = self.keys.down = false;
+    });
+  };
+
+  Table.prototype.keyName = function (code) {
+    if (code === 'ArrowLeft' || code === 'KeyA' || code === 'KeyQ') return 'left';
+    if (code === 'ArrowRight' || code === 'KeyD' || code === 'KeyE') return 'right';
+    if (code === 'ArrowUp' || code === 'KeyW') return 'up';
+    if (code === 'ArrowDown' || code === 'KeyS') return 'down';
+    if (code === 'ShiftLeft' || code === 'ShiftRight') return 'shift';
+    return '';
+  };
+
+  Table.prototype.onKey = function (ev, down) {
+    var name = this.keyName(ev.code);
+    if (name) {
+      this.keys[name] = down;
+      if (down && (name === 'left' || name === 'right' || name === 'up' || name === 'down')) {
+        ev.preventDefault();
+      }
+    }
+    if (!down) return;
+    if (ev.repeat) return;
+    if (this.menuOpen) return;
+    if (ev.code === 'Space' || ev.code === 'Enter') {
+      ev.preventDefault();
+      Pool.Sfx.unlock();
+      if (this.canPlace()) this.confirmPlace();
+      else if (this.canAim()) this.shoot(this.pull > 12 ? this.pull : 125);
+    }
+  };
+
+  Table.prototype.setHold = function (name, down) {
+    if (this.keys[name] === undefined) return;
+    this.keys[name] = !!down;
+    Pool.Sfx.unlock();
   };
 
   Table.prototype.rotateAim = function (delta) {
@@ -1270,6 +1355,83 @@ canvas {
     var ang = Math.atan2(this.aimY, this.aimX) + delta;
     this.aimX = Math.cos(ang);
     this.aimY = Math.sin(ang);
+  };
+
+  Table.prototype.applyHolds = function (dt) {
+    var cue, speed, nx, ny, x, y;
+    if (this.canAim()) {
+      speed = this.keys.shift ? 0.7 : 2.3;
+      if (this.keys.left) this.rotateAim(-speed * dt);
+      if (this.keys.right) this.rotateAim(speed * dt);
+      if (this.keys.up) this.pull = Pool.clamp(this.pull + 160 * dt, 8, 180);
+      if (this.keys.down) this.pull = Pool.clamp(this.pull - 160 * dt, 8, 180);
+    }
+    if (this.canPlace()) {
+      cue = this.cue();
+      if (!cue) return;
+      nx = (this.keys.right ? 1 : 0) - (this.keys.left ? 1 : 0);
+      ny = (this.keys.down ? 1 : 0) - (this.keys.up ? 1 : 0);
+      if (!nx && !ny) return;
+      x = cue.x + nx * 140 * dt;
+      y = cue.y + ny * 140 * dt;
+      this.moveCueTo(x, y, false);
+    }
+  };
+
+  Table.prototype.moveCueTo = function (x, y, snap) {
+    var cue = this.cue();
+    if (!cue) return false;
+    if (this.placeAnywhere) {
+      x = Pool.clamp(x, Pool.R + 1, Pool.TW - Pool.R - 1);
+    } else {
+      x = Pool.clamp(x, Pool.R + 1, Pool.TW * 0.25);
+    }
+    y = Pool.clamp(y, Pool.R + 1, Pool.TH - Pool.R - 1);
+    if (Pool.overlapsAny(this.balls, x, y, Pool.R, cue)) {
+      if (snap) {
+        this.msg = '这里没空位，换个位置放下白球';
+        this.emit();
+      }
+      return false;
+    }
+    cue.x = x;
+    cue.y = y;
+    cue.vx = 0;
+    cue.vy = 0;
+    cue.pocketed = false;
+    return true;
+  };
+
+  Table.prototype.confirmPlace = function () {
+    var cue = this.cue();
+    if (!this.canPlace() || !cue) return;
+    if (!this.moveCueTo(cue.x, cue.y, true)) return;
+    this.phase = 'aim';
+    this.pull = 100;
+    this.msg = '自由球已放好，方向键瞄准，空格击打';
+    this.emit();
+  };
+
+  Table.prototype.autoPlaceCue = function () {
+    var spots = [
+      { x: Pool.TW * 0.22, y: Pool.TH * 0.5 },
+      { x: Pool.TW * 0.22, y: Pool.TH * 0.32 },
+      { x: Pool.TW * 0.22, y: Pool.TH * 0.68 },
+      { x: Pool.TW * 0.18, y: Pool.TH * 0.5 },
+      { x: Pool.TW * 0.5, y: Pool.TH * 0.5 }
+    ];
+    var i;
+    this.placeAnywhere = true;
+    for (i = 0; i < spots.length; i++) {
+      if (this.moveCueTo(spots[i].x, spots[i].y, false)) {
+        this.phase = 'aim';
+        this.pull = 100;
+        this.emit();
+        return;
+      }
+    }
+    this.phase = 'aim';
+    this.emit();
   };
 
   Table.prototype.pointer = function (ev) {
@@ -1280,7 +1442,11 @@ canvas {
   };
 
   Table.prototype.canAim = function () {
-    return this.phase === 'aim' && this.winner < 0 && !this.isAiTurn();
+    return this.phase === 'aim' && this.winner < 0 && !this.isAiTurn() && !this.menuOpen;
+  };
+
+  Table.prototype.canPlace = function () {
+    return this.phase === 'place' && this.winner < 0 && !this.isAiTurn() && !this.menuOpen;
   };
 
   Table.prototype.isAiTurn = function () {
@@ -1316,7 +1482,7 @@ canvas {
     if (!this.dragging) return;
     this.dragging = false;
     if (this.canAim() && this.pull > 10) this.shoot(this.pull);
-    this.pull = 0;
+    else if (this.pull < 20) this.pull = 100;
   };
 
   Table.prototype.updateAim = function (p, cue) {
@@ -1329,25 +1495,9 @@ canvas {
   };
 
   Table.prototype.tryPlace = function (p) {
-    var cue = this.cue();
-    var x = Pool.clamp(p.x, Pool.R + 1, Pool.TW * 0.25);
-    var y = Pool.clamp(p.y, Pool.R + 1, Pool.TH - Pool.R - 1);
-    if (this.placeAnywhere) {
-      x = Pool.clamp(p.x, Pool.R + 1, Pool.TW - Pool.R - 1);
-    }
-    if (Pool.overlapsAny(this.balls, x, y, Pool.R, cue)) {
-      this.msg = '这里没空位，换个位置放下白球';
-      this.emit();
-      return;
-    }
-    cue.x = x;
-    cue.y = y;
-    cue.vx = 0;
-    cue.vy = 0;
-    cue.pocketed = false;
-    this.phase = 'aim';
-    this.msg = '自由球已放好，请击打';
-    this.emit();
+    if (!this.canPlace()) return;
+    if (!this.moveCueTo(p.x, p.y, true)) return;
+    this.confirmPlace();
   };
 
   Table.prototype.shoot = function (pull) {
@@ -1445,7 +1595,7 @@ canvas {
       this.phase = this.cuePocketed ? 'place' : 'aim';
       this.placeAnywhere = true;
       this.turn = 0;
-      this.msg = this.cuePocketed ? '白球入袋，点击开球区放置' : (result.ownIn ? '打进了！继续' : '继续练习');
+      this.msg = this.cuePocketed ? '白球入袋，方向键移动白球，空格放下' : (result.ownIn ? '打进了！空格继续' : '方向键瞄准，空格击打');
       this.emit();
       return;
     }
@@ -1454,23 +1604,27 @@ canvas {
       this.turn = 1 - this.turn;
       this.phase = 'place';
       this.placeAnywhere = true;
-      this.msg = '犯规：' + result.reason + '。对方自由球';
+      this.msg = '犯规：' + result.reason + '。方向键移动白球，空格放下';
       Pool.Sfx.foul();
     } else if (result.ownIn) {
       this.phase = 'aim';
-      this.msg = '打进了，继续击打';
+      this.msg = '打进了，空格继续击打';
     } else {
       this.turn = 1 - this.turn;
       this.phase = 'aim';
-      this.msg = '交换击打';
+      this.msg = '换人：方向键瞄准，空格击打';
     }
     this.emit();
   };
 
   Table.prototype.update = function (dt) {
+    this.applyHolds(dt);
     if (this.phase === 'rolling') {
       this.stepPhysics(dt);
       if (!Pool.anyMoving(this.balls)) this.finishShot();
+    }
+    if (this.phase === 'place' && this.isAiTurn()) {
+      this.autoPlaceCue();
     }
     if (this.phase === 'aim' && this.isAiTurn() && this.winner < 0) {
       this.aiTimer += dt;
@@ -1507,7 +1661,7 @@ canvas {
     if (this.phase === 'aim' && cue && !cue.pocketed && this.winner < 0 && !this.isAiTurn()) {
       Pool.Render.drawAim(ctx, cue, this.aimX, this.aimY, this.balls, C);
       Pool.Render.drawCue(ctx, cue, this.aimX, this.aimY, this.pull, C);
-      if (this.dragging) Pool.Render.drawPower(ctx, this.pull, C);
+      Pool.Render.drawPower(ctx, this.pull, C);
     }
     for (i = 0; i < this.balls.length; i++) Pool.Render.drawBall(ctx, this.balls[i], C);
   };
@@ -1582,9 +1736,18 @@ canvas {
     p0.classList.toggle('active', g.turn === 0 && g.winner < 0);
     p1.classList.toggle('active', g.turn === 1 && g.winner < 0 && g.mode !== 'practice');
 
+    var shoot = doc.getElementById('btn-shoot');
+    var pad = doc.getElementById('pad');
+    if (shoot) {
+      shoot.innerHTML = g.phase === 'place'
+        ? '放下白球<br><small>空格</small>'
+        : '击打<br><small>空格</small>';
+    }
+    if (pad) pad.classList.toggle('is-place', g.phase === 'place');
+
     var t = g.msg;
     if (g.winner >= 0) t = g.msg;
-    else if (g.phase === 'place') t = '点击球桌放置白球';
+    else if (g.phase === 'place') t = '方向键移动白球，空格放下';
     else if (g.isAiTurn()) t = '电脑瞄准中…';
     turnEl.innerHTML = '<strong>' + t + '</strong>';
 
@@ -1603,8 +1766,17 @@ canvas {
     if (!table) {
       table = new Pool.Table(canvas, { onHud: renderHud });
     }
+    table.menuOpen = false;
     table.reset(mode);
     renderHud(table);
+  }
+
+  function openMenu() {
+    overlay.classList.remove('hidden');
+    overlayTitle.textContent = '八球台球';
+    overlayMsg.textContent = '没有鼠标也能玩：按 1 对战电脑，2 双人，3 练习。方向键瞄准，空格击打。';
+    modes.style.display = '';
+    if (table) table.menuOpen = true;
   }
 
   modes.addEventListener('click', function (ev) {
@@ -1613,16 +1785,52 @@ canvas {
     start(btn.getAttribute('data-mode'));
   });
 
-  btnReset.addEventListener('click', function () {
-    overlay.classList.remove('hidden');
-    overlayTitle.textContent = '八球台球';
-    overlayMsg.textContent = '拉杆瞄准击打。先打进的花色归你，打完再打 8 号。';
-    modes.style.display = '';
-  });
+  btnReset.addEventListener('click', openMenu);
 
   btnSound.addEventListener('click', function () {
     var muted = Pool.Sfx.toggle();
     btnSound.textContent = muted ? '音效：关' : '音效：开';
+  });
+
+  doc.addEventListener('keydown', function (ev) {
+    if (overlay.classList.contains('hidden')) return;
+    if (ev.repeat) return;
+    if (ev.code === 'Digit1' || ev.key === '1') start('vsai');
+    else if (ev.code === 'Digit2' || ev.key === '2') start('hotseat');
+    else if (ev.code === 'Digit3' || ev.key === '3') start('practice');
+  });
+
+  var pad = doc.getElementById('pad');
+  pad.addEventListener('pointerdown', function (ev) {
+    var hold = ev.target.closest('[data-hold]');
+    var shoot = ev.target.closest('#btn-shoot');
+    if (hold) {
+      ev.preventDefault();
+      hold.classList.add('is-down');
+      hold.setPointerCapture(ev.pointerId);
+      if (table) table.setHold(hold.getAttribute('data-hold'), true);
+    } else if (shoot) {
+      ev.preventDefault();
+      if (!table) return;
+      Pool.Sfx.unlock();
+      if (table.canPlace()) table.confirmPlace();
+      else if (table.canAim()) table.shoot(table.pull > 12 ? table.pull : 125);
+    }
+  });
+  pad.addEventListener('pointerup', function (ev) {
+    var hold = ev.target.closest('[data-hold]');
+    if (hold) {
+      hold.classList.remove('is-down');
+      if (table) table.setHold(hold.getAttribute('data-hold'), false);
+    }
+  });
+  pad.addEventListener('pointercancel', function () {
+    ['left', 'right', 'up', 'down'].forEach(function (k) {
+      if (table) table.setHold(k, false);
+    });
+    Array.prototype.forEach.call(pad.querySelectorAll('.is-down'), function (el) {
+      el.classList.remove('is-down');
+    });
   });
 
   overlay.classList.remove('hidden');
