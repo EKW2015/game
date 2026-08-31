@@ -1557,8 +1557,8 @@ canvas {
     return '<span class="' + cls + '" style="background:' + bg + ';color:' + (ball.group === 'eight' ? '#fff' : '#111') + '">' + label + '</span>';
   }
 
-  function ballsOf(group) {
-    return table.balls.filter(function (b) { return b.group === group; })
+  function ballsOf(g, group) {
+    return g.balls.filter(function (b) { return b.group === group; })
       .sort(function (a, b) { return a.id - b.id; })
       .map(chipHtml).join('');
   }
@@ -1575,9 +1575,9 @@ canvas {
       ? '—'
       : (g.openTable ? '尚未分色' : Pool.Rules.groupLabel(a1));
 
-    p0balls.innerHTML = a0 ? ballsOf(a0) : ballsOf('solid') + ballsOf('stripe');
+    p0balls.innerHTML = a0 ? ballsOf(g, a0) : ballsOf(g, 'solid') + ballsOf(g, 'stripe');
     if (g.mode === 'practice') p1balls.innerHTML = '';
-    else p1balls.innerHTML = a1 ? ballsOf(a1) : '';
+    else p1balls.innerHTML = a1 ? ballsOf(g, a1) : '';
 
     p0.classList.toggle('active', g.turn === 0 && g.winner < 0);
     p1.classList.toggle('active', g.turn === 1 && g.winner < 0 && g.mode !== 'practice');
