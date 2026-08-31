@@ -108,7 +108,7 @@
     this.phase = 'aim';
     this.aimX = 1;
     this.aimY = 0;
-    this.pull = 150;
+    this.pull = this.mode === 'challenge' ? 78 : 150;
     this.keys = { left: false, right: false, up: false, down: false, shift: false };
     this.menuOpen = false;
     this.dragging = false;
@@ -131,6 +131,7 @@
     this.levelIndex = this.mode === 'challenge' ? (this.levelIndex || 0) : 0;
     if (this.mode === 'challenge') this.loadChallenge(this.levelIndex);
     else this.balls = rackBalls();
+    if (this.mode === 'challenge') this.pull = 78;
     if (this.mode === 'practice') this.names = ['练习', ''];
     else if (this.mode === 'vsai') this.names = ['你', '电脑'];
     else if (this.mode === 'challenge') {
@@ -364,7 +365,7 @@
     if (!this.canPlace() || !cue) return;
     if (!this.moveCueTo(cue.x, cue.y, true)) return;
     this.phase = 'aim';
-    this.pull = 150;
+    this.pull = this.mode === 'challenge' ? 78 : 150;
     this.msg = '自由球已放好，方向键瞄准，空格击打';
     this.emit();
   };
@@ -382,7 +383,7 @@
     for (i = 0; i < spots.length; i++) {
       if (this.moveCueTo(spots[i].x, spots[i].y, false)) {
         this.phase = 'aim';
-        this.pull = 150;
+        this.pull = this.mode === 'challenge' ? 78 : 150;
         this.emit();
         return;
       }
@@ -439,7 +440,7 @@
     if (!this.dragging) return;
     this.dragging = false;
     if (this.canAim() && this.pull > 10) this.shoot(this.pull);
-    else if (this.pull < 20) this.pull = 150;
+    else if (this.pull < 20) this.pull = this.mode === 'challenge' ? 78 : 150;
   };
 
   Table.prototype.updateAim = function (p, cue) {
@@ -736,6 +737,7 @@
     ctx.save();
     ctx.translate(sx, sy);
     Pool.Render.drawTable(ctx, C);
+    if (this.mode === 'challenge') Pool.Render.drawTargets(ctx, this.balls, C);
     for (i = 0; i < this.balls.length; i++) Pool.Render.drawTrail(ctx, this.balls[i], C);
     cue = this.cue();
     if (this.phase === 'aim' && cue && !cue.pocketed && this.winner < 0 && !this.isAiTurn()) {

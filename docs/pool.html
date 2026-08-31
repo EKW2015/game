@@ -1194,6 +1194,22 @@ canvas {
     }
   }
 
+  function drawTargets(ctx, balls, C) {
+    var i, b;
+    ctx.save();
+    ctx.setLineDash([5, 4]);
+    ctx.lineWidth = 2;
+    for (i = 0; i < balls.length; i++) {
+      b = balls[i];
+      if (b.pocketed || b.group === 'cue') continue;
+      ctx.strokeStyle = 'rgba(255, 220, 80, 0.9)';
+      ctx.beginPath();
+      ctx.arc(C + b.x, C + b.y, b.r + 7, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
   Pool.Render = {
     drawTable: drawTable,
     drawBall: drawBall,
@@ -1203,7 +1219,8 @@ canvas {
     drawPower: drawPower,
     drawSparks: drawSparks,
     drawPops: drawPops,
-    drawHudStrip: drawHudStrip
+    drawHudStrip: drawHudStrip,
+    drawTargets: drawTargets
   };
 })(typeof window !== 'undefined' ? window : global);
 
@@ -1236,21 +1253,21 @@ canvas {
   Pool.LEVELS = [
     {
       name: '开门红',
-      info: '顺着球台上方，把黄球推进右上角袋',
+      info: '瞄准黄球，空格一杆推进右下角袋',
       shots: 3,
       need: 1,
-      cue: { x: 210, y: 32 },
-      balls: [{ id: 1, x: 690, y: 28 }]
+      cue: { x: 240, y: 180 },
+      balls: [{ id: 1, x: 700, y: 350 }]
     },
     {
       name: '左右开弓',
-      info: '两颗球，都要打进（4 杆内）',
+      info: '两颗球都要打进（4 杆内）',
       shots: 4,
       need: 2,
-      cue: { x: 400, y: 200 },
+      cue: { x: 400, y: 210 },
       balls: [
-        { id: 3, x: 120, y: 36 },
-        { id: 2, x: 680, y: 36 }
+        { id: 3, x: 140, y: 80 },
+        { id: 2, x: 660, y: 80 }
       ]
     },
     {
@@ -1260,20 +1277,20 @@ canvas {
       need: 2,
       cue: { x: 180, y: 200 },
       balls: [
-        { id: 1, x: 520, y: 90 },
+        { id: 1, x: 500, y: 90 },
         { id: 5, x: 560, y: 200 },
-        { id: 6, x: 520, y: 310 }
+        { id: 6, x: 500, y: 310 }
       ]
     },
     {
       name: '黑八点心',
-      info: '把 8 号打进右下角（别把白球打进）',
+      info: '把 8 号推进右下角，别把白球打进',
       shots: 4,
       need: 1,
-      cue: { x: 240, y: 300 },
+      cue: { x: 260, y: 160 },
       balls: [
-        { id: 8, x: 700, y: 368 },
-        { id: 9, x: 480, y: 240 }
+        { id: 8, x: 690, y: 345 },
+        { id: 9, x: 430, y: 230 }
       ]
     },
     {
@@ -1283,11 +1300,11 @@ canvas {
       need: 3,
       cue: { x: 170, y: 200 },
       balls: [
-        { id: 1, x: 430, y: 70 },
-        { id: 3, x: 500, y: 140 },
-        { id: 8, x: 540, y: 200 },
-        { id: 11, x: 500, y: 260 },
-        { id: 15, x: 430, y: 330 }
+        { id: 1, x: 420, y: 80 },
+        { id: 3, x: 520, y: 140 },
+        { id: 8, x: 560, y: 200 },
+        { id: 11, x: 520, y: 260 },
+        { id: 15, x: 420, y: 320 }
       ]
     }
   ];
@@ -1403,7 +1420,7 @@ canvas {
     this.phase = 'aim';
     this.aimX = 1;
     this.aimY = 0;
-    this.pull = 150;
+    this.pull = this.mode === 'challenge' ? 78 : 150;
     this.keys = { left: false, right: false, up: false, down: false, shift: false };
     this.menuOpen = false;
     this.dragging = false;
@@ -1426,6 +1443,7 @@ canvas {
     this.levelIndex = this.mode === 'challenge' ? (this.levelIndex || 0) : 0;
     if (this.mode === 'challenge') this.loadChallenge(this.levelIndex);
     else this.balls = rackBalls();
+    if (this.mode === 'challenge') this.pull = 78;
     if (this.mode === 'practice') this.names = ['练习', ''];
     else if (this.mode === 'vsai') this.names = ['你', '电脑'];
     else if (this.mode === 'challenge') {
@@ -1659,7 +1677,7 @@ canvas {
     if (!this.canPlace() || !cue) return;
     if (!this.moveCueTo(cue.x, cue.y, true)) return;
     this.phase = 'aim';
-    this.pull = 150;
+    this.pull = this.mode === 'challenge' ? 78 : 150;
     this.msg = '自由球已放好，方向键瞄准，空格击打';
     this.emit();
   };
@@ -1677,7 +1695,7 @@ canvas {
     for (i = 0; i < spots.length; i++) {
       if (this.moveCueTo(spots[i].x, spots[i].y, false)) {
         this.phase = 'aim';
-        this.pull = 150;
+        this.pull = this.mode === 'challenge' ? 78 : 150;
         this.emit();
         return;
       }
@@ -1734,7 +1752,7 @@ canvas {
     if (!this.dragging) return;
     this.dragging = false;
     if (this.canAim() && this.pull > 10) this.shoot(this.pull);
-    else if (this.pull < 20) this.pull = 150;
+    else if (this.pull < 20) this.pull = this.mode === 'challenge' ? 78 : 150;
   };
 
   Table.prototype.updateAim = function (p, cue) {
@@ -2031,6 +2049,7 @@ canvas {
     ctx.save();
     ctx.translate(sx, sy);
     Pool.Render.drawTable(ctx, C);
+    if (this.mode === 'challenge') Pool.Render.drawTargets(ctx, this.balls, C);
     for (i = 0; i < this.balls.length; i++) Pool.Render.drawTrail(ctx, this.balls[i], C);
     cue = this.cue();
     if (this.phase === 'aim' && cue && !cue.pocketed && this.winner < 0 && !this.isAiTurn()) {
