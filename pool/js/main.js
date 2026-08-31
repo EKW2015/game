@@ -136,7 +136,7 @@
       if (!table) return;
       Pool.Sfx.unlock();
       if (table.canPlace()) table.confirmPlace();
-      else if (table.canAim()) table.shoot(table.pull > 12 ? table.pull : 125);
+      else if (table.canAim()) table.shoot(table.pull > 12 ? table.pull : 150);
     }
   });
   pad.addEventListener('pointerup', function (ev) {

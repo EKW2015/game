@@ -11,11 +11,11 @@
   var R = 9.2;
   var POCKET_R = 22;
   var CUSHION = 34;
-  var FRICTION = 0.78;
-  var STOP = 4.5;
-  var REST = 0.72;
-  var RAIL_REST = 0.78;
-  var MAX_SPEED = 980;
+  var FRICTION = 0.5;
+  var STOP = 5;
+  var REST = 0.88;
+  var RAIL_REST = 0.84;
+  var MAX_SPEED = 2200;
 
   var POCKETS = [
     { x: 2, y: 2, corner: true },

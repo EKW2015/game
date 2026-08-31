@@ -106,7 +106,7 @@
     this.phase = 'aim';
     this.aimX = 1;
     this.aimY = 0;
-    this.pull = 100;
+    this.pull = 150;
     this.keys = { left: false, right: false, up: false, down: false, shift: false };
     this.menuOpen = false;
     this.dragging = false;
@@ -203,7 +203,7 @@
       ev.preventDefault();
       Pool.Sfx.unlock();
       if (this.canPlace()) this.confirmPlace();
-      else if (this.canAim()) this.shoot(this.pull > 12 ? this.pull : 125);
+      else if (this.canAim()) this.shoot(this.pull > 12 ? this.pull : 150);
     }
   };
 
@@ -270,7 +270,7 @@
     if (!this.canPlace() || !cue) return;
     if (!this.moveCueTo(cue.x, cue.y, true)) return;
     this.phase = 'aim';
-    this.pull = 100;
+    this.pull = 150;
     this.msg = '自由球已放好，方向键瞄准，空格击打';
     this.emit();
   };
@@ -288,7 +288,7 @@
     for (i = 0; i < spots.length; i++) {
       if (this.moveCueTo(spots[i].x, spots[i].y, false)) {
         this.phase = 'aim';
-        this.pull = 100;
+        this.pull = 150;
         this.emit();
         return;
       }
@@ -345,7 +345,7 @@
     if (!this.dragging) return;
     this.dragging = false;
     if (this.canAim() && this.pull > 10) this.shoot(this.pull);
-    else if (this.pull < 20) this.pull = 100;
+    else if (this.pull < 20) this.pull = 150;
   };
 
   Table.prototype.updateAim = function (p, cue) {
@@ -366,7 +366,7 @@
   Table.prototype.shoot = function (pull) {
     var cue = this.cue();
     if (!cue || this.phase !== 'aim') return;
-    var power = 80 + pull * 4.2;
+    var power = 220 + pull * 9;
     cue.vx = this.aimX * power;
     cue.vy = this.aimY * power;
     this.phase = 'rolling';
@@ -503,12 +503,12 @@
     if (!shot) {
       this.aimX = 1;
       this.aimY = 0;
-      this.shoot(40);
+      this.shoot(90);
       return;
     }
     this.aimX = shot.ax;
     this.aimY = shot.ay;
-    this.shoot((shot.power - 80) / 4.2);
+    this.shoot((shot.power - 220) / 9);
   };
 
   Table.prototype.draw = function () {

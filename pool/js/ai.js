@@ -65,7 +65,7 @@
       x: aim.x + (Math.random() - 0.5) * jitter,
       y: aim.y + (Math.random() - 0.5) * jitter
     });
-    power = best.dump ? 420 : Pool.clamp(220 + best.ghost.dist * 0.55, 260, 720);
+    power = best.dump ? 900 : Pool.clamp(480 + best.ghost.dist * 1.1, 620, 1600);
     power *= 0.88 + Math.random() * 0.18;
     return { ax: aim.x, ay: aim.y, power: power };
   }

@@ -320,11 +320,11 @@ canvas {
   var R = 9.2;
   var POCKET_R = 22;
   var CUSHION = 34;
-  var FRICTION = 0.78;
-  var STOP = 4.5;
-  var REST = 0.72;
-  var RAIL_REST = 0.78;
-  var MAX_SPEED = 980;
+  var FRICTION = 0.5;
+  var STOP = 5;
+  var REST = 0.88;
+  var RAIL_REST = 0.84;
+  var MAX_SPEED = 2200;
 
   var POCKETS = [
     { x: 2, y: 2, corner: true },
@@ -884,7 +884,7 @@ canvas {
       x: aim.x + (Math.random() - 0.5) * jitter,
       y: aim.y + (Math.random() - 0.5) * jitter
     });
-    power = best.dump ? 420 : Pool.clamp(220 + best.ghost.dist * 0.55, 260, 720);
+    power = best.dump ? 900 : Pool.clamp(480 + best.ghost.dist * 1.1, 620, 1600);
     power *= 0.88 + Math.random() * 0.18;
     return { ax: aim.x, ay: aim.y, power: power };
   }
@@ -1243,7 +1243,7 @@ canvas {
     this.phase = 'aim';
     this.aimX = 1;
     this.aimY = 0;
-    this.pull = 100;
+    this.pull = 150;
     this.keys = { left: false, right: false, up: false, down: false, shift: false };
     this.menuOpen = false;
     this.dragging = false;
@@ -1340,7 +1340,7 @@ canvas {
       ev.preventDefault();
       Pool.Sfx.unlock();
       if (this.canPlace()) this.confirmPlace();
-      else if (this.canAim()) this.shoot(this.pull > 12 ? this.pull : 125);
+      else if (this.canAim()) this.shoot(this.pull > 12 ? this.pull : 150);
     }
   };
 
@@ -1407,7 +1407,7 @@ canvas {
     if (!this.canPlace() || !cue) return;
     if (!this.moveCueTo(cue.x, cue.y, true)) return;
     this.phase = 'aim';
-    this.pull = 100;
+    this.pull = 150;
     this.msg = '自由球已放好，方向键瞄准，空格击打';
     this.emit();
   };
@@ -1482,7 +1482,7 @@ canvas {
     if (!this.dragging) return;
     this.dragging = false;
     if (this.canAim() && this.pull > 10) this.shoot(this.pull);
-    else if (this.pull < 20) this.pull = 100;
+    else if (this.pull < 20) this.pull = 150;
   };
 
   Table.prototype.updateAim = function (p, cue) {
@@ -1503,7 +1503,7 @@ canvas {
   Table.prototype.shoot = function (pull) {
     var cue = this.cue();
     if (!cue || this.phase !== 'aim') return;
-    var power = 80 + pull * 4.2;
+    var power = 220 + pull * 9;
     cue.vx = this.aimX * power;
     cue.vy = this.aimY * power;
     this.phase = 'rolling';
@@ -1640,12 +1640,12 @@ canvas {
     if (!shot) {
       this.aimX = 1;
       this.aimY = 0;
-      this.shoot(40);
+      this.shoot(90);
       return;
     }
     this.aimX = shot.ax;
     this.aimY = shot.ay;
-    this.shoot((shot.power - 80) / 4.2);
+    this.shoot((shot.power - 220) / 9);
   };
 
   Table.prototype.draw = function () {
@@ -1820,7 +1820,7 @@ canvas {
       if (!table) return;
       Pool.Sfx.unlock();
       if (table.canPlace()) table.confirmPlace();
-      else if (table.canAim()) table.shoot(table.pull > 12 ? table.pull : 125);
+      else if (table.canAim()) table.shoot(table.pull > 12 ? table.pull : 150);
     }
   });
   pad.addEventListener('pointerup', function (ev) {
