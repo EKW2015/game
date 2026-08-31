@@ -109,11 +109,17 @@
   });
 
   doc.addEventListener('keydown', function (ev) {
-    if (overlay.classList.contains('hidden')) return;
     if (ev.repeat) return;
-    if (ev.code === 'Digit1' || ev.key === '1') start('vsai');
-    else if (ev.code === 'Digit2' || ev.key === '2') start('hotseat');
-    else if (ev.code === 'Digit3' || ev.key === '3') start('practice');
+    if (!overlay.classList.contains('hidden')) {
+      if (ev.code === 'Digit1' || ev.key === '1') start('vsai');
+      else if (ev.code === 'Digit2' || ev.key === '2') start('hotseat');
+      else if (ev.code === 'Digit3' || ev.key === '3') start('practice');
+      return;
+    }
+    if (ev.code === 'Escape' || ev.code === 'KeyM') {
+      ev.preventDefault();
+      openMenu();
+    }
   });
 
   var pad = doc.getElementById('pad');

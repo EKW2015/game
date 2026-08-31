@@ -303,7 +303,7 @@ canvas {
         <strong>不用鼠标：</strong>方向键或 WASD 瞄准和调力道，空格或回车击打。
         也可按住屏幕上的「左转 / 右转 / 力道 / 击打」。
         白球入袋时用方向键移动白球，再按空格放下。
-        选模式可按键盘 1 / 2 / 3。
+        选模式可按键盘 1 / 2 / 3，按 M 或 Esc 打开菜单。
       </p>
     </div>
 
@@ -1793,11 +1793,17 @@ canvas {
   });
 
   doc.addEventListener('keydown', function (ev) {
-    if (overlay.classList.contains('hidden')) return;
     if (ev.repeat) return;
-    if (ev.code === 'Digit1' || ev.key === '1') start('vsai');
-    else if (ev.code === 'Digit2' || ev.key === '2') start('hotseat');
-    else if (ev.code === 'Digit3' || ev.key === '3') start('practice');
+    if (!overlay.classList.contains('hidden')) {
+      if (ev.code === 'Digit1' || ev.key === '1') start('vsai');
+      else if (ev.code === 'Digit2' || ev.key === '2') start('hotseat');
+      else if (ev.code === 'Digit3' || ev.key === '3') start('practice');
+      return;
+    }
+    if (ev.code === 'Escape' || ev.code === 'KeyM') {
+      ev.preventDefault();
+      openMenu();
+    }
   });
 
   var pad = doc.getElementById('pad');
