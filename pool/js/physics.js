@@ -101,7 +101,7 @@
   }
 
   function integrate(balls, dt) {
-    var i, b, speed, damp;
+    var i, b, speed, damp, cap;
     damp = Math.exp(-FRICTION * dt);
     for (i = 0; i < balls.length; i++) {
       b = balls[i];
@@ -111,9 +111,10 @@
       b.vx *= damp;
       b.vy *= damp;
       speed = Math.sqrt(b.vx * b.vx + b.vy * b.vy);
-      if (speed > MAX_SPEED) {
-        b.vx *= MAX_SPEED / speed;
-        b.vy *= MAX_SPEED / speed;
+      cap = Pool.MAX_SPEED || MAX_SPEED;
+      if (speed > cap) {
+        b.vx *= cap / speed;
+        b.vy *= cap / speed;
       } else if (speed < STOP) {
         b.vx = 0;
         b.vy = 0;
@@ -252,12 +253,33 @@
     return false;
   }
 
+  function nearestPocket(p) {
+    var i, pk, best = POCKETS[0], d, bestD = 1e9;
+    for (i = 0; i < POCKETS.length; i++) {
+      pk = POCKETS[i];
+      d = dist(p, pk);
+      if (d < bestD) {
+        bestD = d;
+        best = pk;
+      }
+    }
+    return best;
+  }
+
+  function isCueLike(b) {
+    return !!(b && (b.group === 'cue' || b.group === 'clone'));
+  }
+
   Pool.TW = TW;
   Pool.TH = TH;
   Pool.R = R;
   Pool.POCKET_R = POCKET_R;
   Pool.CUSHION = CUSHION;
+  Pool.MAX_SPEED = MAX_SPEED;
+  Pool.DEFAULT_MAX_SPEED = MAX_SPEED;
   Pool.POCKETS = POCKETS;
+  Pool.nearestPocket = nearestPocket;
+  Pool.isCueLike = isCueLike;
   Pool.vec = vec;
   Pool.add = add;
   Pool.sub = sub;

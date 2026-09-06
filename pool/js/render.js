@@ -90,9 +90,9 @@
     ctx.fill();
 
     var g = ctx.createRadialGradient(x - r * 0.35, y - r * 0.4, r * 0.1, x, y, r);
-    if (b.group === 'cue') {
+    if (b.group === 'cue' || b.group === 'clone') {
       g.addColorStop(0, '#ffffff');
-      g.addColorStop(1, '#d7d7d0');
+      g.addColorStop(1, b.group === 'clone' ? '#c8e8ff' : '#d7d7d0');
     } else if (b.group === 'stripe') {
       g.addColorStop(0, '#fff');
       g.addColorStop(0.45, '#f4f4f4');
@@ -145,7 +145,7 @@
     return 'rgb(' + r + ',' + g + ',' + b + ')';
   }
 
-  function drawCue(ctx, cue, aimX, aimY, pull, C) {
+  function drawCue(ctx, cue, aimX, aimY, pull, C, powerId) {
     if (!cue || cue.pocketed) return;
     var n = Pool.norm({ x: aimX, y: aimY });
     if (!n.x && !n.y) return;
@@ -156,13 +156,13 @@
     var x1 = x0 + back.x * 210;
     var y1 = y0 + back.y * 210;
     ctx.lineCap = 'round';
-    ctx.strokeStyle = '#3a210e';
-    ctx.lineWidth = 7;
+    ctx.strokeStyle = powerId === 'burst' ? '#5a1208' : '#3a210e';
+    ctx.lineWidth = powerId === 'burst' ? 9 : 7;
     ctx.beginPath();
     ctx.moveTo(x0 + back.x * 18, y0 + back.y * 18);
     ctx.lineTo(x1, y1);
     ctx.stroke();
-    ctx.strokeStyle = '#c9a24a';
+    ctx.strokeStyle = powerId === 'burst' ? '#ff6a3a' : powerId === 'precision' ? '#ffe08a' : '#c9a24a';
     ctx.lineWidth = 5;
     ctx.beginPath();
     ctx.moveTo(x0, y0);
@@ -221,15 +221,70 @@
     }
   }
 
-  function drawPower(ctx, pull, C) {
+  function drawPower(ctx, pull, C, powerId) {
     var x = C + 16;
     var y = C + Pool.TH - 18;
     ctx.fillStyle = 'rgba(0,0,0,0.35)';
     roundRect(ctx, x, y, 140, 10, 5);
     ctx.fill();
-    ctx.fillStyle = pull > 70 ? '#ff8a7a' : '#e4c27a';
-    roundRect(ctx, x, y, 140 * Pool.clamp(pull / 180, 0, 1), 10, 5);
+    ctx.fillStyle = powerId === 'burst' ? '#ff4d2a' : pull > 70 ? '#ff8a7a' : '#e4c27a';
+    roundRect(ctx, x, y, 140 * Pool.clamp((powerId === 'burst' ? 180 : pull) / 180, 0, 1), 10, 5);
     ctx.fill();
+  }
+
+  function drawPowerAura(ctx, table, C) {
+    var cue = table.cue && table.cue();
+    var info = table.powerInfo && table.powerInfo();
+    var ghosts = table.pendingPower === 'clone' ? 2 : 0;
+    var i, ang, gx, gy, b, pk, base, spread;
+    if (info && cue && !cue.pocketed) {
+      ctx.save();
+      ctx.strokeStyle = info.color;
+      ctx.globalAlpha = 0.7;
+      ctx.lineWidth = 2;
+      ctx.setLineDash([4, 4]);
+      ctx.beginPath();
+      ctx.arc(C + cue.x, C + cue.y, cue.r + 10, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.restore();
+    }
+    if (ghosts && cue && !cue.pocketed) {
+      base = Math.atan2(table.aimY, table.aimX);
+      for (i = 0; i < ghosts; i++) {
+        spread = i === 0 ? -20 : 20;
+        gx = cue.x + Math.cos(base + Math.PI / 2) * spread;
+        gy = cue.y + Math.sin(base + Math.PI / 2) * spread;
+        ctx.beginPath();
+        ctx.arc(C + gx, C + gy, cue.r, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(200, 230, 255, 0.35)';
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(126, 203, 255, 0.9)';
+        ctx.stroke();
+        ctx.setLineDash([5, 5]);
+        ctx.beginPath();
+        ctx.moveTo(C + gx, C + gy);
+        ang = base + (i === 0 ? -0.24 : 0.24);
+        ctx.lineTo(C + gx + Math.cos(ang) * 70, C + gy + Math.sin(ang) * 70);
+        ctx.stroke();
+        ctx.setLineDash([]);
+      }
+    }
+    if (table.pendingPower === 'precision' && table.powerTargets) {
+      ctx.save();
+      ctx.setLineDash([5, 5]);
+      ctx.strokeStyle = 'rgba(255, 224, 138, 0.65)';
+      ctx.lineWidth = 1.4;
+      var targets = table.powerTargets();
+      for (i = 0; i < targets.length; i++) {
+        b = targets[i];
+        pk = Pool.nearestPocket(b);
+        ctx.beginPath();
+        ctx.moveTo(C + b.x, C + b.y);
+        ctx.lineTo(C + pk.x, C + pk.y);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
   }
 
   function drawTrail(ctx, b, C) {
@@ -273,9 +328,11 @@
   }
 
   function drawHudStrip(ctx, table, C) {
-    if (table.mode !== 'challenge' && table.mode !== 'practice') return;
+    var info = table.powerInfo && table.powerInfo();
+    var extra = info ? 20 : 0;
+    if (table.mode !== 'challenge' && table.mode !== 'practice' && !info) return;
     ctx.fillStyle = 'rgba(0,0,0,0.38)';
-    roundRect(ctx, C + Pool.TW - 168, C + 10, 156, table.mode === 'challenge' ? 54 : 36, 8);
+    roundRect(ctx, C + Pool.TW - 168, C + 10, 156, (table.mode === 'challenge' ? 54 : 36) + extra, 8);
     ctx.fill();
     ctx.fillStyle = '#ffe08a';
     ctx.font = 'bold 16px sans-serif';
@@ -287,6 +344,11 @@
       ctx.font = '12px sans-serif';
       ctx.fillText('杆 ' + table.shotsUsed + '/' + table.maxShots + '  进 ' + table.cleared + '/' + table.need, C + Pool.TW - 156, C + 38);
     }
+    if (info) {
+      ctx.fillStyle = info.color;
+      ctx.font = 'bold 12px sans-serif';
+      ctx.fillText(info.name, C + Pool.TW - 156, C + (table.mode === 'challenge' ? 54 : 36));
+    }
   }
 
   function drawTargets(ctx, balls, C) {
@@ -296,7 +358,7 @@
     ctx.lineWidth = 2;
     for (i = 0; i < balls.length; i++) {
       b = balls[i];
-      if (b.pocketed || b.group === 'cue') continue;
+      if (b.pocketed || Pool.isCueLike(b)) continue;
       ctx.strokeStyle = 'rgba(255, 220, 80, 0.9)';
       ctx.beginPath();
       ctx.arc(C + b.x, C + b.y, b.r + 7, 0, Math.PI * 2);
@@ -312,6 +374,7 @@
     drawCue: drawCue,
     drawAim: drawAim,
     drawPower: drawPower,
+    drawPowerAura: drawPowerAura,
     drawSparks: drawSparks,
     drawPops: drawPops,
     drawHudStrip: drawHudStrip,

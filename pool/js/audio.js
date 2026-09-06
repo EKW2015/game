@@ -71,6 +71,15 @@
     },
     foul: function () {
       beep(160, 0.2, 'sawtooth', 0.05, 80);
+    },
+    power: function () {
+      beep(392, 0.08, 'sine', 0.07);
+      setTimeout(function () { beep(523, 0.1, 'sine', 0.08); }, 70);
+      setTimeout(function () { beep(659, 0.16, 'triangle', 0.08); }, 150);
+    },
+    burst: function () {
+      beep(70, 0.14, 'sawtooth', 0.1, 40);
+      setTimeout(function () { beep(110, 0.1, 'square', 0.06, 50); }, 40);
     }
   };
 })(typeof window !== 'undefined' ? window : global);

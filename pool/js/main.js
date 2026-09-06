@@ -8,6 +8,7 @@
   var overlayMsg = doc.getElementById('overlay-msg');
   var modes = doc.getElementById('modes');
   var btnSound = doc.getElementById('btn-sound');
+  var btnPower = doc.getElementById('btn-power');
   var btnReset = doc.getElementById('btn-reset');
   var p0 = doc.getElementById('p0');
   var p1 = doc.getElementById('p1');
@@ -68,10 +69,16 @@
     if (pad) pad.classList.toggle('is-place', g.phase === 'place');
 
     var t = g.msg;
+    var info = g.powerInfo && g.powerInfo();
     if (g.winner >= 0) t = g.msg;
     else if (g.phase === 'place') t = '方向键移动白球，空格放下';
     else if (g.isAiTurn()) t = '电脑瞄准中…';
     turnEl.innerHTML = '<strong>' + t + '</strong>';
+    if (btnPower) {
+      btnPower.classList.toggle('hidden', !g.pendingPower);
+      btnPower.classList.toggle('is-power', !!g.pendingPower);
+      if (info && g.pendingPower) btnPower.textContent = info.name + ' · 5换';
+    }
 
     var nextBtn = doc.getElementById('btn-next');
     if (g.winner >= 0) {
@@ -79,7 +86,8 @@
       if (g.mode === 'challenge') {
         overlayTitle.textContent = g.winner === 0 ? g.msg : '再试一次';
         overlayMsg.textContent = g.winner === 0
-          ? ('得分 ' + g.score + (g.stars ? '　' + '★'.repeat(g.stars) : '') + '。回车下一关，4 重试。')
+          ? ('得分 ' + g.score + (g.stars ? '　' + '★'.repeat(g.stars) : '') +
+            (info ? '。带着「' + info.name + '」回车下一关，按 5 可换。' : '。回车下一关，4 重试。'))
           : '按 4 重试本关，或换模式。';
         if (nextBtn) {
           nextBtn.classList.toggle('hidden', !(g.winner === 0 && g.levelIndex < Pool.LEVELS.length - 1));
@@ -92,12 +100,14 @@
         if (nextBtn) nextBtn.classList.add('hidden');
       }
       modes.style.display = '';
+      g.menuOpen = true;
     } else if (nextBtn) {
       nextBtn.classList.add('hidden');
     }
   }
 
-  function start(mode) {
+  function start(mode, opts) {
+    opts = opts || {};
     overlay.classList.add('hidden');
     if (!table) {
       table = new Pool.Table(canvas, { onHud: renderHud });
@@ -111,6 +121,7 @@
         renderHud(table);
         return;
       }
+      if (opts.blockShoot) table.blockShootOnce = true;
       renderHud(table);
       return;
     }
@@ -118,13 +129,14 @@
       if (!(table.mode === 'challenge' && table.winner === 1)) table.levelIndex = 0;
     }
     table.reset(mode, { fresh: mode === 'challenge' && table.winner !== 1 });
+    if (opts && opts.blockShoot) table.blockShootOnce = true;
     renderHud(table);
   }
 
   function openMenu() {
     overlay.classList.remove('hidden');
     overlayTitle.textContent = '八球台球';
-    overlayMsg.textContent = '按 4 闯关（推荐）。1 对战电脑，2 双人，3 练习。方向键瞄准，空格击打。';
+    overlayMsg.textContent = '按空格或 4 开始闯关。进球得超能力：爆发杆、三个白球一起打、精准清台。按 5 换能力。1 对战电脑，2 双人，3 练习。';
     modes.style.display = '';
     if (table) table.menuOpen = true;
   }
@@ -142,6 +154,12 @@
     btnSound.textContent = muted ? '音效：关' : '音效：开';
   });
 
+  if (btnPower) {
+    btnPower.addEventListener('click', function () {
+      if (table) table.cyclePower();
+    });
+  }
+
   doc.addEventListener('keydown', function (ev) {
     if (ev.repeat) return;
     if (!overlay.classList.contains('hidden')) {
@@ -150,7 +168,11 @@
       else if (ev.code === 'Digit3' || ev.key === '3') start('practice');
       else if (ev.code === 'Digit4' || ev.key === '4') start('challenge');
       else if (ev.code === 'Enter' && table && table.mode === 'challenge' && table.winner === 0) {
-        start('challenge-next');
+        start('challenge-next', { blockShoot: true });
+      } else if (ev.code === 'Space' || ev.code === 'Enter') {
+        ev.preventDefault();
+        if (table && table.mode === 'challenge' && table.winner === 0) start('challenge-next', { blockShoot: true });
+        else start('challenge', { blockShoot: true });
       }
       return;
     }
@@ -171,8 +193,12 @@
       if (table) table.setHold(hold.getAttribute('data-hold'), true);
     } else if (shoot) {
       ev.preventDefault();
-      if (!table) return;
       Pool.Sfx.unlock();
+      if (!overlay.classList.contains('hidden') || !table) {
+        if (table && table.mode === 'challenge' && table.winner === 0) start('challenge-next');
+        else start('challenge');
+        return;
+      }
       if (table.canPlace()) table.confirmPlace();
       else if (table.canAim()) table.shoot(table.pull > 12 ? table.pull : 150);
     }

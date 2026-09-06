@@ -123,6 +123,10 @@
     this.aiTimer = 0;
     this.aiLevel = this.mode === 'vsai' ? 0.16 : 0.22;
     this.score = keepScore ? (this.score || 0) : 0;
+    this.pendingPower = keepScore ? this.pendingPower : null;
+    this.activePower = null;
+    this.precisionActive = false;
+    Pool.MAX_SPEED = Pool.DEFAULT_MAX_SPEED;
     this.combo = 0;
     this.stars = 0;
     this.shake = 0;
@@ -328,9 +332,18 @@
     }
     if (!down) return;
     if (ev.repeat) return;
-    if (this.menuOpen) return;
-    if (ev.code === 'Space' || ev.code === 'Enter') {
+    if (ev.code === 'Digit5' || ev.key === '5') {
       ev.preventDefault();
+      this.cyclePower();
+      return;
+    }
+    if (this.menuOpen) return;
+    if (ev.code === 'Space') {
+      ev.preventDefault();
+      if (this.blockShootOnce) {
+        this.blockShootOnce = false;
+        return;
+      }
       Pool.Sfx.unlock();
       if (this.canPlace()) this.confirmPlace();
       else if (this.canAim()) this.shoot(this.pull > 12 ? this.pull : 150);
@@ -495,20 +508,207 @@
     this.confirmPlace();
   };
 
+  Table.prototype.powerInfo = function () {
+    return Pool.powerById(this.pendingPower || this.activePower);
+  };
+
+  Table.prototype.cyclePower = function () {
+    if (!this.pendingPower) return;
+    if (!this.canAim() && this.winner !== 0) return;
+    this.pendingPower = Pool.nextPowerId(this.pendingPower);
+    var info = this.powerInfo();
+    if (this.winner < 0) this.msg = '超能力换成：' + info.name + ' — ' + info.info;
+    this.emit();
+  };
+
+  Table.prototype.pickPower = function () {
+    this.pendingPower = Pool.pickPowerId(this.pendingPower);
+    var info = this.powerInfo();
+    this.addPop(Pool.TW / 2, 72, info.name + '！', info.color, 26);
+    if (this.winner < 0) {
+      this.msg = '超能力：' + info.name + '！按 5 换一个，空格发动';
+    }
+    Pool.Sfx.power();
+    this.emit();
+  };
+
+  Table.prototype.maybeGrantPower = function (n) {
+    if (n <= 0) return;
+    if (this.isAiTurn()) return;
+    if (this.winner > 0) return;
+    this.pickPower();
+  };
+
+  Table.prototype.powerTargets = function () {
+    var i, b, out = [], g;
+    g = this.mode === 'vsai' || this.mode === 'hotseat'
+      ? (this.openTable ? null : this.assignment[this.turn])
+      : null;
+    for (i = 0; i < this.balls.length; i++) {
+      b = this.balls[i];
+      if (b.pocketed || Pool.isCueLike(b)) continue;
+      if (this.mode === 'challenge' || this.mode === 'practice') {
+        out.push(b);
+        continue;
+      }
+      if (b.group === 'eight') {
+        if (g && Pool.Rules.remaining(this.balls, g) === 0) out.push(b);
+      } else if (!g || b.group === g) {
+        if (b.group !== 'eight') out.push(b);
+      }
+    }
+    return out;
+  };
+
+  Table.prototype.startPrecision = function (cue, pull) {
+    var i, b, pk, dir, targets = this.powerTargets();
+    this.precisionActive = true;
+    this.firstHit = targets[0] || null;
+    this.recordedFirst = true;
+    cue.vx = this.aimX * (160 + pull * 2);
+    cue.vy = this.aimY * (160 + pull * 2);
+    for (i = 0; i < targets.length; i++) {
+      b = targets[i];
+      pk = Pool.nearestPocket(b);
+      b.seekPocket = pk;
+      dir = Pool.norm(Pool.sub(pk, b));
+      b.vx = dir.x * 1180;
+      b.vy = dir.y * 1180;
+    }
+    this.shake = Math.max(this.shake, 12);
+    this.slow = Math.max(this.slow, 0.45);
+    Pool.Sfx.power();
+  };
+
+  Table.prototype.finishPrecision = function () {
+    var i, b, targets;
+    if (!this.precisionActive && this.activePower !== 'precision') return;
+    targets = this.powerTargets();
+    for (i = 0; i < targets.length; i++) {
+      b = targets[i];
+      if (b.pocketed) continue;
+      b.pocketed = true;
+      b.vx = 0;
+      b.vy = 0;
+      b.seekPocket = null;
+      this.shotPocketed.push(b);
+      this.addPop(b.x, b.y, '进袋!', '#ffe08a', 20);
+      this.addSparks(b.x, b.y, b.color);
+    }
+    this.precisionActive = false;
+  };
+
+  Table.prototype.consumePowerForShot = function () {
+    var used = this.pendingPower;
+    if (used) {
+      this.activePower = used;
+      this.pendingPower = null;
+    }
+    return used || this.activePower;
+  };
+
+  Table.prototype.spawnClones = function (cue) {
+    var perp = Pool.norm({ x: -this.aimY, y: this.aimX });
+    var i, x, y, c, gap;
+    if (!perp.x && !perp.y) perp = { x: 0, y: 1 };
+    for (i = 0; i < 2; i++) {
+      gap = i === 0 ? 20 : -20;
+      x = Pool.clamp(cue.x + perp.x * gap, Pool.R + 2, Pool.TW - Pool.R - 2);
+      y = Pool.clamp(cue.y + perp.y * gap, Pool.R + 2, Pool.TH - Pool.R - 2);
+      c = Pool.makeBall(100 + i, x, y, 'clone', '#e8f6ff', '');
+      this.balls.push(c);
+    }
+  };
+
+  Table.prototype.launchClones = function (power) {
+    var base = Math.atan2(this.aimY, this.aimX);
+    var i, b, ang, extra = 0;
+    for (i = 0; i < this.balls.length; i++) {
+      b = this.balls[i];
+      if (b.pocketed || !Pool.isCueLike(b)) continue;
+      if (b.group === 'cue') ang = base;
+      else {
+        ang = base + (extra === 0 ? -0.24 : 0.24);
+        extra += 1;
+      }
+      b.vx = Math.cos(ang) * power;
+      b.vy = Math.sin(ang) * power;
+    }
+  };
+
+  Table.prototype.mergeClones = function () {
+    var cue = this.cue();
+    var i, b, survivor = null;
+    for (i = 0; i < this.balls.length; i++) {
+      b = this.balls[i];
+      if (b.group !== 'clone' || b.pocketed) continue;
+      if (!survivor) survivor = b;
+    }
+    if (cue && cue.pocketed && survivor) {
+      cue.pocketed = false;
+      cue.x = survivor.x;
+      cue.y = survivor.y;
+      cue.vx = 0;
+      cue.vy = 0;
+    }
+    for (i = this.balls.length - 1; i >= 0; i--) {
+      if (this.balls[i].group === 'clone') this.balls.splice(i, 1);
+    }
+    this.cuePocketed = !cue || !!cue.pocketed;
+  };
+
+  Table.prototype.endPowerAfterShot = function () {
+    Pool.MAX_SPEED = Pool.DEFAULT_MAX_SPEED;
+    var i, b;
+    for (i = 0; i < this.balls.length; i++) {
+      b = this.balls[i];
+      b.seekPocket = null;
+    }
+    this.precisionActive = false;
+    this.activePower = null;
+    return false;
+  };
+
   Table.prototype.shoot = function (pull) {
     var cue = this.cue();
     if (!cue || this.phase !== 'aim') return;
+    var used = this.consumePowerForShot();
     var power = 220 + pull * 9;
-    cue.vx = this.aimX * power;
-    cue.vy = this.aimY * power;
     this.phase = 'rolling';
     this.firstHit = null;
     this.shotPocketed = [];
     this.cuePocketed = false;
     this.recordedFirst = false;
     this.shake = Math.max(this.shake, 3 + pull / 40);
-    Pool.Sfx.cue(pull / 180);
-    this.msg = '球在滚动…';
+
+    if (used === 'burst') {
+      power = 420 + pull * 34;
+      Pool.MAX_SPEED = 5600;
+      this.shake = Math.max(this.shake, 16);
+      Pool.Sfx.burst();
+      this.addPop(cue.x, cue.y - 24, '爆发!!', '#ff6a3a', 24);
+    } else {
+      Pool.Sfx.cue(pull / 180);
+    }
+
+    if (used === 'precision') {
+      this.startPrecision(cue, pull);
+      this.msg = '精准清台发动！';
+      this.emit();
+      return;
+    }
+
+    if (used === 'clone') {
+      this.spawnClones(cue);
+      this.launchClones(power);
+      this.shake = Math.max(this.shake, 10);
+      this.addPop(cue.x, cue.y - 22, '三重白球!', '#7ecbff', 22);
+      this.msg = '三个白球一起打出去了！';
+    } else {
+      cue.vx = this.aimX * power;
+      cue.vy = this.aimY * power;
+      this.msg = '球在滚动…';
+    }
     this.emit();
   };
 
@@ -526,20 +726,32 @@
         b.trail.shift();
       }
     }
+    for (i = 0; i < this.balls.length; i++) {
+      b = this.balls[i];
+      if (b.pocketed || !b.seekPocket) continue;
+      n = Pool.norm(Pool.sub(b.seekPocket, b));
+      b.vx += n.x * 2600 * dt;
+      b.vy += n.y * 2600 * dt;
+    }
     Pool.integrate(this.balls, dt);
     Pool.hitCushions(this.balls);
 
-    if (!this.recordedFirst && cue && !cue.pocketed) {
-      for (i = 1; i < this.balls.length; i++) {
-        b = this.balls[i];
-        if (b.pocketed) continue;
-        if (Pool.dist(cue, b) > cue.r + b.r + 1.2) continue;
-        rel = (cue.vx - b.vx) * (b.x - cue.x) + (cue.vy - b.vy) * (b.y - cue.y);
-        if (rel > 0) {
-          this.firstHit = b;
-          this.recordedFirst = true;
-          this.shake = Math.max(this.shake, 4);
-          break;
+    if (!this.recordedFirst) {
+      var striker, j;
+      for (j = 0; j < this.balls.length && !this.recordedFirst; j++) {
+        striker = this.balls[j];
+        if (striker.pocketed || !Pool.isCueLike(striker)) continue;
+        for (i = 0; i < this.balls.length; i++) {
+          b = this.balls[i];
+          if (b.pocketed || Pool.isCueLike(b)) continue;
+          if (Pool.dist(striker, b) > striker.r + b.r + 1.2) continue;
+          rel = (striker.vx - b.vx) * (b.x - striker.x) + (striker.vy - b.vy) * (b.y - striker.y);
+          if (rel > 0) {
+            this.firstHit = b;
+            this.recordedFirst = true;
+            this.shake = Math.max(this.shake, 4);
+            break;
+          }
         }
       }
     }
@@ -561,13 +773,14 @@
       this.shake = Math.max(this.shake, 7);
       for (i = 0; i < fallen.length; i++) {
         this.shotPocketed.push(fallen[i]);
-        if (fallen[i].group === 'cue') this.cuePocketed = true;
-        else {
-          this.addPop(fallen[i].x, fallen[i].y, '进袋!', '#ffe08a', 22);
-          this.addSparks(fallen[i].x, fallen[i].y, fallen[i].color);
-        }
+        if (Pool.isCueLike(fallen[i])) continue;
+        this.addPop(fallen[i].x, fallen[i].y, '进袋!', '#ffe08a', 22);
+        this.addSparks(fallen[i].x, fallen[i].y, fallen[i].color);
       }
-      n = fallen.filter(function (b) { return b.group !== 'cue'; }).length;
+      this.cuePocketed = !this.balls.some(function (ball) {
+        return !ball.pocketed && Pool.isCueLike(ball);
+      });
+      n = fallen.filter(function (b) { return !Pool.isCueLike(b); }).length;
       if (n >= 2) {
         this.addPop(Pool.TW / 2, Pool.TH / 2, '一杆 ' + n + ' 袋!', '#ffd36a', 28);
         Pool.Sfx.combo(n);
@@ -579,7 +792,7 @@
     var i, b, n = 0, pts, bonus;
     for (i = 0; i < pocketed.length; i++) {
       b = pocketed[i];
-      if (b.group === 'cue') continue;
+      if (Pool.isCueLike(b)) continue;
       n++;
       pts = 100 + (n - 1) * 50;
       if (b.group === 'eight') pts += 50;
@@ -601,6 +814,8 @@
   };
 
   Table.prototype.finishChallengeShot = function () {
+    this.finishPrecision();
+    this.mergeClones();
     var n = this.awardPockets(this.shotPocketed);
     this.cleared += n;
     this.shotsUsed += 1;
@@ -640,6 +855,8 @@
       this.msg = '杆数用完了，按 4 重试本关';
       Pool.Sfx.foul();
     }
+    this.maybeGrantPower(n);
+    this.endPowerAfterShot();
     this.emit();
   };
 
@@ -662,6 +879,8 @@
       return;
     }
 
+    this.finishPrecision();
+    this.mergeClones();
     var shot = {
       firstHit: this.firstHit,
       pocketed: this.shotPocketed,
@@ -671,7 +890,8 @@
     if (this.mode !== 'practice') {
       Pool.Rules.applyGroups(this, this.shotPocketed, this.turn);
     }
-    if (this.mode === 'practice' || this.turn === 0) this.awardPockets(this.shotPocketed);
+    var nAward = 0;
+    if (this.mode === 'practice' || this.turn === 0) nAward = this.awardPockets(this.shotPocketed);
 
     if (result.win) {
       this.winner = this.turn;
@@ -679,6 +899,8 @@
       this.msg = this.names[this.turn] + ' 打进 8 号，获胜！';
       if (this.turn === 0) this.addPop(Pool.TW / 2, Pool.TH / 2, '胜利!', '#ffe08a', 32);
       Pool.Sfx.win();
+      if (this.turn === 0) this.maybeGrantPower(nAward || 1);
+      this.endPowerAfterShot();
       this.emit();
       return;
     }
@@ -688,6 +910,7 @@
       this.phase = 'over';
       this.msg = result.reason || '8 号入袋判负';
       Pool.Sfx.foul();
+      this.endPowerAfterShot();
       this.emit();
       return;
     }
@@ -706,6 +929,8 @@
       this.placeAnywhere = true;
       this.turn = 0;
       this.msg = this.cuePocketed ? '白球入袋，方向键移动白球，空格放下' : (result.ownIn ? '打进了！空格继续' : '方向键瞄准，空格击打');
+      this.maybeGrantPower(nAward);
+      this.endPowerAfterShot();
       this.emit();
       return;
     }
@@ -724,6 +949,8 @@
       this.phase = 'aim';
       this.msg = '换人：方向键瞄准，空格击打';
     }
+    if (this.turn === 0) this.maybeGrantPower(nAward);
+    this.endPowerAfterShot();
     this.emit();
   };
 
@@ -780,9 +1007,10 @@
     for (i = 0; i < this.balls.length; i++) Pool.Render.drawTrail(ctx, this.balls[i], C);
     cue = this.cue();
     if (this.phase === 'aim' && cue && !cue.pocketed && this.winner < 0 && !this.isAiTurn()) {
+      Pool.Render.drawPowerAura(ctx, this, C);
       Pool.Render.drawAim(ctx, cue, this.aimX, this.aimY, this.balls, C);
-      Pool.Render.drawCue(ctx, cue, this.aimX, this.aimY, this.pull, C);
-      Pool.Render.drawPower(ctx, this.pull, C);
+      Pool.Render.drawCue(ctx, cue, this.aimX, this.aimY, this.pull, C, this.pendingPower || this.activePower);
+      Pool.Render.drawPower(ctx, this.pull, C, this.pendingPower || this.activePower);
     }
     for (i = 0; i < this.balls.length; i++) Pool.Render.drawBall(ctx, this.balls[i], C);
     Pool.Render.drawSparks(ctx, this.sparks || [], C);
