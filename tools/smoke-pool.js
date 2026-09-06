@@ -110,7 +110,12 @@ function assert(cond, msg) {
   assert(shot && isFinite(shot.ax) && shot.power > 0, 'AI returns a shot');
 })();
 
+require(path.join(root, 'powers.js'));
 require(path.join(root, 'levels.js'));
+assert(P.POWERS && P.POWERS.length === 3, 'three superpowers');
+assert(P.powerById('burst') && P.powerById('clone') && P.powerById('precision'), 'power ids exist');
+assert(P.nextPowerId('burst') === 'clone', 'cycle burst to clone');
+assert(P.nearestPocket({ x: 790, y: 390 }).x > 700, 'nearest pocket is bottom-right');
 assert(P.LEVELS && P.LEVELS.length >= 5, 'challenge has several levels');
 assert(P.LEVELS[0].balls.length >= 1 && P.LEVELS[0].need === 1, 'first level is a single pocket');
 assert(P.LEVELS[0].cue.x > 0, 'first level has a cue spot');
@@ -138,6 +143,27 @@ assert(P.LEVELS[0].cue.x > 0, 'first level has a cue spot');
   }
   assert(obj.pocketed, 'level 1 default shot pockets the yellow');
   assert(!cue.pocketed, 'level 1 default shot does not scratch');
+})();
+
+/* 精准清台：球朝最近袋口飞，应能进袋 */
+(function () {
+  var b = P.makeBall(3, 720, 360, 'solid', '#d61f2a', 3);
+  var pk = P.nearestPocket(b);
+  var dir = P.norm(P.sub(pk, b));
+  var balls = [b];
+  var steps = 0;
+  b.vx = dir.x * 1180;
+  b.vy = dir.y * 1180;
+  while (P.anyMoving(balls) && steps < 4000) {
+    var to = P.norm(P.sub(pk, b));
+    b.vx += to.x * 40;
+    b.vy += to.y * 40;
+    P.integrate(balls, 1 / 60);
+    P.hitCushions(balls);
+    P.pocketBalls(balls);
+    steps++;
+  }
+  assert(b.pocketed, 'precision-style seek pockets a near-corner ball');
 })();
 
 if (failed) {

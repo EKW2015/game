@@ -14,6 +14,7 @@
         <h1>🎱 八球台球</h1>
         <div class="tools">
           <button class="btn" id="btn-sound" type="button">音效：开</button>
+          <button class="btn hidden" id="btn-power" type="button">换能力 5</button>
           <button class="btn" id="btn-reset" type="button">选模式</button>
         </div>
       </header>
@@ -22,7 +23,7 @@
         <canvas id="table" width="868" height="468" aria-label="台球桌"></canvas>
         <div class="overlay" id="overlay">
           <h2 id="overlay-title">八球台球</h2>
-          <p id="overlay-msg">按 4 开始闯关（最好玩）。没有鼠标：方向键瞄准，空格击打。1 对战电脑，2 双人，3 练习。</p>
+          <p id="overlay-msg">按 4 开始闯关（最好玩）。进球会得到一杆超能力：爆发杆、分身三次、或精准清台。没有鼠标：方向键瞄准，空格击打。1 对战电脑，2 双人，3 练习。</p>
           <div class="modes" id="modes">
             <button class="mode play" type="button" data-mode="challenge">闯关挑战</button>
             <button class="mode" type="button" data-mode="vsai">对战电脑</button>
@@ -58,7 +59,7 @@
       </div>
 
       <p class="help">
-        <strong>闯关最好玩：</strong>按 4 开始。方向键瞄准，空格击打。进袋有连击加分。
+        <strong>闯关最好玩：</strong>按 4 开始。方向键瞄准，空格击打。进袋得超能力（爆发 / 分身三次 / 精准清台），按 5 换一个。
         过关后按回车进下一关。M 打开菜单。
       </p>
     </div>
@@ -69,6 +70,7 @@
     <script src="js/ai.js"></script>
     <script src="js/render.js"></script>
     <script src="js/levels.js"></script>
+    <script src="js/powers.js"></script>
     <script src="js/game.js"></script>
     <script src="js/main.js"></script>
   </body>

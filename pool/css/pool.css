@@ -64,6 +64,14 @@ h1 {
 
 .btn:hover { border-color: var(--gold); color: #fff; }
 
+.btn.hidden { display: none; }
+
+.btn.is-power {
+  border-color: #ff6a3a;
+  color: #ffe08a;
+  box-shadow: 0 0 0 1px rgba(255, 106, 58, 0.35);
+}
+
 .stage {
   position: relative;
   width: min(1100px, 100%);

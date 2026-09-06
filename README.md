@@ -17,7 +17,7 @@ https://htmlpreview.github.io/?https://github.com/EKW2015/game/blob/cursor/pool-
 2. 点右上角 **Download raw file**（下载按钮）
 3. 用 Chrome 打开下载下来的 `pool.html`（Windows 也可双击 `打开台球.bat`）
 
-操作：**不用鼠标**。按 **4** 闯关。方向键 / WASD 瞄准和调力道，空格击打。过关回车进下一关。屏幕上也有大按钮。
+操作：**不用鼠标**。按 **4** 闯关。方向键 / WASD 瞄准和调力道，空格击打。进袋会得到一杆超能力（爆发杆 / 分身打三次 / 精准清台），按 **5** 换一个。过关回车进下一关。屏幕上也有大按钮。
 
 白球入袋或先碰到对方球算犯规。
 
