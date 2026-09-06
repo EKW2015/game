@@ -120,6 +120,7 @@
         renderHud(table);
         return;
       }
+      table.blockShootOnce = true;
       renderHud(table);
       return;
     }
@@ -127,13 +128,14 @@
       if (!(table.mode === 'challenge' && table.winner === 1)) table.levelIndex = 0;
     }
     table.reset(mode, { fresh: mode === 'challenge' && table.winner !== 1 });
+    table.blockShootOnce = true;
     renderHud(table);
   }
 
   function openMenu() {
     overlay.classList.remove('hidden');
     overlayTitle.textContent = '八球台球';
-    overlayMsg.textContent = '按 4 闯关（推荐）。进球得超能力：爆发杆、分身三次、精准清台。按 5 换能力。1 对战电脑，2 双人，3 练习。';
+    overlayMsg.textContent = '按空格或 4 开始闯关。进球得超能力：爆发杆、分身三次、精准清台。按 5 换能力。1 对战电脑，2 双人，3 练习。';
     modes.style.display = '';
     if (table) table.menuOpen = true;
   }
@@ -166,6 +168,10 @@
       else if (ev.code === 'Digit4' || ev.key === '4') start('challenge');
       else if (ev.code === 'Enter' && table && table.mode === 'challenge' && table.winner === 0) {
         start('challenge-next');
+      } else if (ev.code === 'Space' || ev.code === 'Enter') {
+        ev.preventDefault();
+        if (table && table.mode === 'challenge' && table.winner === 0) start('challenge-next');
+        else start('challenge');
       }
       return;
     }
@@ -186,8 +192,12 @@
       if (table) table.setHold(hold.getAttribute('data-hold'), true);
     } else if (shoot) {
       ev.preventDefault();
-      if (!table) return;
       Pool.Sfx.unlock();
+      if (!overlay.classList.contains('hidden') || !table) {
+        if (table && table.mode === 'challenge' && table.winner === 0) start('challenge-next');
+        else start('challenge');
+        return;
+      }
       if (table.canPlace()) table.confirmPlace();
       else if (table.canAim()) table.shoot(table.pull > 12 ? table.pull : 150);
     }

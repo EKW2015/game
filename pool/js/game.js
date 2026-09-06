@@ -341,6 +341,10 @@
     if (this.menuOpen) return;
     if (ev.code === 'Space') {
       ev.preventDefault();
+      if (this.blockShootOnce) {
+        this.blockShootOnce = false;
+        return;
+      }
       Pool.Sfx.unlock();
       if (this.canPlace()) this.confirmPlace();
       else if (this.canAim()) this.shoot(this.pull > 12 ? this.pull : 150);

@@ -9,15 +9,15 @@ GitHub 上直接点 `.html` 只会看到**源代码**，那不是游戏。请用
 标准八球 + **闯关挑战**（连击加分、进袋特效）。可对战电脑、双人、练习。
 
 **现在在线玩（点这个，用 Chrome）：**  
-https://htmlpreview.github.io/?https://github.com/EKW2015/game/blob/cursor/pool-billiards-f51a/pool.html
+https://htmlpreview.github.io/?https://github.com/EKW2015/game/blob/cursor/pool-superpowers-f51a/pool.html
 
 第一次打开可能要等几秒。若预览也打不开：
 
-1. 打开 [pool.html 文件页](https://github.com/EKW2015/game/blob/cursor/pool-billiards-f51a/pool.html)
+1. 打开 [pool.html 文件页](https://github.com/EKW2015/game/blob/cursor/pool-superpowers-f51a/pool.html)
 2. 点右上角 **Download raw file**（下载按钮）
 3. 用 Chrome 打开下载下来的 `pool.html`（Windows 也可双击 `打开台球.bat`）
 
-操作：**不用鼠标**。按 **4** 闯关。方向键 / WASD 瞄准和调力道，空格击打。进袋会得到一杆超能力（爆发杆 / 分身打三次 / 精准清台），按 **5** 换一个。过关回车进下一关。屏幕上也有大按钮。
+操作：**不用鼠标**。打开后按 **空格** 或 **4** 就会开始闯关。方向键 / WASD 瞄准和调力道，空格击打。进袋会得到一杆超能力（爆发杆 / 分身打三次 / 精准清台），按 **5** 换一个。过关回车或空格进下一关。屏幕上也有大按钮。
 
 白球入袋或先碰到对方球算犯规。
 
