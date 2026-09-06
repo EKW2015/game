@@ -358,7 +358,7 @@
     ctx.lineWidth = 2;
     for (i = 0; i < balls.length; i++) {
       b = balls[i];
-      if (b.pocketed || b.group === 'cue') continue;
+      if (b.pocketed || Pool.isCueLike(b)) continue;
       ctx.strokeStyle = 'rgba(255, 220, 80, 0.9)';
       ctx.beginPath();
       ctx.arc(C + b.x, C + b.y, b.r + 7, 0, Math.PI * 2);
