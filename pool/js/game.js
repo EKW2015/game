@@ -333,16 +333,17 @@
     }
     if (!down) return;
     if (ev.repeat) return;
+    if (ev.code === 'Digit5' || ev.key === '5') {
+      ev.preventDefault();
+      this.cyclePower();
+      return;
+    }
     if (this.menuOpen) return;
-    if (ev.code === 'Space' || ev.code === 'Enter') {
+    if (ev.code === 'Space') {
       ev.preventDefault();
       Pool.Sfx.unlock();
       if (this.canPlace()) this.confirmPlace();
       else if (this.canAim()) this.shoot(this.pull > 12 ? this.pull : 150);
-    }
-    if (ev.code === 'Digit5' || ev.key === '5') {
-      ev.preventDefault();
-      this.cyclePower();
     }
   };
 
@@ -509,10 +510,11 @@
   };
 
   Table.prototype.cyclePower = function () {
-    if (!this.pendingPower || !this.canAim()) return;
+    if (!this.pendingPower) return;
+    if (!this.canAim() && this.winner !== 0) return;
     this.pendingPower = Pool.nextPowerId(this.pendingPower);
     var info = this.powerInfo();
-    this.msg = '超能力换成：' + info.name + ' — ' + info.info;
+    if (this.winner < 0) this.msg = '超能力换成：' + info.name + ' — ' + info.info;
     this.emit();
   };
 
@@ -520,7 +522,9 @@
     this.pendingPower = Pool.pickPowerId(this.pendingPower);
     var info = this.powerInfo();
     this.addPop(Pool.TW / 2, 72, info.name + '！', info.color, 26);
-    this.msg = '超能力：' + info.name + '！按 5 换一个，空格发动';
+    if (this.winner < 0) {
+      this.msg = '超能力：' + info.name + '！按 5 换一个，空格发动';
+    }
     Pool.Sfx.power();
     this.emit();
   };

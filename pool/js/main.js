@@ -86,7 +86,8 @@
       if (g.mode === 'challenge') {
         overlayTitle.textContent = g.winner === 0 ? g.msg : '再试一次';
         overlayMsg.textContent = g.winner === 0
-          ? ('得分 ' + g.score + (g.stars ? '　' + '★'.repeat(g.stars) : '') + '。回车下一关，4 重试。')
+          ? ('得分 ' + g.score + (g.stars ? '　' + '★'.repeat(g.stars) : '') +
+            (info ? '。带着「' + info.name + '」回车下一关，按 5 可换。' : '。回车下一关，4 重试。'))
           : '按 4 重试本关，或换模式。';
         if (nextBtn) {
           nextBtn.classList.toggle('hidden', !(g.winner === 0 && g.levelIndex < Pool.LEVELS.length - 1));
@@ -99,6 +100,7 @@
         if (nextBtn) nextBtn.classList.add('hidden');
       }
       modes.style.display = '';
+      g.menuOpen = true;
     } else if (nextBtn) {
       nextBtn.classList.add('hidden');
     }
