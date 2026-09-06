@@ -90,9 +90,9 @@
     ctx.fill();
 
     var g = ctx.createRadialGradient(x - r * 0.35, y - r * 0.4, r * 0.1, x, y, r);
-    if (b.group === 'cue') {
+    if (b.group === 'cue' || b.group === 'clone') {
       g.addColorStop(0, '#ffffff');
-      g.addColorStop(1, '#d7d7d0');
+      g.addColorStop(1, b.group === 'clone' ? '#c8e8ff' : '#d7d7d0');
     } else if (b.group === 'stripe') {
       g.addColorStop(0, '#fff');
       g.addColorStop(0.45, '#f4f4f4');
@@ -235,8 +235,8 @@
   function drawPowerAura(ctx, table, C) {
     var cue = table.cue && table.cue();
     var info = table.powerInfo && table.powerInfo();
-    var ghosts = table.cloneShotsLeft > 0 ? table.cloneShotsLeft : (table.pendingPower === 'clone' ? 2 : 0);
-    var i, ang, gx, gy, b, pk;
+    var ghosts = table.pendingPower === 'clone' ? 2 : 0;
+    var i, ang, gx, gy, b, pk, base, spread;
     if (info && cue && !cue.pocketed) {
       ctx.save();
       ctx.strokeStyle = info.color;
@@ -249,16 +249,24 @@
       ctx.restore();
     }
     if (ghosts && cue && !cue.pocketed) {
+      base = Math.atan2(table.aimY, table.aimX);
       for (i = 0; i < ghosts; i++) {
-        ang = (i - (ghosts - 1) / 2) * 0.7;
-        gx = cue.x + Math.cos(ang) * 22;
-        gy = cue.y + Math.sin(ang) * 22;
+        spread = i === 0 ? -20 : 20;
+        gx = cue.x + Math.cos(base + Math.PI / 2) * spread;
+        gy = cue.y + Math.sin(base + Math.PI / 2) * spread;
         ctx.beginPath();
         ctx.arc(C + gx, C + gy, cue.r, 0, Math.PI * 2);
-        ctx.fillStyle = 'rgba(200, 230, 255, 0.28)';
+        ctx.fillStyle = 'rgba(200, 230, 255, 0.35)';
         ctx.fill();
-        ctx.strokeStyle = 'rgba(126, 203, 255, 0.85)';
+        ctx.strokeStyle = 'rgba(126, 203, 255, 0.9)';
         ctx.stroke();
+        ctx.setLineDash([5, 5]);
+        ctx.beginPath();
+        ctx.moveTo(C + gx, C + gy);
+        ang = base + (i === 0 ? -0.24 : 0.24);
+        ctx.lineTo(C + gx + Math.cos(ang) * 70, C + gy + Math.sin(ang) * 70);
+        ctx.stroke();
+        ctx.setLineDash([]);
       }
     }
     if (table.pendingPower === 'precision' && table.powerTargets) {
@@ -339,7 +347,7 @@
     if (info) {
       ctx.fillStyle = info.color;
       ctx.font = 'bold 12px sans-serif';
-      ctx.fillText(info.name + (table.cloneShotsLeft ? ' ×' + table.cloneShotsLeft : ''), C + Pool.TW - 156, C + (table.mode === 'challenge' ? 54 : 36));
+      ctx.fillText(info.name, C + Pool.TW - 156, C + (table.mode === 'challenge' ? 54 : 36));
     }
   }
 

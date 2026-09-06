@@ -166,6 +166,24 @@ assert(P.LEVELS[0].cue.x > 0, 'first level has a cue spot');
   assert(b.pocketed, 'precision-style seek pockets a near-corner ball');
 })();
 
+/* 分身：三个白球同时出手，都会动 */
+(function () {
+  var cue = P.makeBall(0, 200, 200, 'cue', '#fff', '');
+  var a = P.makeBall(100, 200, 180, 'clone', '#e8f6ff', '');
+  var b = P.makeBall(101, 200, 220, 'clone', '#e8f6ff', '');
+  var power = 900;
+  var base = 0;
+  cue.vx = Math.cos(base) * power;
+  cue.vy = Math.sin(base) * power;
+  a.vx = Math.cos(base - 0.24) * power;
+  a.vy = Math.sin(base - 0.24) * power;
+  b.vx = Math.cos(base + 0.24) * power;
+  b.vy = Math.sin(base + 0.24) * power;
+  assert(P.isCueLike(cue) && P.isCueLike(a) && P.isCueLike(b), 'three cue-like balls');
+  assert(P.anyMoving([cue, a, b]), 'all three clones are moving');
+  assert(Math.abs(a.vy) > 10 && Math.abs(b.vy) > 10 && Math.abs(cue.vy) < 1, 'side clones spread, center goes straight');
+})();
+
 if (failed) {
   console.error(failed + ' failed');
   process.exit(1);

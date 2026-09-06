@@ -69,7 +69,7 @@
 
     for (i = 0; i < pocketed.length; i++) {
       b = pocketed[i];
-      if (b.group === 'cue') continue;
+      if (b.group === 'cue' || b.group === 'clone') continue;
       anyObj = true;
       if (b.group === 'eight') eightIn = true;
       else if (state.openTable && (b.group === 'solid' || b.group === 'stripe')) ownIn = true;

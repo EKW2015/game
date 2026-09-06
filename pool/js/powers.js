@@ -8,7 +8,7 @@
 
   Pool.POWERS = [
     { id: 'burst', name: '爆发杆', info: '打得很用力很用力很用力', color: '#ff6a3a' },
-    { id: 'clone', name: '分身杆', info: '白球分身，连续打三次', color: '#7ecbff' },
+    { id: 'clone', name: '分身杆', info: '一次打出三个白球', color: '#7ecbff' },
     { id: 'precision', name: '精准清台', info: '瞄准所有目标球，一杆清台', color: '#ffe08a' }
   ];
 

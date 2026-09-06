@@ -125,7 +125,6 @@
     this.score = keepScore ? (this.score || 0) : 0;
     this.pendingPower = keepScore ? this.pendingPower : null;
     this.activePower = null;
-    this.cloneShotsLeft = 0;
     this.precisionActive = false;
     Pool.MAX_SPEED = Pool.DEFAULT_MAX_SPEED;
     this.combo = 0;
@@ -536,7 +535,6 @@
   Table.prototype.maybeGrantPower = function (n) {
     if (n <= 0) return;
     if (this.isAiTurn()) return;
-    if (this.cloneShotsLeft > 0 && this.winner < 0) return;
     if (this.winner > 0) return;
     this.pickPower();
   };
@@ -601,21 +599,65 @@
   };
 
   Table.prototype.consumePowerForShot = function () {
-    var used = this.activePower;
-    if (this.pendingPower) {
-      used = this.pendingPower;
+    var used = this.pendingPower;
+    if (used) {
       this.activePower = used;
       this.pendingPower = null;
-      if (used === 'clone') this.cloneShotsLeft = 3;
     }
-    if (used === 'clone') {
-      this.cloneShotsLeft = Math.max(0, this.cloneShotsLeft - 1);
+    return used || this.activePower;
+  };
+
+  Table.prototype.spawnClones = function (cue) {
+    var perp = Pool.norm({ x: -this.aimY, y: this.aimX });
+    var i, x, y, c, gap;
+    if (!perp.x && !perp.y) perp = { x: 0, y: 1 };
+    for (i = 0; i < 2; i++) {
+      gap = i === 0 ? 20 : -20;
+      x = Pool.clamp(cue.x + perp.x * gap, Pool.R + 2, Pool.TW - Pool.R - 2);
+      y = Pool.clamp(cue.y + perp.y * gap, Pool.R + 2, Pool.TH - Pool.R - 2);
+      c = Pool.makeBall(100 + i, x, y, 'clone', '#e8f6ff', '');
+      this.balls.push(c);
     }
-    return used;
+  };
+
+  Table.prototype.launchClones = function (power) {
+    var base = Math.atan2(this.aimY, this.aimX);
+    var i, b, ang, extra = 0;
+    for (i = 0; i < this.balls.length; i++) {
+      b = this.balls[i];
+      if (b.pocketed || !Pool.isCueLike(b)) continue;
+      if (b.group === 'cue') ang = base;
+      else {
+        ang = base + (extra === 0 ? -0.24 : 0.24);
+        extra += 1;
+      }
+      b.vx = Math.cos(ang) * power;
+      b.vy = Math.sin(ang) * power;
+    }
+  };
+
+  Table.prototype.mergeClones = function () {
+    var cue = this.cue();
+    var i, b, survivor = null;
+    for (i = 0; i < this.balls.length; i++) {
+      b = this.balls[i];
+      if (b.group !== 'clone' || b.pocketed) continue;
+      if (!survivor) survivor = b;
+    }
+    if (cue && cue.pocketed && survivor) {
+      cue.pocketed = false;
+      cue.x = survivor.x;
+      cue.y = survivor.y;
+      cue.vx = 0;
+      cue.vy = 0;
+    }
+    for (i = this.balls.length - 1; i >= 0; i--) {
+      if (this.balls[i].group === 'clone') this.balls.splice(i, 1);
+    }
+    this.cuePocketed = !cue || !!cue.pocketed;
   };
 
   Table.prototype.endPowerAfterShot = function () {
-    var keepClone = this.activePower === 'clone' && this.cloneShotsLeft > 0 && this.winner < 0;
     Pool.MAX_SPEED = Pool.DEFAULT_MAX_SPEED;
     var i, b;
     for (i = 0; i < this.balls.length; i++) {
@@ -623,8 +665,8 @@
       b.seekPocket = null;
     }
     this.precisionActive = false;
-    if (!keepClone) this.activePower = null;
-    return keepClone;
+    this.activePower = null;
+    return false;
   };
 
   Table.prototype.shoot = function (pull) {
@@ -656,11 +698,17 @@
       return;
     }
 
-    cue.vx = this.aimX * power;
-    cue.vy = this.aimY * power;
-    this.msg = used === 'clone'
-      ? ('分身击打中… 还剩 ' + this.cloneShotsLeft + ' 次')
-      : '球在滚动…';
+    if (used === 'clone') {
+      this.spawnClones(cue);
+      this.launchClones(power);
+      this.shake = Math.max(this.shake, 10);
+      this.addPop(cue.x, cue.y - 22, '三重白球!', '#7ecbff', 22);
+      this.msg = '三个白球一起打出去了！';
+    } else {
+      cue.vx = this.aimX * power;
+      cue.vy = this.aimY * power;
+      this.msg = '球在滚动…';
+    }
     this.emit();
   };
 
@@ -688,17 +736,22 @@
     Pool.integrate(this.balls, dt);
     Pool.hitCushions(this.balls);
 
-    if (!this.recordedFirst && cue && !cue.pocketed) {
-      for (i = 1; i < this.balls.length; i++) {
-        b = this.balls[i];
-        if (b.pocketed || Pool.isCueLike(b)) continue;
-        if (Pool.dist(cue, b) > cue.r + b.r + 1.2) continue;
-        rel = (cue.vx - b.vx) * (b.x - cue.x) + (cue.vy - b.vy) * (b.y - cue.y);
-        if (rel > 0) {
-          this.firstHit = b;
-          this.recordedFirst = true;
-          this.shake = Math.max(this.shake, 4);
-          break;
+    if (!this.recordedFirst) {
+      var striker, j;
+      for (j = 0; j < this.balls.length && !this.recordedFirst; j++) {
+        striker = this.balls[j];
+        if (striker.pocketed || !Pool.isCueLike(striker)) continue;
+        for (i = 0; i < this.balls.length; i++) {
+          b = this.balls[i];
+          if (b.pocketed || Pool.isCueLike(b)) continue;
+          if (Pool.dist(striker, b) > striker.r + b.r + 1.2) continue;
+          rel = (striker.vx - b.vx) * (b.x - striker.x) + (striker.vy - b.vy) * (b.y - striker.y);
+          if (rel > 0) {
+            this.firstHit = b;
+            this.recordedFirst = true;
+            this.shake = Math.max(this.shake, 4);
+            break;
+          }
         }
       }
     }
@@ -720,13 +773,14 @@
       this.shake = Math.max(this.shake, 7);
       for (i = 0; i < fallen.length; i++) {
         this.shotPocketed.push(fallen[i]);
-        if (Pool.isCueLike(fallen[i])) this.cuePocketed = fallen[i].group === 'cue' || this.cuePocketed;
-        else {
-          this.addPop(fallen[i].x, fallen[i].y, '进袋!', '#ffe08a', 22);
-          this.addSparks(fallen[i].x, fallen[i].y, fallen[i].color);
-        }
+        if (Pool.isCueLike(fallen[i])) continue;
+        this.addPop(fallen[i].x, fallen[i].y, '进袋!', '#ffe08a', 22);
+        this.addSparks(fallen[i].x, fallen[i].y, fallen[i].color);
       }
-      n = fallen.filter(function (b) { return b.group !== 'cue'; }).length;
+      this.cuePocketed = !this.balls.some(function (ball) {
+        return !ball.pocketed && Pool.isCueLike(ball);
+      });
+      n = fallen.filter(function (b) { return !Pool.isCueLike(b); }).length;
       if (n >= 2) {
         this.addPop(Pool.TW / 2, Pool.TH / 2, '一杆 ' + n + ' 袋!', '#ffd36a', 28);
         Pool.Sfx.combo(n);
@@ -761,10 +815,10 @@
 
   Table.prototype.finishChallengeShot = function () {
     this.finishPrecision();
+    this.mergeClones();
     var n = this.awardPockets(this.shotPocketed);
     this.cleared += n;
-    var keepClone = this.activePower === 'clone' && this.cloneShotsLeft > 0;
-    if (!keepClone) this.shotsUsed += 1;
+    this.shotsUsed += 1;
     if (this.cuePocketed) {
       var cue = this.cue();
       cue.pocketed = false;
@@ -794,7 +848,7 @@
         ? ('全部通关！总分 ' + this.score)
         : (this.levelName + ' 过关！' + '★'.repeat(this.stars));
       Pool.Sfx.star();
-    } else if (!keepClone && this.shotsUsed >= this.maxShots) {
+    } else if (this.shotsUsed >= this.maxShots) {
       this.winner = 1;
       this.phase = 'over';
       this.stars = 0;
@@ -802,11 +856,7 @@
       Pool.Sfx.foul();
     }
     this.maybeGrantPower(n);
-    keepClone = this.endPowerAfterShot();
-    if (keepClone && this.winner < 0) {
-      this.phase = this.cuePocketed ? 'place' : 'aim';
-      this.msg = '分身还剩 ' + this.cloneShotsLeft + ' 次击打！空格继续';
-    }
+    this.endPowerAfterShot();
     this.emit();
   };
 
@@ -830,6 +880,7 @@
     }
 
     this.finishPrecision();
+    this.mergeClones();
     var shot = {
       firstHit: this.firstHit,
       pocketed: this.shotPocketed,
@@ -879,19 +930,7 @@
       this.turn = 0;
       this.msg = this.cuePocketed ? '白球入袋，方向键移动白球，空格放下' : (result.ownIn ? '打进了！空格继续' : '方向键瞄准，空格击打');
       this.maybeGrantPower(nAward);
-      if (this.endPowerAfterShot() && this.winner < 0) {
-        this.msg = '分身还剩 ' + this.cloneShotsLeft + ' 次击打！空格继续';
-      }
-      this.emit();
-      return;
-    }
-
-    if (this.activePower === 'clone' && this.cloneShotsLeft > 0) {
-      this.phase = this.cuePocketed ? 'place' : 'aim';
-      this.placeAnywhere = true;
-      this.maybeGrantPower(nAward);
       this.endPowerAfterShot();
-      this.msg = '分身还剩 ' + this.cloneShotsLeft + ' 次击打！空格继续';
       this.emit();
       return;
     }
