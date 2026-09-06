@@ -106,7 +106,8 @@
     }
   }
 
-  function start(mode) {
+  function start(mode, opts) {
+    opts = opts || {};
     overlay.classList.add('hidden');
     if (!table) {
       table = new Pool.Table(canvas, { onHud: renderHud });
@@ -120,7 +121,7 @@
         renderHud(table);
         return;
       }
-      table.blockShootOnce = true;
+      if (opts.blockShoot) table.blockShootOnce = true;
       renderHud(table);
       return;
     }
@@ -128,7 +129,7 @@
       if (!(table.mode === 'challenge' && table.winner === 1)) table.levelIndex = 0;
     }
     table.reset(mode, { fresh: mode === 'challenge' && table.winner !== 1 });
-    table.blockShootOnce = true;
+    if (opts && opts.blockShoot) table.blockShootOnce = true;
     renderHud(table);
   }
 
@@ -167,11 +168,11 @@
       else if (ev.code === 'Digit3' || ev.key === '3') start('practice');
       else if (ev.code === 'Digit4' || ev.key === '4') start('challenge');
       else if (ev.code === 'Enter' && table && table.mode === 'challenge' && table.winner === 0) {
-        start('challenge-next');
+        start('challenge-next', { blockShoot: true });
       } else if (ev.code === 'Space' || ev.code === 'Enter') {
         ev.preventDefault();
-        if (table && table.mode === 'challenge' && table.winner === 0) start('challenge-next');
-        else start('challenge');
+        if (table && table.mode === 'challenge' && table.winner === 0) start('challenge-next', { blockShoot: true });
+        else start('challenge', { blockShoot: true });
       }
       return;
     }
