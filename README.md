@@ -8,7 +8,8 @@ GitHub 上点 `pool.html` 只能看到代码，那不是游戏。
 
 👉 **https://raw.githack.com/EKW2015/game/cursor/open-pool-game-925e/pool.html**
 
-第一次可能要等几秒。看到绿色球桌就成功了。
+第一次可能先出现英文页 **One more step**，点红色按钮 **Open the page**。  
+然后等几秒，看到绿色球桌就成功了。按 **4** 开始闯关。
 
 ## 下载玩（最稳）
 
