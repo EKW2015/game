@@ -72,6 +72,14 @@ h1 {
 
 .btn:hover { border-color: var(--gold); color: #fff; }
 
+.btn.hidden { display: none; }
+
+.btn.is-power {
+  border-color: #ff6a3a;
+  color: #ffe08a;
+  box-shadow: 0 0 0 1px rgba(255, 106, 58, 0.35);
+}
+
 .stage {
   position: relative;
   width: min(1100px, 100%);
@@ -260,6 +268,7 @@ canvas {
         <h1>🎱 八球台球</h1>
         <div class="tools">
           <button class="btn" id="btn-sound" type="button">音效：开</button>
+          <button class="btn hidden" id="btn-power" type="button">换能力 5</button>
           <button class="btn" id="btn-reset" type="button">选模式</button>
         </div>
       </header>
@@ -268,7 +277,7 @@ canvas {
         <canvas id="table" width="868" height="468" aria-label="台球桌"></canvas>
         <div class="overlay" id="overlay">
           <h2 id="overlay-title">八球台球</h2>
-          <p id="overlay-msg">按 4 开始闯关（最好玩）。没有鼠标：方向键瞄准，空格击打。1 对战电脑，2 双人，3 练习。</p>
+          <p id="overlay-msg">按空格或点「闯关挑战」就能玩。进球得超能力：爆发杆、三个白球一起打、精准清台。没有鼠标：方向键瞄准，空格击打。1 对战电脑，2 双人，3 练习。</p>
           <div class="modes" id="modes">
             <button class="mode play" type="button" data-mode="challenge">闯关挑战</button>
             <button class="mode" type="button" data-mode="vsai">对战电脑</button>
@@ -304,7 +313,7 @@ canvas {
       </div>
 
       <p class="help">
-        <strong>闯关最好玩：</strong>按 4 开始。方向键瞄准，空格击打。进袋有连击加分。
+        <strong>闯关最好玩：</strong>按 4 开始。方向键瞄准，空格击打。进袋得超能力（爆发 / 三个白球一起打 / 精准清台），按 5 换一个。
         过关后按回车进下一关。M 打开菜单。
       </p>
     </div>
@@ -412,7 +421,7 @@ canvas {
   }
 
   function integrate(balls, dt) {
-    var i, b, speed, damp;
+    var i, b, speed, damp, cap;
     damp = Math.exp(-FRICTION * dt);
     for (i = 0; i < balls.length; i++) {
       b = balls[i];
@@ -422,9 +431,10 @@ canvas {
       b.vx *= damp;
       b.vy *= damp;
       speed = Math.sqrt(b.vx * b.vx + b.vy * b.vy);
-      if (speed > MAX_SPEED) {
-        b.vx *= MAX_SPEED / speed;
-        b.vy *= MAX_SPEED / speed;
+      cap = Pool.MAX_SPEED || MAX_SPEED;
+      if (speed > cap) {
+        b.vx *= cap / speed;
+        b.vy *= cap / speed;
       } else if (speed < STOP) {
         b.vx = 0;
         b.vy = 0;
@@ -563,12 +573,33 @@ canvas {
     return false;
   }
 
+  function nearestPocket(p) {
+    var i, pk, best = POCKETS[0], d, bestD = 1e9;
+    for (i = 0; i < POCKETS.length; i++) {
+      pk = POCKETS[i];
+      d = dist(p, pk);
+      if (d < bestD) {
+        bestD = d;
+        best = pk;
+      }
+    }
+    return best;
+  }
+
+  function isCueLike(b) {
+    return !!(b && (b.group === 'cue' || b.group === 'clone'));
+  }
+
   Pool.TW = TW;
   Pool.TH = TH;
   Pool.R = R;
   Pool.POCKET_R = POCKET_R;
   Pool.CUSHION = CUSHION;
+  Pool.MAX_SPEED = MAX_SPEED;
+  Pool.DEFAULT_MAX_SPEED = MAX_SPEED;
   Pool.POCKETS = POCKETS;
+  Pool.nearestPocket = nearestPocket;
+  Pool.isCueLike = isCueLike;
   Pool.vec = vec;
   Pool.add = add;
   Pool.sub = sub;
@@ -665,6 +696,15 @@ canvas {
     },
     foul: function () {
       beep(160, 0.2, 'sawtooth', 0.05, 80);
+    },
+    power: function () {
+      beep(392, 0.08, 'sine', 0.07);
+      setTimeout(function () { beep(523, 0.1, 'sine', 0.08); }, 70);
+      setTimeout(function () { beep(659, 0.16, 'triangle', 0.08); }, 150);
+    },
+    burst: function () {
+      beep(70, 0.14, 'sawtooth', 0.1, 40);
+      setTimeout(function () { beep(110, 0.1, 'square', 0.06, 50); }, 40);
     }
   };
 })(typeof window !== 'undefined' ? window : global);
@@ -740,7 +780,7 @@ canvas {
 
     for (i = 0; i < pocketed.length; i++) {
       b = pocketed[i];
-      if (b.group === 'cue') continue;
+      if (b.group === 'cue' || b.group === 'clone') continue;
       anyObj = true;
       if (b.group === 'eight') eightIn = true;
       else if (state.openTable && (b.group === 'solid' || b.group === 'stripe')) ownIn = true;
@@ -995,9 +1035,9 @@ canvas {
     ctx.fill();
 
     var g = ctx.createRadialGradient(x - r * 0.35, y - r * 0.4, r * 0.1, x, y, r);
-    if (b.group === 'cue') {
+    if (b.group === 'cue' || b.group === 'clone') {
       g.addColorStop(0, '#ffffff');
-      g.addColorStop(1, '#d7d7d0');
+      g.addColorStop(1, b.group === 'clone' ? '#c8e8ff' : '#d7d7d0');
     } else if (b.group === 'stripe') {
       g.addColorStop(0, '#fff');
       g.addColorStop(0.45, '#f4f4f4');
@@ -1050,7 +1090,7 @@ canvas {
     return 'rgb(' + r + ',' + g + ',' + b + ')';
   }
 
-  function drawCue(ctx, cue, aimX, aimY, pull, C) {
+  function drawCue(ctx, cue, aimX, aimY, pull, C, powerId) {
     if (!cue || cue.pocketed) return;
     var n = Pool.norm({ x: aimX, y: aimY });
     if (!n.x && !n.y) return;
@@ -1061,13 +1101,13 @@ canvas {
     var x1 = x0 + back.x * 210;
     var y1 = y0 + back.y * 210;
     ctx.lineCap = 'round';
-    ctx.strokeStyle = '#3a210e';
-    ctx.lineWidth = 7;
+    ctx.strokeStyle = powerId === 'burst' ? '#5a1208' : '#3a210e';
+    ctx.lineWidth = powerId === 'burst' ? 9 : 7;
     ctx.beginPath();
     ctx.moveTo(x0 + back.x * 18, y0 + back.y * 18);
     ctx.lineTo(x1, y1);
     ctx.stroke();
-    ctx.strokeStyle = '#c9a24a';
+    ctx.strokeStyle = powerId === 'burst' ? '#ff6a3a' : powerId === 'precision' ? '#ffe08a' : '#c9a24a';
     ctx.lineWidth = 5;
     ctx.beginPath();
     ctx.moveTo(x0, y0);
@@ -1126,15 +1166,70 @@ canvas {
     }
   }
 
-  function drawPower(ctx, pull, C) {
+  function drawPower(ctx, pull, C, powerId) {
     var x = C + 16;
     var y = C + Pool.TH - 18;
     ctx.fillStyle = 'rgba(0,0,0,0.35)';
     roundRect(ctx, x, y, 140, 10, 5);
     ctx.fill();
-    ctx.fillStyle = pull > 70 ? '#ff8a7a' : '#e4c27a';
-    roundRect(ctx, x, y, 140 * Pool.clamp(pull / 180, 0, 1), 10, 5);
+    ctx.fillStyle = powerId === 'burst' ? '#ff4d2a' : pull > 70 ? '#ff8a7a' : '#e4c27a';
+    roundRect(ctx, x, y, 140 * Pool.clamp((powerId === 'burst' ? 180 : pull) / 180, 0, 1), 10, 5);
     ctx.fill();
+  }
+
+  function drawPowerAura(ctx, table, C) {
+    var cue = table.cue && table.cue();
+    var info = table.powerInfo && table.powerInfo();
+    var ghosts = table.pendingPower === 'clone' ? 2 : 0;
+    var i, ang, gx, gy, b, pk, base, spread;
+    if (info && cue && !cue.pocketed) {
+      ctx.save();
+      ctx.strokeStyle = info.color;
+      ctx.globalAlpha = 0.7;
+      ctx.lineWidth = 2;
+      ctx.setLineDash([4, 4]);
+      ctx.beginPath();
+      ctx.arc(C + cue.x, C + cue.y, cue.r + 10, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.restore();
+    }
+    if (ghosts && cue && !cue.pocketed) {
+      base = Math.atan2(table.aimY, table.aimX);
+      for (i = 0; i < ghosts; i++) {
+        spread = i === 0 ? -20 : 20;
+        gx = cue.x + Math.cos(base + Math.PI / 2) * spread;
+        gy = cue.y + Math.sin(base + Math.PI / 2) * spread;
+        ctx.beginPath();
+        ctx.arc(C + gx, C + gy, cue.r, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(200, 230, 255, 0.35)';
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(126, 203, 255, 0.9)';
+        ctx.stroke();
+        ctx.setLineDash([5, 5]);
+        ctx.beginPath();
+        ctx.moveTo(C + gx, C + gy);
+        ang = base + (i === 0 ? -0.24 : 0.24);
+        ctx.lineTo(C + gx + Math.cos(ang) * 70, C + gy + Math.sin(ang) * 70);
+        ctx.stroke();
+        ctx.setLineDash([]);
+      }
+    }
+    if (table.pendingPower === 'precision' && table.powerTargets) {
+      ctx.save();
+      ctx.setLineDash([5, 5]);
+      ctx.strokeStyle = 'rgba(255, 224, 138, 0.65)';
+      ctx.lineWidth = 1.4;
+      var targets = table.powerTargets();
+      for (i = 0; i < targets.length; i++) {
+        b = targets[i];
+        pk = Pool.nearestPocket(b);
+        ctx.beginPath();
+        ctx.moveTo(C + b.x, C + b.y);
+        ctx.lineTo(C + pk.x, C + pk.y);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
   }
 
   function drawTrail(ctx, b, C) {
@@ -1178,9 +1273,11 @@ canvas {
   }
 
   function drawHudStrip(ctx, table, C) {
-    if (table.mode !== 'challenge' && table.mode !== 'practice') return;
+    var info = table.powerInfo && table.powerInfo();
+    var extra = info ? 20 : 0;
+    if (table.mode !== 'challenge' && table.mode !== 'practice' && !info) return;
     ctx.fillStyle = 'rgba(0,0,0,0.38)';
-    roundRect(ctx, C + Pool.TW - 168, C + 10, 156, table.mode === 'challenge' ? 54 : 36, 8);
+    roundRect(ctx, C + Pool.TW - 168, C + 10, 156, (table.mode === 'challenge' ? 54 : 36) + extra, 8);
     ctx.fill();
     ctx.fillStyle = '#ffe08a';
     ctx.font = 'bold 16px sans-serif';
@@ -1192,6 +1289,11 @@ canvas {
       ctx.font = '12px sans-serif';
       ctx.fillText('杆 ' + table.shotsUsed + '/' + table.maxShots + '  进 ' + table.cleared + '/' + table.need, C + Pool.TW - 156, C + 38);
     }
+    if (info) {
+      ctx.fillStyle = info.color;
+      ctx.font = 'bold 12px sans-serif';
+      ctx.fillText(info.name, C + Pool.TW - 156, C + (table.mode === 'challenge' ? 54 : 36));
+    }
   }
 
   function drawTargets(ctx, balls, C) {
@@ -1201,7 +1303,7 @@ canvas {
     ctx.lineWidth = 2;
     for (i = 0; i < balls.length; i++) {
       b = balls[i];
-      if (b.pocketed || b.group === 'cue') continue;
+      if (b.pocketed || Pool.isCueLike(b)) continue;
       ctx.strokeStyle = 'rgba(255, 220, 80, 0.9)';
       ctx.beginPath();
       ctx.arc(C + b.x, C + b.y, b.r + 7, 0, Math.PI * 2);
@@ -1217,6 +1319,7 @@ canvas {
     drawCue: drawCue,
     drawAim: drawAim,
     drawPower: drawPower,
+    drawPowerAura: drawPowerAura,
     drawSparks: drawSparks,
     drawPops: drawPops,
     drawHudStrip: drawHudStrip,
@@ -1309,6 +1412,45 @@ canvas {
       ]
     }
   ];
+})(typeof window !== 'undefined' ? window : global);
+
+/**
+ * 进球后下一杆可用的超能力。
+ */
+(function (global) {
+  'use strict';
+
+  var Pool = global.Pool || (global.Pool = {});
+
+  Pool.POWERS = [
+    { id: 'burst', name: '爆发杆', info: '打得很用力很用力很用力', color: '#ff6a3a' },
+    { id: 'clone', name: '分身杆', info: '一次打出三个白球', color: '#7ecbff' },
+    { id: 'precision', name: '精准清台', info: '瞄准所有目标球，一杆清台', color: '#ffe08a' }
+  ];
+
+  Pool.powerById = function (id) {
+    var i;
+    for (i = 0; i < Pool.POWERS.length; i++) {
+      if (Pool.POWERS[i].id === id) return Pool.POWERS[i];
+    }
+    return null;
+  };
+
+  Pool.nextPowerId = function (id) {
+    var i;
+    for (i = 0; i < Pool.POWERS.length; i++) {
+      if (Pool.POWERS[i].id === id) {
+        return Pool.POWERS[(i + 1) % Pool.POWERS.length].id;
+      }
+    }
+    return Pool.POWERS[0].id;
+  };
+
+  Pool.pickPowerId = function (avoid) {
+    var list = Pool.POWERS.filter(function (p) { return p.id !== avoid; });
+    if (!list.length) list = Pool.POWERS;
+    return list[Math.floor(Math.random() * list.length)].id;
+  };
 })(typeof window !== 'undefined' ? window : global);
 
 /**
@@ -1436,6 +1578,10 @@ canvas {
     this.aiTimer = 0;
     this.aiLevel = this.mode === 'vsai' ? 0.16 : 0.22;
     this.score = keepScore ? (this.score || 0) : 0;
+    this.pendingPower = keepScore ? this.pendingPower : null;
+    this.activePower = null;
+    this.precisionActive = false;
+    Pool.MAX_SPEED = Pool.DEFAULT_MAX_SPEED;
     this.combo = 0;
     this.stars = 0;
     this.shake = 0;
@@ -1641,9 +1787,18 @@ canvas {
     }
     if (!down) return;
     if (ev.repeat) return;
-    if (this.menuOpen) return;
-    if (ev.code === 'Space' || ev.code === 'Enter') {
+    if (ev.code === 'Digit5' || ev.key === '5') {
       ev.preventDefault();
+      this.cyclePower();
+      return;
+    }
+    if (this.menuOpen) return;
+    if (ev.code === 'Space') {
+      ev.preventDefault();
+      if (this.blockShootOnce) {
+        this.blockShootOnce = false;
+        return;
+      }
       Pool.Sfx.unlock();
       if (this.canPlace()) this.confirmPlace();
       else if (this.canAim()) this.shoot(this.pull > 12 ? this.pull : 150);
@@ -1808,20 +1963,207 @@ canvas {
     this.confirmPlace();
   };
 
+  Table.prototype.powerInfo = function () {
+    return Pool.powerById(this.pendingPower || this.activePower);
+  };
+
+  Table.prototype.cyclePower = function () {
+    if (!this.pendingPower) return;
+    if (!this.canAim() && this.winner !== 0) return;
+    this.pendingPower = Pool.nextPowerId(this.pendingPower);
+    var info = this.powerInfo();
+    if (this.winner < 0) this.msg = '超能力换成：' + info.name + ' — ' + info.info;
+    this.emit();
+  };
+
+  Table.prototype.pickPower = function () {
+    this.pendingPower = Pool.pickPowerId(this.pendingPower);
+    var info = this.powerInfo();
+    this.addPop(Pool.TW / 2, 72, info.name + '！', info.color, 26);
+    if (this.winner < 0) {
+      this.msg = '超能力：' + info.name + '！按 5 换一个，空格发动';
+    }
+    Pool.Sfx.power();
+    this.emit();
+  };
+
+  Table.prototype.maybeGrantPower = function (n) {
+    if (n <= 0) return;
+    if (this.isAiTurn()) return;
+    if (this.winner > 0) return;
+    this.pickPower();
+  };
+
+  Table.prototype.powerTargets = function () {
+    var i, b, out = [], g;
+    g = this.mode === 'vsai' || this.mode === 'hotseat'
+      ? (this.openTable ? null : this.assignment[this.turn])
+      : null;
+    for (i = 0; i < this.balls.length; i++) {
+      b = this.balls[i];
+      if (b.pocketed || Pool.isCueLike(b)) continue;
+      if (this.mode === 'challenge' || this.mode === 'practice') {
+        out.push(b);
+        continue;
+      }
+      if (b.group === 'eight') {
+        if (g && Pool.Rules.remaining(this.balls, g) === 0) out.push(b);
+      } else if (!g || b.group === g) {
+        if (b.group !== 'eight') out.push(b);
+      }
+    }
+    return out;
+  };
+
+  Table.prototype.startPrecision = function (cue, pull) {
+    var i, b, pk, dir, targets = this.powerTargets();
+    this.precisionActive = true;
+    this.firstHit = targets[0] || null;
+    this.recordedFirst = true;
+    cue.vx = this.aimX * (160 + pull * 2);
+    cue.vy = this.aimY * (160 + pull * 2);
+    for (i = 0; i < targets.length; i++) {
+      b = targets[i];
+      pk = Pool.nearestPocket(b);
+      b.seekPocket = pk;
+      dir = Pool.norm(Pool.sub(pk, b));
+      b.vx = dir.x * 1180;
+      b.vy = dir.y * 1180;
+    }
+    this.shake = Math.max(this.shake, 12);
+    this.slow = Math.max(this.slow, 0.45);
+    Pool.Sfx.power();
+  };
+
+  Table.prototype.finishPrecision = function () {
+    var i, b, targets;
+    if (!this.precisionActive && this.activePower !== 'precision') return;
+    targets = this.powerTargets();
+    for (i = 0; i < targets.length; i++) {
+      b = targets[i];
+      if (b.pocketed) continue;
+      b.pocketed = true;
+      b.vx = 0;
+      b.vy = 0;
+      b.seekPocket = null;
+      this.shotPocketed.push(b);
+      this.addPop(b.x, b.y, '进袋!', '#ffe08a', 20);
+      this.addSparks(b.x, b.y, b.color);
+    }
+    this.precisionActive = false;
+  };
+
+  Table.prototype.consumePowerForShot = function () {
+    var used = this.pendingPower;
+    if (used) {
+      this.activePower = used;
+      this.pendingPower = null;
+    }
+    return used || this.activePower;
+  };
+
+  Table.prototype.spawnClones = function (cue) {
+    var perp = Pool.norm({ x: -this.aimY, y: this.aimX });
+    var i, x, y, c, gap;
+    if (!perp.x && !perp.y) perp = { x: 0, y: 1 };
+    for (i = 0; i < 2; i++) {
+      gap = i === 0 ? 20 : -20;
+      x = Pool.clamp(cue.x + perp.x * gap, Pool.R + 2, Pool.TW - Pool.R - 2);
+      y = Pool.clamp(cue.y + perp.y * gap, Pool.R + 2, Pool.TH - Pool.R - 2);
+      c = Pool.makeBall(100 + i, x, y, 'clone', '#e8f6ff', '');
+      this.balls.push(c);
+    }
+  };
+
+  Table.prototype.launchClones = function (power) {
+    var base = Math.atan2(this.aimY, this.aimX);
+    var i, b, ang, extra = 0;
+    for (i = 0; i < this.balls.length; i++) {
+      b = this.balls[i];
+      if (b.pocketed || !Pool.isCueLike(b)) continue;
+      if (b.group === 'cue') ang = base;
+      else {
+        ang = base + (extra === 0 ? -0.24 : 0.24);
+        extra += 1;
+      }
+      b.vx = Math.cos(ang) * power;
+      b.vy = Math.sin(ang) * power;
+    }
+  };
+
+  Table.prototype.mergeClones = function () {
+    var cue = this.cue();
+    var i, b, survivor = null;
+    for (i = 0; i < this.balls.length; i++) {
+      b = this.balls[i];
+      if (b.group !== 'clone' || b.pocketed) continue;
+      if (!survivor) survivor = b;
+    }
+    if (cue && cue.pocketed && survivor) {
+      cue.pocketed = false;
+      cue.x = survivor.x;
+      cue.y = survivor.y;
+      cue.vx = 0;
+      cue.vy = 0;
+    }
+    for (i = this.balls.length - 1; i >= 0; i--) {
+      if (this.balls[i].group === 'clone') this.balls.splice(i, 1);
+    }
+    this.cuePocketed = !cue || !!cue.pocketed;
+  };
+
+  Table.prototype.endPowerAfterShot = function () {
+    Pool.MAX_SPEED = Pool.DEFAULT_MAX_SPEED;
+    var i, b;
+    for (i = 0; i < this.balls.length; i++) {
+      b = this.balls[i];
+      b.seekPocket = null;
+    }
+    this.precisionActive = false;
+    this.activePower = null;
+    return false;
+  };
+
   Table.prototype.shoot = function (pull) {
     var cue = this.cue();
     if (!cue || this.phase !== 'aim') return;
+    var used = this.consumePowerForShot();
     var power = 220 + pull * 9;
-    cue.vx = this.aimX * power;
-    cue.vy = this.aimY * power;
     this.phase = 'rolling';
     this.firstHit = null;
     this.shotPocketed = [];
     this.cuePocketed = false;
     this.recordedFirst = false;
     this.shake = Math.max(this.shake, 3 + pull / 40);
-    Pool.Sfx.cue(pull / 180);
-    this.msg = '球在滚动…';
+
+    if (used === 'burst') {
+      power = 420 + pull * 34;
+      Pool.MAX_SPEED = 5600;
+      this.shake = Math.max(this.shake, 16);
+      Pool.Sfx.burst();
+      this.addPop(cue.x, cue.y - 24, '爆发!!', '#ff6a3a', 24);
+    } else {
+      Pool.Sfx.cue(pull / 180);
+    }
+
+    if (used === 'precision') {
+      this.startPrecision(cue, pull);
+      this.msg = '精准清台发动！';
+      this.emit();
+      return;
+    }
+
+    if (used === 'clone') {
+      this.spawnClones(cue);
+      this.launchClones(power);
+      this.shake = Math.max(this.shake, 10);
+      this.addPop(cue.x, cue.y - 22, '三重白球!', '#7ecbff', 22);
+      this.msg = '三个白球一起打出去了！';
+    } else {
+      cue.vx = this.aimX * power;
+      cue.vy = this.aimY * power;
+      this.msg = '球在滚动…';
+    }
     this.emit();
   };
 
@@ -1839,20 +2181,32 @@ canvas {
         b.trail.shift();
       }
     }
+    for (i = 0; i < this.balls.length; i++) {
+      b = this.balls[i];
+      if (b.pocketed || !b.seekPocket) continue;
+      n = Pool.norm(Pool.sub(b.seekPocket, b));
+      b.vx += n.x * 2600 * dt;
+      b.vy += n.y * 2600 * dt;
+    }
     Pool.integrate(this.balls, dt);
     Pool.hitCushions(this.balls);
 
-    if (!this.recordedFirst && cue && !cue.pocketed) {
-      for (i = 1; i < this.balls.length; i++) {
-        b = this.balls[i];
-        if (b.pocketed) continue;
-        if (Pool.dist(cue, b) > cue.r + b.r + 1.2) continue;
-        rel = (cue.vx - b.vx) * (b.x - cue.x) + (cue.vy - b.vy) * (b.y - cue.y);
-        if (rel > 0) {
-          this.firstHit = b;
-          this.recordedFirst = true;
-          this.shake = Math.max(this.shake, 4);
-          break;
+    if (!this.recordedFirst) {
+      var striker, j;
+      for (j = 0; j < this.balls.length && !this.recordedFirst; j++) {
+        striker = this.balls[j];
+        if (striker.pocketed || !Pool.isCueLike(striker)) continue;
+        for (i = 0; i < this.balls.length; i++) {
+          b = this.balls[i];
+          if (b.pocketed || Pool.isCueLike(b)) continue;
+          if (Pool.dist(striker, b) > striker.r + b.r + 1.2) continue;
+          rel = (striker.vx - b.vx) * (b.x - striker.x) + (striker.vy - b.vy) * (b.y - striker.y);
+          if (rel > 0) {
+            this.firstHit = b;
+            this.recordedFirst = true;
+            this.shake = Math.max(this.shake, 4);
+            break;
+          }
         }
       }
     }
@@ -1874,13 +2228,14 @@ canvas {
       this.shake = Math.max(this.shake, 7);
       for (i = 0; i < fallen.length; i++) {
         this.shotPocketed.push(fallen[i]);
-        if (fallen[i].group === 'cue') this.cuePocketed = true;
-        else {
-          this.addPop(fallen[i].x, fallen[i].y, '进袋!', '#ffe08a', 22);
-          this.addSparks(fallen[i].x, fallen[i].y, fallen[i].color);
-        }
+        if (Pool.isCueLike(fallen[i])) continue;
+        this.addPop(fallen[i].x, fallen[i].y, '进袋!', '#ffe08a', 22);
+        this.addSparks(fallen[i].x, fallen[i].y, fallen[i].color);
       }
-      n = fallen.filter(function (b) { return b.group !== 'cue'; }).length;
+      this.cuePocketed = !this.balls.some(function (ball) {
+        return !ball.pocketed && Pool.isCueLike(ball);
+      });
+      n = fallen.filter(function (b) { return !Pool.isCueLike(b); }).length;
       if (n >= 2) {
         this.addPop(Pool.TW / 2, Pool.TH / 2, '一杆 ' + n + ' 袋!', '#ffd36a', 28);
         Pool.Sfx.combo(n);
@@ -1892,7 +2247,7 @@ canvas {
     var i, b, n = 0, pts, bonus;
     for (i = 0; i < pocketed.length; i++) {
       b = pocketed[i];
-      if (b.group === 'cue') continue;
+      if (Pool.isCueLike(b)) continue;
       n++;
       pts = 100 + (n - 1) * 50;
       if (b.group === 'eight') pts += 50;
@@ -1914,6 +2269,8 @@ canvas {
   };
 
   Table.prototype.finishChallengeShot = function () {
+    this.finishPrecision();
+    this.mergeClones();
     var n = this.awardPockets(this.shotPocketed);
     this.cleared += n;
     this.shotsUsed += 1;
@@ -1953,6 +2310,8 @@ canvas {
       this.msg = '杆数用完了，按 4 重试本关';
       Pool.Sfx.foul();
     }
+    this.maybeGrantPower(n);
+    this.endPowerAfterShot();
     this.emit();
   };
 
@@ -1975,6 +2334,8 @@ canvas {
       return;
     }
 
+    this.finishPrecision();
+    this.mergeClones();
     var shot = {
       firstHit: this.firstHit,
       pocketed: this.shotPocketed,
@@ -1984,7 +2345,8 @@ canvas {
     if (this.mode !== 'practice') {
       Pool.Rules.applyGroups(this, this.shotPocketed, this.turn);
     }
-    if (this.mode === 'practice' || this.turn === 0) this.awardPockets(this.shotPocketed);
+    var nAward = 0;
+    if (this.mode === 'practice' || this.turn === 0) nAward = this.awardPockets(this.shotPocketed);
 
     if (result.win) {
       this.winner = this.turn;
@@ -1992,6 +2354,8 @@ canvas {
       this.msg = this.names[this.turn] + ' 打进 8 号，获胜！';
       if (this.turn === 0) this.addPop(Pool.TW / 2, Pool.TH / 2, '胜利!', '#ffe08a', 32);
       Pool.Sfx.win();
+      if (this.turn === 0) this.maybeGrantPower(nAward || 1);
+      this.endPowerAfterShot();
       this.emit();
       return;
     }
@@ -2001,6 +2365,7 @@ canvas {
       this.phase = 'over';
       this.msg = result.reason || '8 号入袋判负';
       Pool.Sfx.foul();
+      this.endPowerAfterShot();
       this.emit();
       return;
     }
@@ -2019,6 +2384,8 @@ canvas {
       this.placeAnywhere = true;
       this.turn = 0;
       this.msg = this.cuePocketed ? '白球入袋，方向键移动白球，空格放下' : (result.ownIn ? '打进了！空格继续' : '方向键瞄准，空格击打');
+      this.maybeGrantPower(nAward);
+      this.endPowerAfterShot();
       this.emit();
       return;
     }
@@ -2037,6 +2404,8 @@ canvas {
       this.phase = 'aim';
       this.msg = '换人：方向键瞄准，空格击打';
     }
+    if (this.turn === 0) this.maybeGrantPower(nAward);
+    this.endPowerAfterShot();
     this.emit();
   };
 
@@ -2093,9 +2462,10 @@ canvas {
     for (i = 0; i < this.balls.length; i++) Pool.Render.drawTrail(ctx, this.balls[i], C);
     cue = this.cue();
     if (this.phase === 'aim' && cue && !cue.pocketed && this.winner < 0 && !this.isAiTurn()) {
+      Pool.Render.drawPowerAura(ctx, this, C);
       Pool.Render.drawAim(ctx, cue, this.aimX, this.aimY, this.balls, C);
-      Pool.Render.drawCue(ctx, cue, this.aimX, this.aimY, this.pull, C);
-      Pool.Render.drawPower(ctx, this.pull, C);
+      Pool.Render.drawCue(ctx, cue, this.aimX, this.aimY, this.pull, C, this.pendingPower || this.activePower);
+      Pool.Render.drawPower(ctx, this.pull, C, this.pendingPower || this.activePower);
     }
     for (i = 0; i < this.balls.length; i++) Pool.Render.drawBall(ctx, this.balls[i], C);
     Pool.Render.drawSparks(ctx, this.sparks || [], C);
@@ -2130,6 +2500,7 @@ canvas {
   var overlayMsg = doc.getElementById('overlay-msg');
   var modes = doc.getElementById('modes');
   var btnSound = doc.getElementById('btn-sound');
+  var btnPower = doc.getElementById('btn-power');
   var btnReset = doc.getElementById('btn-reset');
   var p0 = doc.getElementById('p0');
   var p1 = doc.getElementById('p1');
@@ -2190,10 +2561,16 @@ canvas {
     if (pad) pad.classList.toggle('is-place', g.phase === 'place');
 
     var t = g.msg;
+    var info = g.powerInfo && g.powerInfo();
     if (g.winner >= 0) t = g.msg;
     else if (g.phase === 'place') t = '方向键移动白球，空格放下';
     else if (g.isAiTurn()) t = '电脑瞄准中…';
     turnEl.innerHTML = '<strong>' + t + '</strong>';
+    if (btnPower) {
+      btnPower.classList.toggle('hidden', !g.pendingPower);
+      btnPower.classList.toggle('is-power', !!g.pendingPower);
+      if (info && g.pendingPower) btnPower.textContent = info.name + ' · 5换';
+    }
 
     var nextBtn = doc.getElementById('btn-next');
     if (g.winner >= 0) {
@@ -2201,7 +2578,8 @@ canvas {
       if (g.mode === 'challenge') {
         overlayTitle.textContent = g.winner === 0 ? g.msg : '再试一次';
         overlayMsg.textContent = g.winner === 0
-          ? ('得分 ' + g.score + (g.stars ? '　' + '★'.repeat(g.stars) : '') + '。回车下一关，4 重试。')
+          ? ('得分 ' + g.score + (g.stars ? '　' + '★'.repeat(g.stars) : '') +
+            (info ? '。带着「' + info.name + '」回车下一关，按 5 可换。' : '。回车下一关，4 重试。'))
           : '按 4 重试本关，或换模式。';
         if (nextBtn) {
           nextBtn.classList.toggle('hidden', !(g.winner === 0 && g.levelIndex < Pool.LEVELS.length - 1));
@@ -2214,12 +2592,14 @@ canvas {
         if (nextBtn) nextBtn.classList.add('hidden');
       }
       modes.style.display = '';
+      g.menuOpen = true;
     } else if (nextBtn) {
       nextBtn.classList.add('hidden');
     }
   }
 
-  function start(mode) {
+  function start(mode, opts) {
+    opts = opts || {};
     overlay.classList.add('hidden');
     if (!table) {
       table = new Pool.Table(canvas, { onHud: renderHud });
@@ -2233,6 +2613,7 @@ canvas {
         renderHud(table);
         return;
       }
+      if (opts.blockShoot) table.blockShootOnce = true;
       renderHud(table);
       return;
     }
@@ -2240,13 +2621,14 @@ canvas {
       if (!(table.mode === 'challenge' && table.winner === 1)) table.levelIndex = 0;
     }
     table.reset(mode, { fresh: mode === 'challenge' && table.winner !== 1 });
+    if (opts && opts.blockShoot) table.blockShootOnce = true;
     renderHud(table);
   }
 
   function openMenu() {
     overlay.classList.remove('hidden');
     overlayTitle.textContent = '八球台球';
-    overlayMsg.textContent = '按 4 闯关（推荐）。1 对战电脑，2 双人，3 练习。方向键瞄准，空格击打。';
+    overlayMsg.textContent = '按空格或 4 开始闯关。进球得超能力：爆发杆、三个白球一起打、精准清台。按 5 换能力。1 对战电脑，2 双人，3 练习。';
     modes.style.display = '';
     if (table) table.menuOpen = true;
   }
@@ -2264,6 +2646,12 @@ canvas {
     btnSound.textContent = muted ? '音效：关' : '音效：开';
   });
 
+  if (btnPower) {
+    btnPower.addEventListener('click', function () {
+      if (table) table.cyclePower();
+    });
+  }
+
   doc.addEventListener('keydown', function (ev) {
     if (ev.repeat) return;
     if (!overlay.classList.contains('hidden')) {
@@ -2272,7 +2660,11 @@ canvas {
       else if (ev.code === 'Digit3' || ev.key === '3') start('practice');
       else if (ev.code === 'Digit4' || ev.key === '4') start('challenge');
       else if (ev.code === 'Enter' && table && table.mode === 'challenge' && table.winner === 0) {
-        start('challenge-next');
+        start('challenge-next', { blockShoot: true });
+      } else if (ev.code === 'Space' || ev.code === 'Enter') {
+        ev.preventDefault();
+        if (table && table.mode === 'challenge' && table.winner === 0) start('challenge-next', { blockShoot: true });
+        else start('challenge', { blockShoot: true });
       }
       return;
     }
@@ -2293,8 +2685,12 @@ canvas {
       if (table) table.setHold(hold.getAttribute('data-hold'), true);
     } else if (shoot) {
       ev.preventDefault();
-      if (!table) return;
       Pool.Sfx.unlock();
+      if (!overlay.classList.contains('hidden') || !table) {
+        if (table && table.mode === 'challenge' && table.winner === 0) start('challenge-next');
+        else start('challenge');
+        return;
+      }
       if (table.canPlace()) table.confirmPlace();
       else if (table.canAim()) table.shoot(table.pull > 12 ? table.pull : 150);
     }
