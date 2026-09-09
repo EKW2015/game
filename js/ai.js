@@ -22,54 +22,40 @@
   function updateAI(dino, others, dt, ctx) {
     if (!dino.alive || dino.isPlayer) return;
 
+    // 被眩晕状态无法行动
+    if (dino.stunned > 0) return { action: 'stunned' };
+
     ctx = ctx || {};
-    var inGrace = ctx.playTime != null && ctx.playTime < (ctx.graceTime || 0);
+    var player = ctx.player;
 
-    // 简单模式：保护期内只漫游，不攻击
-    if (inGrace) {
-      dino.wanderAngle += U.rand(-0.6, 0.6) * dt;
-      var wx = dino.x + Math.cos(dino.wanderAngle) * 200;
-      var wy = dino.y + Math.sin(dino.wanderAngle) * 200;
-      dino.moveToward(wx, wy, 0.2, dt);
-      return { action: 'grace' };
-    }
+    // 魂兽AI：如果玩家距离较近且在视野中，主动扑杀玩家或逃跑
+    if (player && player.alive) {
+      var distToPlayer = U.dist(dino.x, dino.y, player.x, player.y);
+      var biteRange = dino.biteReach() + player.radius * 0.7;
 
-    // 简单模式：AI 基本无视玩家，只互相打闹
-    var hunt = nearest(dino, others, true);
-    var target = hunt.target;
-    var biteRange = dino.biteReach() + (target ? target.radius : 0);
-
-    if (target) {
-      var canEat = dino.canEat(target);
-      var ratio = dino.eatRatio(target);
-      var similar = ratio > 0.75 && ratio < 1.12;
-
-      if (canEat && hunt.dist < dino.radius + target.radius + 30) {
-        dino.moveToward(target.x, target.y, 0.6, dt);
-        if (hunt.dist < biteRange && dino.tryBite()) {
-          return { action: 'bite', target: target };
-        }
-        return { action: 'chase', target: target };
+      // 如果玩家开启了【光明圣龙真身】或者圣龙金身，弱小魂兽本能恐惧逃窜！
+      if (player.avatarMode || player.goldBodyActive) {
+        var fearX = dino.x + (dino.x - player.x);
+        var fearY = dino.y + (dino.y - player.y);
+        dino.moveToward(fearX, fearY, 0.9, dt);
+        return { action: 'flee', target: player };
       }
 
-      if (target.canEat(dino) && hunt.dist < target.radius * 2) {
-        var fleeX = dino.x + (dino.x - target.x);
-        var fleeY = dino.y + (dino.y - target.y);
-        dino.moveToward(fleeX, fleeY, 0.8, dt);
-        return { action: 'flee', target: target };
-      }
-
-      if (similar && hunt.dist < dino.radius * 3 && Math.random() < 0.008) {
-        if (hunt.dist < biteRange && dino.tryBite()) {
-          return { action: 'bite', target: target };
+      // 否则在攻击范围内进行扑咬
+      if (distToPlayer < 260) {
+        dino.moveToward(player.x, player.y, 0.75, dt);
+        if (distToPlayer < biteRange && dino.tryBite()) {
+          return { action: 'bite', target: player };
         }
+        return { action: 'chase', target: player };
       }
     }
 
-    dino.wanderAngle += U.rand(-0.8, 0.8) * dt;
+    // 魂兽之间日常游荡
+    dino.wanderAngle += U.rand(-0.6, 0.6) * dt;
     var wanderX = dino.x + Math.cos(dino.wanderAngle) * 200;
     var wanderY = dino.y + Math.sin(dino.wanderAngle) * 200;
-    dino.moveToward(wanderX, wanderY, 0.22, dt);
+    dino.moveToward(wanderX, wanderY, 0.25, dt);
     return { action: 'wander' };
   }
 

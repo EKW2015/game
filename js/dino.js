@@ -1,84 +1,107 @@
+/**
+ * 斗罗大陆：魂师（光明圣龙）与魂兽角色实体类
+ */
 (function (global) {
   'use strict';
 
   var U = global.Utils;
 
-  var STAGE_COLORS = [
-    { body: '#4caf7a', belly: '#8fd4a8', eye: '#1a3d2e' },
-    { body: '#4a8fd4', belly: '#9ec8f0', eye: '#1a2d4a' },
-    { body: '#e07a3a', belly: '#f0b878', eye: '#4a2010' },
-    { body: '#d44a4a', belly: '#f09090', eye: '#3a1010' }
-  ];
-
-  var PLAYER_COLORS = { body: '#5cd65c', belly: '#b8f0b8', eye: '#1a4a1a' };
-
-  function Dino(opts) {
+  function SoulEntity(opts) {
     this.id = opts.id;
     this.isPlayer = !!opts.isPlayer;
-    this.x = opts.x;
-    this.y = opts.y;
+    this.name = opts.name || (this.isPlayer ? '圣龙斗罗' : '星斗魂兽');
+    this.martialSoul = opts.martialSoul || (this.isPlayer ? '光明圣龙' : '暗夜魔兽');
+    this.beastType = opts.beastType || 'tiger';
+
+    this.x = opts.x || 0;
+    this.y = opts.y || 0;
     this.vx = 0;
     this.vy = 0;
     this.angle = opts.angle || 0;
-    this.mass = opts.mass || 18;
-    this.radius = U.radiusFromMass(this.mass);
-    this.stage = U.evolutionStage(this.mass);
-    this.hp = opts.hp || 100;
-    this.maxHp = this.hp;
-    this.biteCooldown = 0;
-    this.biteAnim = 0;
+
+    // 魂力境界与属性
+    this.level = opts.level || (this.isPlayer ? 78 : 55); // 七环魂圣
+    this.title = U.getTitleByLevel(this.level);
+    this.maxHp = opts.hp || (this.isPlayer ? 2400 : 1200);
+    this.hp = this.maxHp;
+    this.maxMp = opts.mp || (this.isPlayer ? 1000 : 500); // 魂力值 (MP)
+    this.mp = this.maxMp;
+
+    this.attack = opts.attack || (this.isPlayer ? 180 : 90);
+    this.defense = opts.defense || (this.isPlayer ? 120 : 60);
+    this.radius = opts.radius || (this.isPlayer ? 32 : 28);
+
     this.alive = true;
     this.kills = 0;
-    this.ai = opts.ai || null;
+    this.biteCooldown = 0;
+    this.biteAnim = 0;
     this.wanderAngle = U.rand(0, Math.PI * 2);
-    this.name = opts.name || (this.isPlayer ? '你' : '恐龙');
+    this.domainBlessing = false;
+    this._credited = false;
+
+    // 状态标记
+    this.isFlying = false;        // 圣龙之翼飞行中
+    this.flightTime = 0;
+    this.goldBodyActive = false;   // 圣龙金身 (免伤 + 反弹)
+    this.goldBodyTime = 0;
+    this.avatarMode = false;       // 光明圣龙真身 (全属性+300%, 技能0消耗, 免伤)
+    this.avatarTime = 0;
+    this.shieldActive = false;     // 光盾守护
+    this.shieldHp = 0;
+
+    // 减益与控制状态
+    this.stunned = 0;              // 眩晕时间
+    this.blinded = 0;              // 失明时间
+    this.heavyDebuff = 0;          // 太阳重力拳减速/定身
+    this.domainDebuff = false;     // 处于敌对领域属性减半
+    this.domainBurnTime = 0;       // 圣龙火焰灼烧
+    this.hasBadge = this.isPlayer; // 圣龙徽章持有者（免疫领域伤害，获圣龙祝福）
+
+    // 技能冷却记录
+    this.cooldowns = {};
   }
 
-  Dino.prototype.syncStats = function () {
-    this.radius = U.radiusFromMass(this.mass);
-    var newStage = U.evolutionStage(this.mass);
-    if (newStage !== this.stage) {
-      this.stage = newStage;
-      this.maxHp = 80 + this.stage * 35 + this.mass * 0.4;
-      this.hp = Math.min(this.hp + 25, this.maxHp);
-      return true;
-    }
-    return false;
+  SoulEntity.prototype.getSpeed = function () {
+    var base = this.isPlayer ? 180 : 110;
+    if (this.avatarMode) base *= 1.6;
+    if (this.isFlying) base *= 1.8;
+    if (this.heavyDebuff > 0) base *= 0.35; // 太阳重力拳：身体瞬间变沉重
+    if (this.domainDebuff) base *= 0.5;   // 圣龙领域：所有属性削弱一半
+    if (this.stunned > 0) return 0;
+    return base;
   };
 
-  Dino.prototype.speed = function () {
-    var base = 140 + this.stage * 18 - this.mass * 0.35;
-    return this.isPlayer ? base * 1.35 : base * 0.85;
+  SoulEntity.prototype.getEffectiveAttack = function () {
+    var atk = this.attack;
+    if (this.avatarMode) atk *= 4.0; // 全属性暴增300% (即4倍)
+    if (this.domainDebuff) atk *= 0.5;
+    if (this.hasBadge && this.domainBlessing) atk *= 1.3; // 圣龙祝福 全属性提升30%
+    return atk;
   };
 
-  Dino.prototype.biteDamage = function () {
-    return 12 + this.stage * 8 + this.mass * 0.15;
+  SoulEntity.prototype.getEffectiveDefense = function () {
+    var def = this.defense;
+    if (this.avatarMode) def *= 4.0;
+    if (this.goldBodyActive) def *= 99.0; // 圣龙金身免伤
+    if (this.domainDebuff) def *= 0.5;
+    if (this.hasBadge && this.domainBlessing) def *= 1.3;
+    return def;
   };
 
-  Dino.prototype.canEat = function (other) {
-    if (this.isPlayer) {
-      return this.radius > other.radius * 1.02 && this.mass > other.mass * 1.05;
-    }
-    return this.radius > other.radius * 1.12 && this.mass > other.mass * 1.15;
-  };
-
-  Dino.prototype.eatRatio = function (other) {
-    return this.radius / other.radius;
-  };
-
-  Dino.prototype.moveToward = function (tx, ty, power, dt) {
+  SoulEntity.prototype.moveToward = function (tx, ty, power, dt) {
+    if (this.stunned > 0) return;
     var a = U.angleTo(this.x, this.y, tx, ty);
     this.angle = a;
-    var spd = this.speed() * power;
-    this.vx += Math.cos(a) * spd * dt * 3.5;
-    this.vy += Math.sin(a) * spd * dt * 3.5;
+    var spd = this.getSpeed() * power;
+    this.vx += Math.cos(a) * spd * dt * 4;
+    this.vy += Math.sin(a) * spd * dt * 4;
   };
 
-  Dino.prototype.applyFriction = function (dt) {
-    var drag = Math.pow(0.12, dt);
+  SoulEntity.prototype.applyFriction = function (dt) {
+    var drag = Math.pow(0.1, dt);
     this.vx *= drag;
     this.vy *= drag;
-    var max = this.speed() * 1.1;
+    var max = this.getSpeed() * 1.2;
     var v = Math.hypot(this.vx, this.vy);
     if (v > max) {
       this.vx = (this.vx / v) * max;
@@ -86,145 +109,110 @@
     }
   };
 
-  Dino.prototype.updateMotion = function (world, dt) {
+  SoulEntity.prototype.updateMotion = function (world, dt) {
     this.x += this.vx * dt;
     this.y += this.vy * dt;
 
-    if (Math.hypot(this.vx, this.vy) > 8) {
+    if (Math.hypot(this.vx, this.vy) > 10) {
       this.angle = Math.atan2(this.vy, this.vx);
     }
 
     if (this.biteCooldown > 0) this.biteCooldown -= dt;
     if (this.biteAnim > 0) this.biteAnim -= dt;
+    if (this.stunned > 0) this.stunned -= dt;
+    if (this.blinded > 0) this.blinded -= dt;
+    if (this.heavyDebuff > 0) this.heavyDebuff -= dt;
+
+    // 飞行时间倒计时
+    if (this.isFlying) {
+      this.flightTime -= dt;
+      if (this.flightTime <= 0) this.isFlying = false;
+    }
+
+    // 金身时间
+    if (this.goldBodyActive) {
+      this.goldBodyTime -= dt;
+      if (this.goldBodyTime <= 0) this.goldBodyActive = false;
+    }
+
+    // 真身时间
+    if (this.avatarMode) {
+      this.avatarTime -= dt;
+      if (this.avatarTime <= 0) this.avatarMode = false;
+    }
+
+    // 冷却倒计时更新
+    for (var k in this.cooldowns) {
+      if (this.cooldowns[k] > 0) {
+        this.cooldowns[k] -= dt;
+        if (this.cooldowns[k] < 0) this.cooldowns[k] = 0;
+      }
+    }
+
+    // 魂力被动自然恢复
+    if (this.alive && this.mp < this.maxMp) {
+      var regen = 15;
+      if (this.hasBadge && this.domainBlessing) regen += 45; // 领域内圣龙祝福：魂力持续快速恢复
+      this.mp = Math.min(this.maxMp, this.mp + regen * dt);
+    }
   };
 
-  Dino.prototype.groundY = function (world) {
-    if (!world || !world.heightAt) return 0;
-    return world.heightAt(this.x, this.y);
-  };
-
-  Dino.prototype.tryBite = function () {
-    if (this.biteCooldown > 0) return false;
-    this.biteCooldown = 0.38 - this.stage * 0.04;
+  SoulEntity.prototype.tryBite = function () {
+    if (this.biteCooldown > 0 || this.stunned > 0) return false;
+    this.biteCooldown = 0.35;
     this.biteAnim = 0.18;
     return true;
   };
 
-  Dino.prototype.biteReach = function () {
-    return this.radius * 1.55;
+  SoulEntity.prototype.biteReach = function () {
+    return this.radius * (this.avatarMode ? 2.5 : 1.6);
   };
 
-  Dino.prototype.takeDamage = function (amount, from) {
-    this.hp -= amount;
+  SoulEntity.prototype.biteDamage = function () {
+    return this.getEffectiveAttack() * 0.8;
+  };
+
+  SoulEntity.prototype.takeDamage = function (amount, from) {
+    if (this.goldBodyActive || (this.avatarMode && this.isPlayer)) {
+      // 圣龙金身 / 圣龙真身 免疫伤害！反弹冲击波
+      if (this.goldBodyActive && from) {
+        var reflectDmg = amount * 0.6;
+        from.takeDamage(reflectDmg, null);
+      }
+      return false;
+    }
+
+    // 光盾吸收伤害
+    if (this.shieldActive && this.shieldHp > 0) {
+      if (this.shieldHp >= amount) {
+        this.shieldHp -= amount;
+        return false;
+      } else {
+        amount -= this.shieldHp;
+        this.shieldHp = 0;
+        this.shieldActive = false;
+      }
+    }
+
+    var def = this.getEffectiveDefense();
+    var realDamage = Math.max(10, amount * (100 / (100 + def)));
+    this.hp -= realDamage;
+
+    // 击退受力
     if (from) {
-      var push = 120 + from.mass * 0.5;
+      var push = 120;
       var a = U.angleTo(from.x, from.y, this.x, this.y);
       this.vx += Math.cos(a) * push;
       this.vy += Math.sin(a) * push;
     }
-    return this.hp <= 0;
-  };
 
-  Dino.prototype.absorb = function (other) {
-    this.mass += other.mass * 0.85;
-    this.kills += 1;
-    var evolved = this.syncStats();
-    this.hp = Math.min(this.maxHp, this.hp + other.mass * 0.3);
-    return evolved;
-  };
-
-  Dino.prototype.colors = function () {
-    if (this.isPlayer) return PLAYER_COLORS;
-    return STAGE_COLORS[this.stage];
-  };
-
-  Dino.prototype.draw = function (ctx) {
-    if (!this.alive) return;
-
-    var c = this.colors();
-    var r = this.radius;
-    var bite = this.biteAnim > 0 ? this.biteAnim / 0.18 : 0;
-
-    ctx.save();
-    ctx.translate(this.x, this.y);
-    ctx.rotate(this.angle);
-
-    // 尾巴
-    ctx.fillStyle = c.body;
-    ctx.beginPath();
-    ctx.moveTo(-r * 0.35, 0);
-    ctx.lineTo(-r * 1.35, -r * 0.22);
-    ctx.lineTo(-r * 1.1, 0);
-    ctx.lineTo(-r * 1.35, r * 0.22);
-    ctx.closePath();
-    ctx.fill();
-
-    // 身体
-    ctx.fillStyle = c.belly;
-    ctx.beginPath();
-    ctx.ellipse(0, 0, r * 0.95, r * 0.72, 0, 0, Math.PI * 2);
-    ctx.fill();
-
-    ctx.fillStyle = c.body;
-    ctx.beginPath();
-    ctx.ellipse(r * 0.05, 0, r * 0.82, r * 0.62, 0, 0, Math.PI * 2);
-    ctx.fill();
-
-    // 头
-    var headX = r * 0.72 + bite * r * 0.25;
-    ctx.beginPath();
-    ctx.arc(headX, 0, r * 0.48, 0, Math.PI * 2);
-    ctx.fill();
-
-    // 嘴
-    ctx.fillStyle = c.eye;
-    ctx.beginPath();
-    ctx.moveTo(headX + r * 0.2, -r * 0.12);
-    ctx.lineTo(headX + r * 0.55 + bite * r * 0.2, -r * 0.05);
-    ctx.lineTo(headX + r * 0.55 + bite * r * 0.2, r * 0.05);
-    ctx.lineTo(headX + r * 0.2, r * 0.12);
-    ctx.closePath();
-    ctx.fill();
-
-    // 眼睛
-    ctx.fillStyle = '#fff';
-    ctx.beginPath();
-    ctx.arc(headX + r * 0.08, -r * 0.18, r * 0.14, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = c.eye;
-    ctx.beginPath();
-    ctx.arc(headX + r * 0.12, -r * 0.18, r * 0.07, 0, Math.PI * 2);
-    ctx.fill();
-
-    // 腿（俯视小点）
-    ctx.fillStyle = c.body;
-    var leg = r * 0.18;
-    ctx.fillRect(-r * 0.15, -r * 0.55, leg, leg);
-    ctx.fillRect(-r * 0.15, r * 0.38, leg, leg);
-    ctx.fillRect(r * 0.2, -r * 0.45, leg, leg);
-    ctx.fillRect(r * 0.2, r * 0.28, leg, leg);
-
-  ctx.restore();
-
-    // 血条（受伤或玩家时显示）
-    if (this.hp < this.maxHp || this.isPlayer) {
-      var barW = r * 1.6;
-      var bx = this.x - barW / 2;
-      var by = this.y - r - 10;
-      ctx.fillStyle = 'rgba(0,0,0,0.35)';
-      ctx.fillRect(bx, by, barW, 5);
-      ctx.fillStyle = this.isPlayer ? '#5cd65c' : '#e06060';
-      ctx.fillRect(bx, by, barW * (this.hp / this.maxHp), 5);
+    if (this.hp <= 0) {
+      this.hp = 0;
+      this.alive = false;
+      return true;
     }
-
-    // 玩家标记
-    if (this.isPlayer) {
-      ctx.fillStyle = '#5cd65c';
-      ctx.font = 'bold 11px sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText('你', this.x, this.y - r - 16);
-    }
+    return false;
   };
 
-  global.Dino = Dino;
+  global.Dino = SoulEntity;
 })(window);

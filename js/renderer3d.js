@@ -1,5 +1,5 @@
 /**
- * 无限 3D 世界渲染：真实恐龙、区块地形、第一人称相机。
+ * 斗罗大陆：3D光明圣龙与魂师/魂兽世界渲染引擎
  */
 (function (global) {
   'use strict';
@@ -12,13 +12,15 @@
 
     this.meshes = new Map();
     this.particleMeshes = [];
+    this.vfxMeshes = []; // 技能投射物与视觉特效网格
 
     this.scene = new THREE.Scene();
-    this.scene.background = new THREE.Color(0x7ec8f0);
-    this.scene.fog = new THREE.Fog(0xa8daf5, 280, 3200);
+    this.scene.background = new THREE.Color(0x38556b);
+    this.scene.fog = new THREE.Fog(0x4a6a80, 250, 2800);
 
-    this.camera = new THREE.PerspectiveCamera(72, 16 / 9, 2, 5000);
-    this.camera.position.set(0, 80, 0);
+    // 第三人称/自由动作相机视角
+    this.camera = new THREE.PerspectiveCamera(65, 16 / 9, 2, 6000);
+    this.camera.position.set(0, 50, -60);
 
     this.renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true });
     if (!this.renderer.getContext()) throw new Error('WebGL 不可用');
@@ -26,23 +28,28 @@
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    this.renderer.toneMappingExposure = 1.05;
+    this.renderer.toneMappingExposure = 1.15;
 
     this.setupLights();
     this.world = new World(this.scene);
   }
 
   Renderer3D.prototype.setupLights = function () {
-    this.scene.add(new THREE.AmbientLight(0xbfd4ff, 0.45));
-    this.scene.add(new THREE.HemisphereLight(0x87ceeb, 0x3d5c32, 0.55));
+    // 环境天光与地光
+    this.ambientLight = new THREE.AmbientLight(0xfff5e0, 0.55);
+    this.scene.add(this.ambientLight);
 
-    var sun = new THREE.DirectionalLight(0xfff0cc, 1.35);
-    sun.position.set(400, 700, 200);
+    this.hemiLight = new THREE.HemisphereLight(0xffeedd, 0x223322, 0.6);
+    this.scene.add(this.hemiLight);
+
+    // 太阳神光（圣龙金色主光）
+    var sun = new THREE.DirectionalLight(0xffe599, 1.45);
+    sun.position.set(300, 600, 200);
     sun.castShadow = true;
     sun.shadow.mapSize.set(2048, 2048);
     sun.shadow.camera.near = 50;
     sun.shadow.camera.far = 1800;
-    var s = 900;
+    var s = 800;
     sun.shadow.camera.left = -s;
     sun.shadow.camera.right = s;
     sun.shadow.camera.top = s;
@@ -54,66 +61,214 @@
     this.sun = sun;
   };
 
-  Renderer3D.prototype.createDinoMesh = function (dino) {
-    var group = DinoModel.create(dino.colors());
-    if (dino.isPlayer) {
-      var ring = new THREE.Mesh(
-        new THREE.RingGeometry(2.8, 3.2, 32),
-        new THREE.MeshBasicMaterial({ color: 0x66ff66, transparent: true, opacity: 0.45, side: THREE.DoubleSide })
-      );
-      ring.rotation.x = -Math.PI / 2;
-      ring.position.y = 0.2;
-      group.add(ring);
+  Renderer3D.prototype.createEntityMesh = function (entity) {
+    var group;
+    if (entity.isPlayer) {
+      // 玩家：光明圣龙武魂真身与七环
+      group = DinoModel.createSacredDragonMesh(entity.avatarMode);
+      var rings = DinoModel.createSoulRingsGroup();
+      group.add(rings);
+      group.userData.rings = rings;
+    } else {
+      // 敌方魂兽
+      var bType = entity.beastType || 'tiger';
+      group = DinoModel.createSoulBeastMesh(bType);
     }
+
     this.scene.add(group);
-    this.meshes.set(dino.id, group);
+    this.meshes.set(entity.id, group);
     return group;
   };
 
-  Renderer3D.prototype.updateDinoMesh = function (dino, world) {
-    if (dino.isPlayer) {
-      var existing = this.meshes.get(dino.id);
-      if (existing) existing.visible = false;
-      return;
-    }
-
-    var group = this.meshes.get(dino.id) || this.createDinoMesh(dino);
-    if (!dino.alive) {
+  Renderer3D.prototype.updateEntityMesh = function (entity, world, dt) {
+    var group = this.meshes.get(entity.id) || this.createEntityMesh(entity);
+    if (!entity.alive) {
       group.visible = false;
       return;
     }
     group.visible = true;
 
-    var scale = dino.radius / 34;
-    group.scale.setScalar(scale);
-    var gy = world.heightAt(dino.x, dino.y);
-    group.position.set(dino.x, gy, dino.y);
-    group.rotation.y = -dino.angle + Math.PI / 2;
+    // 缩放处理：如果是第七魂技【光明圣龙真身】，体型暴增为百米级圣龙！
+    var baseScale = entity.isPlayer ? (entity.avatarMode ? 3.8 : 1.35) : (entity.radius / 28);
+    group.scale.setScalar(baseScale);
 
-    var bite = dino.biteAnim > 0 ? dino.biteAnim / 0.18 : 0;
-    if (group.userData.jaw) {
-      group.userData.jaw.position.z = 4.25 + bite * 0.5;
-      group.userData.jaw.rotation.x = bite * 0.35;
+    var gy = world.heightAt(entity.x, entity.y);
+    var targetY = gy;
+    if (entity.isPlayer && entity.isFlying) {
+      targetY += 28 + Math.sin(Date.now() * 0.003) * 4; // 圣龙之翼飞行浮空
     }
-    if (group.userData.head) {
-      group.userData.head.rotation.x = -bite * 0.12;
-    }
+    group.position.set(entity.x, targetY, entity.y);
+    group.rotation.y = -entity.angle + Math.PI / 2;
 
-    var moving = Math.hypot(dino.vx, dino.vy) > 15;
-    if (group.userData.legs && moving) {
-      var t = Date.now() * 0.009;
-      for (var i = 0; i < group.userData.legs.length; i++) {
-        var swing = Math.sin(t + (i % 2) * Math.PI) * 0.35;
-        group.userData.legs[i].upper.rotation.x = swing;
-        group.userData.legs[i].lower.rotation.x = -swing * 0.6;
+    // 金身护盾显隐
+    if (group.userData.goldenShield) {
+      group.userData.goldenShield.visible = !!entity.goldBodyActive;
+      if (entity.goldBodyActive) {
+        group.userData.goldenShield.rotation.y += dt * 3.0;
       }
     }
 
+    // 魂环律动与升降旋转
+    if (group.userData.rings) {
+      var rings = group.userData.rings.children;
+      var time = Date.now() * 0.002;
+      for (var r = 0; r < rings.length; r++) {
+        var ring = rings[r];
+        ring.rotation.z += dt * (ring.userData.speed || 1.0);
+        ring.position.y = (ring.userData.baseY || 0.5) + Math.sin(time * (ring.userData.pulseSpeed || 1.5) + r) * 0.35;
+        // 真身开启时所有魂环辉映暴闪
+        if (entity.avatarMode) {
+          ring.material.emissiveIntensity = 1.2 + Math.sin(time * 5) * 0.3;
+        }
+      }
+    }
+
+    // 龙翼振动动画
+    if (group.userData.wings) {
+      var wings = group.userData.wings.userData;
+      var wingFreq = entity.isFlying ? 12 : 3;
+      var wingSwing = Math.sin(Date.now() * 0.001 * wingFreq) * (entity.isFlying ? 0.45 : 0.15);
+      wings.leftWing.rotation.y = wingSwing;
+      wings.rightWing.rotation.y = -wingSwing;
+    }
+
+    // 龙尾优雅摆动
     if (group.userData.tail) {
-      var w = Date.now() * 0.005;
+      var w = Date.now() * 0.004;
       for (var j = 0; j < group.userData.tail.length; j++) {
-        group.userData.tail[j].rotation.y = Math.sin(w + j * 0.6) * 0.08;
+        group.userData.tail[j].rotation.y = Math.sin(w + j * 0.6) * 0.12;
       }
+    }
+
+    // 腿部奔跑/行走动画
+    var moving = Math.hypot(entity.vx, entity.vy) > 15;
+    if (group.userData.legs && moving && !entity.isFlying) {
+      var lt = Date.now() * 0.012;
+      for (var k = 0; k < group.userData.legs.length; k++) {
+        var swing = Math.sin(lt + (k % 2) * Math.PI) * 0.4;
+        group.userData.legs[k].upper.rotation.x = swing;
+      }
+    }
+
+    // 下颚撕咬/吐息动画
+    var bite = entity.biteAnim > 0 ? entity.biteAnim / 0.18 : 0;
+    if (group.userData.jaw) {
+      group.userData.jaw.rotation.x = bite * 0.4;
+    }
+  };
+
+  // 技能法术弹道与特殊视觉对象同步（审判巨剑、太阳神光激光柱、御剑术飞剑、护盾、龙针等）
+  Renderer3D.prototype.syncSkillProjectiles = function (projectiles) {
+    while (this.vfxMeshes.length > projectiles.length) {
+      var oldVfx = this.vfxMeshes.pop();
+      this.scene.remove(oldVfx);
+    }
+
+    while (this.vfxMeshes.length < projectiles.length) {
+      var projGroup = new THREE.Group();
+      this.scene.add(projGroup);
+      this.vfxMeshes.push(projGroup);
+    }
+
+    for (var i = 0; i < projectiles.length; i++) {
+      var p = projectiles[i];
+      var group = this.vfxMeshes[i];
+
+      // 重建几何体（如果类型改变）
+      if (group.userData.type !== p.type) {
+        while (group.children.length > 0) {
+          group.remove(group.children[0]);
+        }
+        group.userData.type = p.type;
+
+        if (p.type === 'sword') {
+          // 御剑术飞剑
+          var blade = new THREE.Mesh(
+            new THREE.BoxGeometry(0.5, 0.1, 4.0),
+            new THREE.MeshStandardMaterial({
+              color: 0xffea00,
+              emissive: 0xffbf00,
+              emissiveIntensity: 0.8,
+              metalness: 0.9,
+              roughness: 0.2
+            })
+          );
+          group.add(blade);
+        } else if (p.type === 'judgment') {
+          // 光耀审判天降巨剑
+          var bigSword = new THREE.Mesh(
+            new THREE.BoxGeometry(2.5, 0.6, 18.0),
+            new THREE.MeshStandardMaterial({
+              color: 0xffffff,
+              emissive: 0xffea00,
+              emissiveIntensity: 1.2,
+              metalness: 0.95
+            })
+          );
+          bigSword.rotation.x = Math.PI / 2; // 垂直向下插击
+          group.add(bigSword);
+
+          // 巨剑光环
+          var halo = new THREE.Mesh(
+            new THREE.TorusGeometry(5, 0.3, 8, 24),
+            new THREE.MeshBasicMaterial({ color: 0xffe600 })
+          );
+          halo.rotation.x = Math.PI / 2;
+          group.add(halo);
+        } else if (p.type === 'laser') {
+          // 追踪太阳神光：粗大金色激光柱
+          var beam = new THREE.Mesh(
+            new THREE.CylinderGeometry(1.2, 1.2, 16.0, 12),
+            new THREE.MeshBasicMaterial({ color: 0xfffa80, transparent: true, opacity: 0.9 })
+          );
+          beam.rotation.x = Math.PI / 2;
+          group.add(beam);
+        } else if (p.type === 'needle') {
+          // 光明龙针
+          var needle = new THREE.Mesh(
+            new THREE.ConeGeometry(0.2, 2.5, 4),
+            new THREE.MeshBasicMaterial({ color: 0xfffa90 })
+          );
+          needle.rotation.x = Math.PI / 2;
+          group.add(needle);
+        } else if (p.type === 'clawBlade') {
+          // 圣龙裂空爪 / 虚空爪光刃
+          var arcBlade = new THREE.Mesh(
+            new THREE.TorusGeometry(3.2, 0.4, 6, 16, Math.PI * 0.8),
+            new THREE.MeshBasicMaterial({ color: 0xffea00 })
+          );
+          arcBlade.rotation.x = Math.PI / 2;
+          group.add(arcBlade);
+        } else if (p.type === 'lightShield') {
+          // 自创四：光盾守护
+          var shield = new THREE.Mesh(
+            new THREE.CylinderGeometry(5.0, 5.0, 0.4, 24),
+            new THREE.MeshStandardMaterial({
+              color: 0xffd700,
+              emissive: 0xffaa00,
+              emissiveIntensity: 0.9,
+              transparent: true,
+              opacity: 0.65,
+              wireframe: true
+            })
+          );
+          shield.rotation.x = Math.PI / 2;
+          group.add(shield);
+        } else {
+          // 默认光球/龙羽
+          var sphere = new THREE.Mesh(
+            new THREE.SphereGeometry(1.5, 8, 8),
+            new THREE.MeshBasicMaterial({ color: 0xffe600 })
+          );
+          group.add(sphere);
+        }
+      }
+
+      group.position.set(p.x, p.y || 12, p.z || p.yPos || 10);
+      if (p.angle != null) {
+        group.rotation.y = -p.angle + Math.PI / 2;
+      }
+      group.visible = p.life > 0;
     }
   };
 
@@ -133,38 +288,48 @@
       var p = particles[i];
       var m = this.particleMeshes[i];
       var gy = world.heightAt(p.x, p.y);
-      m.position.set(p.x, gy + 6 + p.size * 3, p.y);
-      m.scale.setScalar(p.size * p.life * 3);
+      m.position.set(p.x, gy + 4 + (p.zOffset || 0) + p.size * 2, p.y);
+      m.scale.setScalar(p.size * p.life * 2.5);
       m.material.color.set(p.color);
       m.material.opacity = p.life;
       m.visible = p.life > 0;
     }
   };
 
+  // 第三人称史诗追踪跟随摄像机
   Renderer3D.prototype.updateCamera = function (player, dt) {
     if (!player) return;
 
     var ground = this.world.heightAt(player.x, player.y);
-    var eyeHeight = player.radius * 0.55 + 16;
-    var idealX = player.x;
-    var idealY = ground + eyeHeight;
-    var idealZ = player.y;
+    var playerHeight = player.avatarMode ? 45 : 18;
+    var camDistance = player.avatarMode ? 140 : 65;
+    var camHeight = player.avatarMode ? 70 : 35;
 
-    var lerp = 1 - Math.pow(0.0008, dt);
+    // 相机位于角色后上方
+    var camBackAngle = player.angle + Math.PI;
+    var idealX = player.x + Math.cos(camBackAngle) * camDistance;
+    var idealZ = player.y + Math.sin(camBackAngle) * camDistance;
+    var idealY = ground + camHeight;
+    if (player.isFlying) {
+      idealY += 25;
+    }
+
+    var lerp = 1 - Math.pow(0.0005, dt);
     this.camera.position.x += (idealX - this.camera.position.x) * lerp;
     this.camera.position.y += (idealY - this.camera.position.y) * lerp;
     this.camera.position.z += (idealZ - this.camera.position.z) * lerp;
 
-    var lookDist = 140;
+    var lookDist = 40;
     var lookX = player.x + Math.cos(player.angle) * lookDist;
-    var lookY = ground + eyeHeight * 0.95;
+    var lookY = ground + playerHeight;
     var lookZ = player.y + Math.sin(player.angle) * lookDist;
     this.camera.lookAt(lookX, lookY, lookZ);
 
     this.world.update(player.x, player.y);
+    this.world.updateDomainAnim(dt);
 
     if (this.sun) {
-      this.sun.position.set(player.x + 350, 650, player.y + 120);
+      this.sun.position.set(player.x + 350, 650, player.y + 150);
       this.sun.target.position.set(player.x, 0, player.y);
       this.sun.target.updateMatrixWorld();
     }
@@ -180,9 +345,11 @@
     this.renderer.render(this.scene, this.camera);
   };
 
-  Renderer3D.prototype.clearDinos = function () {
+  Renderer3D.prototype.clearEntities = function () {
     this.meshes.forEach(function (g) { this.scene.remove(g); }, this);
     this.meshes.clear();
+    this.vfxMeshes.forEach(function (v) { this.scene.remove(v); }, this);
+    this.vfxMeshes = [];
   };
 
   global.Renderer3D = Renderer3D;

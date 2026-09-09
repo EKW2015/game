@@ -1,5 +1,5 @@
 /**
- * 无限 3D 恐龙世界 —— 自由探索、捕食、进化。
+ * 斗罗大陆：3D光明圣龙对战与游戏世界核心引擎
  */
 (function (global) {
   'use strict';
@@ -9,17 +9,20 @@
   var AI = global.AI;
   var Sfx = global.Sfx;
   var Renderer3D = global.Renderer3D;
+  var SkillManager = global.SkillManager;
 
-  var GRACE_TIME = 10;
-  var PLAYER_START_MASS = 45;
-  var MAX_NPC = 10;
-  var SPAWN_MIN = 280;
-  var SPAWN_MAX = 750;
-  var DESPAWN_DIST = 1400;
+  var MAX_NPC = 12;
+  var SPAWN_MIN = 350;
+  var SPAWN_MAX = 800;
+  var DESPAWN_DIST = 1600;
 
-  var AI_NAMES = [
-    '暴龙', '迅猛龙', '棘龙', '甲龙', '剑龙',
-    '异特龙', '镰刀龙', '三角龙', '双脊龙', '禽龙', '重爪龙', '角龙'
+  var SOUL_BEAST_NAMES = [
+    { name: '万年·暗魔邪神虎', type: 'tiger', level: 68, hp: 3200, atk: 140 },
+    { name: '五万年·暗金恐爪熊', type: 'bear', level: 75, hp: 4500, atk: 180 },
+    { name: '八万年·泰坦巨猿', type: 'ape', level: 82, hp: 6000, atk: 220 },
+    { name: '万年·幽冥影豹', type: 'tiger', level: 60, hp: 2500, atk: 120 },
+    { name: '千年·炽火烈龙兽', type: 'bear', level: 52, hp: 2000, atk: 95 },
+    { name: '十万年·暗影狂魔', type: 'ape', level: 90, hp: 8500, atk: 280 }
   ];
 
   function Game(canvas, hooks) {
@@ -30,12 +33,12 @@
     this.particles = [];
     this.messages = [];
     this.nextId = 1;
-    this.evolveFlash = 0;
     this.playTime = 0;
     this.highKills = this.loadHighKills();
 
     this.r3d = new Renderer3D(canvas);
     this.world = this.r3d.world;
+    this.skills = new SkillManager(this);
 
     this.reset();
     this.resize();
@@ -46,7 +49,7 @@
 
   Game.prototype.loadHighKills = function () {
     try {
-      return parseInt(global.localStorage.getItem('dinoWorld.kills'), 10) || 0;
+      return parseInt(global.localStorage.getItem('douluo3d.kills'), 10) || 0;
     } catch (e) {
       return 0;
     }
@@ -54,7 +57,7 @@
 
   Game.prototype.saveHighKills = function () {
     try {
-      global.localStorage.setItem('dinoWorld.kills', String(this.highKills));
+      global.localStorage.setItem('douluo3d.kills', String(this.highKills));
     } catch (e) {}
   };
 
@@ -63,40 +66,51 @@
     this.particles = [];
     this.messages = [];
     this.nextId = 1;
-    this.evolveFlash = 0;
     this.playTime = 0;
 
-    if (this.r3d) this.r3d.clearDinos();
+    if (this.r3d) this.r3d.clearEntities();
+    if (this.skills) {
+      this.skills.projectiles = [];
+      this.skills.domainActive = false;
+    }
 
-    this.player = this.spawnDino({
+    // 初始化玩家：七环魂帝·光明圣龙魂师
+    this.player = this.spawnEntity({
       isPlayer: true,
       x: 0,
       y: 0,
-      mass: PLAYER_START_MASS,
-      hp: 250,
-      name: '你'
+      level: 78, // 七环魂圣
+      hp: 3500,
+      mp: 1200,
+      attack: 240,
+      defense: 160,
+      name: '圣龙斗罗',
+      martialSoul: '光明圣龙'
     });
 
-    for (var i = 0; i < 6; i++) {
+    for (var i = 0; i < 7; i++) {
       this.spawnNpcNearPlayer();
     }
   };
 
-  Game.prototype.spawnDino = function (opts) {
-    var dino = new Dino({
+  Game.prototype.spawnEntity = function (opts) {
+    var entity = new Dino({
       id: this.nextId++,
       isPlayer: opts.isPlayer,
       x: opts.x,
       y: opts.y,
-      mass: opts.mass || U.rand(12, 28),
-      angle: U.rand(0, Math.PI * 2),
+      level: opts.level,
       hp: opts.hp,
-      name: opts.name || '恐龙'
+      mp: opts.mp,
+      attack: opts.attack,
+      defense: opts.defense,
+      name: opts.name,
+      martialSoul: opts.martialSoul,
+      beastType: opts.beastType
     });
-    dino.syncStats();
-    this.dinos.push(dino);
-    if (this.r3d) this.r3d.createDinoMesh(dino);
-    return dino;
+    this.dinos.push(entity);
+    if (this.r3d) this.r3d.createEntityMesh(entity);
+    return entity;
   };
 
   Game.prototype.spawnNpcNearPlayer = function () {
@@ -106,14 +120,18 @@
     var x = this.player.x + Math.cos(angle) * dist;
     var y = this.player.y + Math.sin(angle) * dist;
 
-    var mass = U.rand(10, 22);
-    if (Math.random() < 0.25) mass = U.rand(this.player.mass * 0.55, this.player.mass * 0.95);
+    var tmpl = SOUL_BEAST_NAMES[U.randInt(0, SOUL_BEAST_NAMES.length - 1)];
 
-    return this.spawnDino({
+    return this.spawnEntity({
       x: x,
       y: y,
-      mass: mass,
-      name: AI_NAMES[U.randInt(0, AI_NAMES.length - 1)]
+      level: tmpl.level,
+      hp: tmpl.hp,
+      mp: 500,
+      attack: tmpl.atk,
+      defense: tmpl.level * 1.5,
+      name: tmpl.name,
+      beastType: tmpl.type
     });
   };
 
@@ -122,7 +140,7 @@
     for (var i = 0; i < this.dinos.length; i++) {
       var d = this.dinos[i];
       if (!d.alive || d.isPlayer) continue;
-      if (U.dist(d.x, d.y, this.player.x, this.player.y) < SPAWN_MAX + 200) n++;
+      if (U.dist(d.x, d.y, this.player.x, this.player.y) < SPAWN_MAX + 300) n++;
     }
     return n;
   };
@@ -134,6 +152,8 @@
       if (d.isPlayer || !d.alive) continue;
       if (U.dist(d.x, d.y, p.x, p.y) > DESPAWN_DIST) {
         d.alive = false;
+        var mesh = this.r3d.meshes.get(d.id);
+        if (mesh) this.r3d.scene.remove(mesh);
         this.r3d.meshes.delete(d.id);
         this.dinos.splice(i, 1);
       }
@@ -147,7 +167,7 @@
     }
   };
 
-  Game.prototype.aliveDinos = function () {
+  Game.prototype.aliveEntities = function () {
     var out = [];
     for (var i = 0; i < this.dinos.length; i++) {
       if (this.dinos[i].alive) out.push(this.dinos[i]);
@@ -160,7 +180,7 @@
     var was = this.state;
     this.state = state;
     if (state === 'playing' && was === 'ready') {
-      this.addMessage('无限世界：自由探索，变大变强！', 3);
+      this.addMessage('武魂觉醒：光明圣龙！按数字键1-7释放七大魂技！', 3.5);
     }
     if (this.hooks.onState) this.hooks.onState(state, this);
   };
@@ -168,6 +188,7 @@
   Game.prototype.press = function (action) {
     if (action === 'bite') this.input.bite = true;
     else if (action in this.input) this.input[action] = true;
+
     if (this.state === 'ready') this.setState('playing');
     else if (this.state === 'over') {
       this.reset();
@@ -194,14 +215,17 @@
     this.messages.push({ text: text, life: duration || 2.2 });
   };
 
-  Game.prototype.addParticles = function (x, y, color, count) {
+  Game.prototype.addParticles = function (x, y, color, count, zOffset) {
     for (var i = 0; i < count; i++) {
       var a = U.rand(0, Math.PI * 2);
-      var spd = U.rand(40, 180);
+      var spd = U.rand(50, 240);
       this.particles.push({
         x: x, y: y,
         vx: Math.cos(a) * spd, vy: Math.sin(a) * spd,
-        life: U.rand(0.3, 0.7), color: color, size: U.rand(2, 6)
+        life: U.rand(0.4, 0.9),
+        color: color || '#ffd700',
+        size: U.rand(2, 6),
+        zOffset: zOffset || 0
       });
     }
   };
@@ -217,7 +241,6 @@
 
   Game.prototype.update = function (dt) {
     if (this.state === 'paused') return;
-    if (this.evolveFlash > 0) this.evolveFlash -= dt;
 
     for (var m = this.messages.length - 1; m >= 0; m--) {
       this.messages[m].life -= dt;
@@ -237,33 +260,17 @@
     this.r3d.updateCamera(this.player, dt);
 
     if (this.state !== 'playing') {
-      if (this.state === 'ready') this.simulateAmbient(dt);
       return;
     }
 
     this.playTime += dt;
 
-    if (this.player.alive && this.player.hp < this.player.maxHp) {
-      this.player.hp = Math.min(this.player.maxHp, this.player.hp + 10 * dt);
-    }
-
     this.updatePlayer(dt);
     this.updateNPCs(dt);
+    this.skills.update(dt);
     this.resolveCombat();
-    this.resolveEating();
+    this.collectDeaths();
     this.maintainPopulation();
-  };
-
-  Game.prototype.simulateAmbient = function (dt) {
-    var alive = this.aliveDinos();
-    var ctx = { playTime: 0, graceTime: GRACE_TIME, player: this.player };
-    for (var i = 0; i < this.dinos.length; i++) {
-      var d = this.dinos[i];
-      if (!d.alive || d.isPlayer) continue;
-      AI.update(d, alive, dt, ctx);
-      d.applyFriction(dt);
-      d.updateMotion(this.world, dt);
-    }
   };
 
   Game.prototype.updatePlayer = function (dt) {
@@ -279,20 +286,48 @@
     if (ax !== 0 || ay !== 0) {
       var len = Math.hypot(ax, ay);
       ax /= len; ay /= len;
-      var spd = p.speed();
-      p.vx += ax * spd * dt * 4;
-      p.vy += ay * spd * dt * 4;
+      var spd = p.getSpeed();
+      p.vx += ax * spd * dt * 4.5;
+      p.vy += ay * spd * dt * 4.5;
       p.angle = Math.atan2(ay, ax);
     }
 
-    if (this.input.bite && p.tryBite()) Sfx.bite();
+    // 普通攻击：圣龙爪击 / 扑咬
+    if (this.input.bite && p.tryBite()) {
+      Sfx.bite();
+      this.performPlayerMeleeAttack();
+    }
+
     p.applyFriction(dt);
     p.updateMotion(this.world, dt);
   };
 
+  Game.prototype.performPlayerMeleeAttack = function () {
+    var p = this.player;
+    var reach = p.biteReach();
+    for (var i = 0; i < this.dinos.length; i++) {
+      var beast = this.dinos[i];
+      if (!beast.alive || beast.isPlayer) continue;
+
+      var d = U.dist(p.x, p.y, beast.x, beast.y);
+      if (d < reach + beast.radius) {
+        var aToB = U.angleTo(p.x, p.y, beast.x, beast.y);
+        if (Math.abs(U.wrapAngle(aToB - p.angle)) < Math.PI * 0.5) {
+          var dmg = p.biteDamage();
+          if (beast.takeDamage(dmg, p)) {
+            this.killEntity(beast, p);
+          } else {
+            Sfx.hit();
+            this.addParticles(beast.x, beast.y, '#ffd700', 8);
+          }
+        }
+      }
+    }
+  };
+
   Game.prototype.updateNPCs = function (dt) {
-    var alive = this.aliveDinos();
-    var ctx = { playTime: this.playTime, graceTime: GRACE_TIME, player: this.player };
+    var alive = this.aliveEntities();
+    var ctx = { playTime: this.playTime, player: this.player };
     for (var i = 0; i < this.dinos.length; i++) {
       var d = this.dinos[i];
       if (!d.alive || d.isPlayer) continue;
@@ -305,82 +340,64 @@
   Game.prototype.resolveCombat = function () {
     for (var i = 0; i < this.dinos.length; i++) {
       var attacker = this.dinos[i];
-      if (!attacker.alive || attacker.biteAnim <= 0) continue;
+      if (!attacker.alive || attacker.isPlayer || attacker.biteAnim <= 0) continue;
 
-      for (var j = 0; j < this.dinos.length; j++) {
-        var victim = this.dinos[j];
-        if (!victim.alive || victim.id === attacker.id) continue;
+      var victim = this.player;
+      if (!victim || !victim.alive) continue;
 
-        var d = U.dist(attacker.x, attacker.y, victim.x, victim.y);
-        if (d > attacker.biteReach() + victim.radius * 0.6) continue;
+      var d = U.dist(attacker.x, attacker.y, victim.x, victim.y);
+      if (d > attacker.biteReach() + victim.radius * 0.7) continue;
 
-        var angleToVictim = U.angleTo(attacker.x, attacker.y, victim.x, victim.y);
-        if (Math.abs(U.wrapAngle(angleToVictim - attacker.angle)) > Math.PI * 0.55) continue;
-        if (attacker.canEat(victim)) continue;
-
-        var dmg = attacker.biteDamage();
-        if (victim.isPlayer) dmg *= 0.3;
-
-        if (victim.takeDamage(dmg, attacker)) {
-          this.killDino(victim, attacker);
-        }
-        this.addParticles(victim.x, victim.y, '#ff6060', 4);
+      var dmg = attacker.biteDamage();
+      if (victim.takeDamage(dmg, attacker)) {
+        this.killEntity(victim, attacker);
+      } else {
+        Sfx.hit();
+        this.addParticles(victim.x, victim.y, '#ff4444', 6);
       }
     }
   };
 
-  Game.prototype.resolveEating = function () {
+  Game.prototype.collectDeaths = function () {
     for (var i = 0; i < this.dinos.length; i++) {
-      var eater = this.dinos[i];
-      if (!eater.alive) continue;
-
-      for (var j = 0; j < this.dinos.length; j++) {
-        var prey = this.dinos[j];
-        if (!prey.alive || prey.id === eater.id) continue;
-
-        var d = U.dist(eater.x, eater.y, prey.x, prey.y);
-        if (d > eater.radius + prey.radius * (eater.isPlayer ? 0.8 : 0.55)) continue;
-        if (!eater.canEat(prey)) continue;
-
-        var evolved = eater.absorb(prey);
-        prey.alive = false;
-        Sfx.eat();
-        this.addParticles(prey.x, prey.y, eater.colors().body, 12);
-        this.addMessage(eater.isPlayer ? '吞食 ' + prey.name + '！' : prey.name + ' 被吞食', 1.8);
-
-        if (evolved && eater.isPlayer) {
-          Sfx.evolve();
-          this.evolveFlash = 0.6;
-          this.addMessage('进化 → ' + U.stageName(eater.mass) + '！', 2.5);
-        }
-
-        if (eater.isPlayer) {
-          if (eater.kills > this.highKills) {
-            this.highKills = eater.kills;
-            this.saveHighKills();
-          }
-        }
+      var d = this.dinos[i];
+      if (!d.alive && !d._credited) {
+        this.killEntity(d, d.isPlayer ? null : this.player);
       }
     }
   };
 
-  Game.prototype.killDino = function (victim, killer) {
+  Game.prototype.killEntity = function (victim, killer) {
+    if (!victim || victim._credited) return;
+    victim._credited = true;
     victim.alive = false;
-    this.addParticles(victim.x, victim.y, '#888888', 8);
+    this.addParticles(victim.x, victim.y, '#ffd700', 30);
 
-    if (killer) {
+    if (killer && killer.isPlayer) {
       killer.kills += 1;
-      killer.mass += victim.mass * 0.25;
-      if (killer.syncStats() && killer.isPlayer) {
-        Sfx.evolve();
-        this.addMessage('进化 → ' + U.stageName(killer.mass) + '！', 2.5);
+      killer.mp = Math.min(killer.maxMp, killer.mp + 150); // 击杀魂兽恢复大量魂力
+      killer.hp = Math.min(killer.maxHp, killer.hp + 200);
+
+      // 击杀吸收魂环，提升魂力等级与战力
+      killer.level += 1;
+      killer.title = U.getTitleByLevel(killer.level);
+      killer.attack += 15;
+      killer.defense += 10;
+      killer.maxHp += 120;
+      killer.hp += 120;
+      Sfx.absorb();
+      this.addMessage('击杀【' + victim.name + '】！吸收魂环，等级提升至 ' + killer.level + ' 级（' + killer.title + '）！', 3.0);
+
+      if (killer.kills > this.highKills) {
+        this.highKills = killer.kills;
+        this.saveHighKills();
       }
     }
 
     if (victim.isPlayer) {
       Sfx.die();
       this.setState('over');
-      this.addMessage('你被击败了… 按 R 重新开始', 4);
+      this.addMessage('魂力耗尽倒下… 按 R 重新开始', 4);
     }
   };
 
@@ -392,11 +409,12 @@
     this.r3d.resize(w, h);
   };
 
-  Game.prototype.draw = function () {
+  Game.prototype.draw = function (dt) {
     var w = this.world;
     for (var i = 0; i < this.dinos.length; i++) {
-      this.r3d.updateDinoMesh(this.dinos[i], w);
+      this.r3d.updateEntityMesh(this.dinos[i], w, dt);
     }
+    this.r3d.syncSkillProjectiles(this.skills.projectiles);
     this.r3d.syncParticles(this.particles, w);
     this.r3d.render();
     if (this.hooks.onHud) this.hooks.onHud(this);

@@ -10,7 +10,7 @@ const root = path.join(__dirname, '..');
 const css = fs.readFileSync(path.join(root, 'css/style.css'), 'utf8');
 const three = fs.readFileSync(path.join(root, 'js/vendor/three.min.js'), 'utf8');
 const jsFiles = [
-  'utils.js', 'audio.js', 'dino.js', 'dinomodel.js', 'world.js',
+  'utils.js', 'audio.js', 'dinomodel.js', 'skills.js', 'dino.js', 'world.js',
   'ai.js', 'renderer3d.js', 'game.js', 'main.js'
 ];
 const js = jsFiles.map(function (f) {

@@ -1,13 +1,14 @@
 :root {
-  --page-bg: #0f2418;
-  --card-bg: #1a3d28;
-  --ink: #e8f0e8;
-  --ink-soft: #9cb8a8;
-  --line: rgba(200, 230, 210, 0.16);
-  --accent: #5cd65c;
-  --accent-ink: #0f2418;
-  --win: #ffcc66;
-  --shadow: 0 18px 40px -24px rgba(0, 0, 0, 0.7);
+  --page-bg: #0b1118;
+  --card-bg: #141c24;
+  --ink: #f0f4f8;
+  --ink-soft: #9bb0c1;
+  --line: rgba(255, 215, 0, 0.22);
+  --accent: #ffd700;
+  --accent-gold: #ffb800;
+  --accent-ink: #110d02;
+  --win: #ffdd44;
+  --shadow: 0 18px 45px -20px rgba(0, 0, 0, 0.85);
   --radius: 14px;
   color-scheme: dark;
 }
@@ -16,8 +17,7 @@
   box-sizing: border-box;
 }
 
-html,
-body {
+html, body {
   margin: 0;
   padding: 0;
 }
@@ -27,8 +27,8 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 24px 16px calc(24px + env(safe-area-inset-bottom));
-  background: var(--page-bg);
+  padding: 20px 16px calc(24px + env(safe-area-inset-bottom));
+  background: radial-gradient(circle at 50% 20%, #172433 0%, var(--page-bg) 100%);
   color: var(--ink);
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
     "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", sans-serif;
@@ -36,10 +36,10 @@ body {
 }
 
 .page {
-  width: min(1000px, 100%);
+  width: min(1120px, 100%);
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 14px;
 }
 
 .page__header {
@@ -52,10 +52,11 @@ body {
 
 .page__title {
   margin: 0;
-  font-size: clamp(20px, 4vw, 28px);
-  font-weight: 700;
-  letter-spacing: 0.06em;
+  font-size: clamp(20px, 3.8vw, 26px);
+  font-weight: 800;
+  letter-spacing: 0.08em;
   color: var(--accent);
+  text-shadow: 0 0 16px rgba(255, 215, 0, 0.4);
 }
 
 .page__tools {
@@ -72,12 +73,13 @@ body {
   background: var(--card-bg);
   color: var(--ink-soft);
   cursor: pointer;
-  transition: color 0.2s ease, border-color 0.2s ease;
+  transition: all 0.2s ease;
 }
 
 .tool:hover {
-  color: var(--ink);
-  border-color: var(--ink-soft);
+  color: #fff;
+  border-color: var(--accent);
+  box-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
 }
 
 .tool:disabled {
@@ -94,16 +96,16 @@ body {
   border: 1px solid var(--line);
   touch-action: manipulation;
   user-select: none;
-  min-height: 360px;
+  min-height: 400px;
 }
 
 .stage__canvas {
   display: block;
   width: 100%;
-  min-height: 360px;
+  min-height: 400px;
   height: auto;
   aspect-ratio: 16 / 9;
-  background: #7ec8f0;
+  background: #38556b;
 }
 
 .crosshair {
@@ -114,15 +116,16 @@ body {
   height: 18px;
   margin: -9px 0 0 -9px;
   pointer-events: none;
-  opacity: 0.55;
+  opacity: 0.65;
 }
 
 .crosshair::before,
 .crosshair::after {
   content: "";
   position: absolute;
-  background: rgba(255, 255, 255, 0.85);
+  background: #ffd700;
   border-radius: 1px;
+  box-shadow: 0 0 6px rgba(255, 215, 0, 0.8);
 }
 
 .crosshair::before {
@@ -146,59 +149,186 @@ body {
   font-size: 0.45em;
   padding: 2px 8px;
   border-radius: 6px;
-  background: linear-gradient(135deg, #5cd65c, #3a9ad9);
-  color: #0f2418;
+  background: linear-gradient(135deg, #ffd700, #ff8c00);
+  color: #1a0f00;
+  font-weight: 900;
   vertical-align: middle;
   letter-spacing: 0.05em;
 }
 
+/* 斗罗大陆专属 HUD 界面 */
 .hud {
   position: absolute;
   inset: 0;
   pointer-events: none;
-  padding: 12px;
+  padding: 14px;
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
 }
 
 .hud__panel {
-  background: rgba(0, 0, 0, 0.5);
-  color: #e8f0e8;
-  padding: 8px 12px;
-  border-radius: 8px;
-  font-size: 12px;
-  line-height: 1.7;
+  background: rgba(10, 16, 24, 0.78);
+  border: 1px solid rgba(255, 215, 0, 0.3);
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.6);
+  color: #f0f4f8;
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-size: 13px;
+  line-height: 1.8;
+  backdrop-filter: blur(4px);
+}
+
+.hud__bar-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 2px;
+}
+
+.hud__bar {
+  width: 110px;
+  height: 8px;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.hud__bar-inner-hp {
+  height: 100%;
+  background: linear-gradient(90deg, #ff4444, #ff8888);
+  width: 100%;
+  transition: width 0.15s ease;
+}
+
+.hud__bar-inner-mp {
+  height: 100%;
+  background: linear-gradient(90deg, #3399ff, #66ccff);
+  width: 100%;
+  transition: width 0.15s ease;
 }
 
 .hud__panel strong {
-  color: #5cd65c;
+  color: var(--accent);
 }
 
 .hud__remain {
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(10, 16, 24, 0.78);
+  border: 1px solid rgba(255, 215, 0, 0.3);
   color: #ffcc66;
-  padding: 6px 12px;
-  border-radius: 8px;
+  padding: 8px 14px;
+  border-radius: 10px;
   font-size: 13px;
   font-weight: 600;
+  backdrop-filter: blur(4px);
+  text-align: right;
+  line-height: 1.6;
+}
+
+.hud__buffs {
+  margin-top: 4px;
+  font-size: 12px;
+  color: #88ff88;
 }
 
 .toast {
   position: absolute;
-  top: 50%;
+  top: 18%;
   left: 50%;
-  transform: translate(-50%, -80px);
-  background: rgba(0, 0, 0, 0.55);
+  transform: translate(-50%, -50%);
+  background: linear-gradient(135deg, rgba(20, 26, 36, 0.92), rgba(35, 45, 60, 0.92));
+  border: 1px solid #ffd700;
+  box-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
   color: #fff;
-  padding: 8px 18px;
+  padding: 10px 24px;
   border-radius: 999px;
-  font-size: 14px;
-  font-weight: 600;
+  font-size: 15px;
+  font-weight: 700;
   opacity: 0;
-  transition: opacity 0.2s ease;
+  transition: opacity 0.25s ease, transform 0.25s ease;
   pointer-events: none;
   white-space: nowrap;
+  letter-spacing: 0.05em;
+  z-index: 20;
+}
+
+/* 技能快捷控制栏 */
+.skill-bar-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: var(--card-bg);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 12px;
+}
+
+.skill-category-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--accent);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 2px;
+}
+
+.skill-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 8px;
+}
+
+.skill-btn {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 215, 0, 0.25);
+  color: var(--ink);
+  padding: 8px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
+  font-size: 12px;
+  transition: all 0.15s ease;
+  text-align: left;
+}
+
+.skill-btn:hover {
+  background: rgba(255, 215, 0, 0.15);
+  border-color: var(--accent);
+  transform: translateY(-1px);
+}
+
+.skill-btn:active {
+  transform: translateY(1px);
+}
+
+.skill-btn.ring-yellow { border-left: 4px solid #f6d32d; }
+.skill-btn.ring-purple { border-left: 4px solid #b55fe6; }
+.skill-btn.ring-black  { border-left: 4px solid #555566; }
+.skill-btn.ring-red    { border-left: 4px solid #ff3344; background: rgba(255, 51, 68, 0.1); }
+.skill-btn.bone        { border-left: 4px solid #ffaa00; }
+.skill-btn.domain      { border-left: 4px solid #ffd700; background: rgba(255, 215, 0, 0.12); }
+
+.skill-btn .s-key {
+  font-size: 11px;
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.skill-btn .s-name {
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  width: 100%;
+}
+
+.skill-btn .s-cost {
+  font-size: 11px;
+  color: #66ccff;
 }
 
 .overlay {
@@ -208,12 +338,13 @@ body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  padding: 16px;
+  gap: 10px;
+  padding: 20px;
   text-align: center;
   pointer-events: none;
-  background: rgba(10, 24, 16, 0.55);
-  backdrop-filter: blur(1px);
+  background: rgba(10, 16, 24, 0.85);
+  backdrop-filter: blur(4px);
+  z-index: 30;
 }
 
 .overlay--hidden {
@@ -222,60 +353,52 @@ body {
 
 .overlay__title {
   margin: 0;
-  font-size: clamp(20px, 4vw, 28px);
-  font-weight: 700;
+  font-size: clamp(22px, 4.5vw, 32px);
+  font-weight: 800;
   letter-spacing: 0.12em;
-}
-
-.overlay__title--win {
-  color: var(--win);
+  color: var(--accent);
+  text-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
 }
 
 .overlay__hint,
 .overlay__score {
   margin: 0;
-  font-size: 13px;
-  color: var(--ink-soft);
-  max-width: 420px;
-}
-
-.overlay__score strong {
-  color: var(--ink);
-}
-
-.overlay__record {
-  display: block;
-  margin-top: 6px;
   font-size: 14px;
-  color: var(--accent);
+  color: var(--ink-soft);
+  max-width: 520px;
+  line-height: 1.6;
 }
 
 .overlay__button {
   pointer-events: auto;
-  margin-top: 10px;
+  margin-top: 14px;
   font: inherit;
-  font-size: 14px;
-  padding: 10px 28px;
+  font-size: 15px;
+  padding: 12px 36px;
   border: 0;
   border-radius: 999px;
-  background: var(--accent);
-  color: var(--accent-ink);
-  font-weight: 600;
+  background: linear-gradient(135deg, #ffd700, #ffaa00);
+  color: #1a0f00;
+  font-weight: 700;
   cursor: pointer;
+  box-shadow: 0 6px 20px rgba(255, 170, 0, 0.4);
+  transition: all 0.2s ease;
 }
 
 .overlay__button:hover {
-  filter: brightness(1.08);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(255, 170, 0, 0.6);
 }
 
 kbd {
   display: inline-block;
   min-width: 20px;
-  padding: 1px 6px;
+  padding: 2px 6px;
   border: 1px solid var(--line);
   border-radius: 5px;
   background: var(--card-bg);
   font-size: 11px;
+  color: var(--accent);
 }
 
 .touch {
@@ -310,12 +433,12 @@ kbd {
   flex: 1;
   font: inherit;
   font-size: 16px;
-  font-weight: 600;
+  font-weight: 700;
   padding: 20px;
   border-radius: 12px;
   border: 1px solid var(--line);
-  background: #c44a4a;
-  color: #fff;
+  background: linear-gradient(135deg, #ffd700, #ff9900);
+  color: #1a0f00;
   cursor: pointer;
 }
 
@@ -334,9 +457,9 @@ kbd {
 
 .legend__title {
   margin: 0 0 10px;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--ink-soft);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--accent);
   letter-spacing: 0.1em;
 }
 
@@ -345,13 +468,12 @@ kbd {
   padding: 0;
   list-style: none;
   display: grid;
-  gap: 6px;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 8px;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
   font-size: 13px;
+  line-height: 1.6;
 }
 
-.legend__note {
-  margin: 12px 0 0;
-  font-size: 12px;
-  color: var(--ink-soft);
+.legend__list li strong {
+  color: var(--accent);
 }

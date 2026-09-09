@@ -3,67 +3,200 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <meta name="description" content="无限 3D 恐龙世界：自由探索、捕食、进化。" />
-    <meta name="theme-color" content="#1a3d28" />
-    <title>无限恐龙世界 3D</title>
-    <style>html,body{background:#0f2418!important;min-height:100vh;margin:0}</style>
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='14' font-size='14'>🦖</text></svg>" />
+    <meta name="description" content="3D 斗罗大陆：武魂光明圣龙，七大魂技、自创魂技、九万年魂骨技与圣龙主迹领域！" />
+    <meta name="theme-color" content="#0b1118" />
+    <title>3D 斗罗大陆：光明圣龙</title>
+    <style>html,body{background:#0b1118!important;min-height:100vh;margin:0}</style>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='14' font-size='14'>🐉</text></svg>" />
     <link rel="stylesheet" href="css/style.css" />
   </head>
   <body>
-    <div id="boot-screen" style="position:fixed;inset:0;background:#0f2418;z-index:99999;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#5cd65c;font-family:sans-serif;text-align:center;padding:20px">
-      <div style="font-size:56px;margin-bottom:12px">🦖</div>
-      <div style="font-size:24px;font-weight:bold">无限恐龙世界 3D</div>
-      <div id="boot-msg" style="font-size:15px;color:#9cb8a8;margin-top:14px">正在加载 3D 引擎，请稍候…</div>
+    <div id="boot-screen" style="position:fixed;inset:0;background:#0b1118;z-index:99999;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#ffd700;font-family:sans-serif;text-align:center;padding:20px">
+      <div style="font-size:60px;margin-bottom:12px">🐉</div>
+      <div style="font-size:26px;font-weight:bold;letter-spacing:2px">3D 斗罗大陆：光明圣龙</div>
+      <div id="boot-msg" style="font-size:15px;color:#9bb0c1;margin-top:14px">正在觉醒武魂光明圣龙，构建星斗大森林 3D 世界…</div>
     </div>
+
     <main class="page">
       <header class="page__header">
-        <h1 class="page__title">无限恐龙世界 <span class="badge-3d">3D</span></h1>
+        <h1 class="page__title">3D 斗罗大陆 · 光明圣龙 <span class="badge-3d">3D 引擎</span></h1>
         <div class="page__tools">
           <button id="btn-sound" class="tool" type="button" aria-pressed="false">音效：开</button>
           <button id="btn-pause" class="tool" type="button">暂停</button>
         </div>
       </header>
 
+      <!-- 3D 渲染舞台 -->
       <div class="stage" id="stage">
-        <canvas id="game" class="stage__canvas" role="img" aria-label="无限 3D 恐龙世界"></canvas>
+        <canvas id="game" class="stage__canvas" role="img" aria-label="3D 斗罗大陆世界"></canvas>
         <div class="crosshair" aria-hidden="true"></div>
 
+        <!-- 魂师战斗状态 HUD -->
         <div class="hud" id="hud">
           <div class="hud__panel">
-            <div>阶段: <strong id="hud-stage">幼龙</strong></div>
-            <div>体型: <strong id="hud-mass">45</strong></div>
-            <div>击杀: <strong id="hud-kills">0</strong></div>
+            <div>武魂: <strong id="hud-soul">光明圣龙</strong> · <span id="hud-title" style="color:#ffd700">魂圣</span></div>
+            <div class="hud__bar-wrap">
+              <span>生命:</span>
+              <div class="hud__bar"><div id="hud-hp-bar" class="hud__bar-inner-hp"></div></div>
+              <strong id="hud-hp">3500/3500</strong>
+            </div>
+            <div class="hud__bar-wrap">
+              <span>魂力:</span>
+              <div class="hud__bar"><div id="hud-mp-bar" class="hud__bar-inner-mp"></div></div>
+              <strong id="hud-mp" style="color:#66ccff">1200/1200</strong>
+            </div>
+            <div>魂力等级: <strong id="hud-level">78 级</strong></div>
+            <div class="hud__buffs" id="hud-buffs">魂环：黄 紫 紫 黑 黑 黑 红</div>
           </div>
-          <div class="hud__remain">最高击杀 <strong id="hud-best">0</strong></div>
+          <div class="hud__remain">
+            <div>击杀魂兽: <strong id="hud-kills">0</strong></div>
+            <div>最高击杀: <strong id="hud-best">0</strong></div>
+            <div id="hud-domain-status" style="color:#ffd700;margin-top:4px">领域：待命</div>
+          </div>
         </div>
 
+        <!-- 技能与战斗信息飘字提示 -->
         <div class="toast" id="toast"></div>
 
+        <!-- 游戏初始界面 -->
         <div class="overlay" id="overlay-ready">
-          <p class="overlay__title">无限 3D 恐龙世界 🌍</p>
-          <p class="overlay__hint">第一人称视角 · 无限大地图 · 自由探索</p>
-          <p class="overlay__hint">方向键移动 · 靠近小恐龙吞食 · 不断进化变大</p>
-          <button class="overlay__button" type="button" data-action="start">进入世界</button>
+          <p class="overlay__title">3D 斗罗大陆 · 光明圣龙 🐉</p>
+          <p class="overlay__hint">武魂：光明圣龙 · 七环魂圣（黄 紫 紫 黑 黑 黑 红）</p>
+          <p class="overlay__hint">全套资料完整收录：七大魂技 + 七大自创魂技 + 九万年双臂魂骨技 + 十万年圣龙主迹领域！</p>
+          <p class="overlay__hint">操作：WASD / 方向键移动，空格键龙爪撕咬，数字键 1-7 及快捷栏释放技能</p>
+          <button class="overlay__button" type="button" data-action="start">觉醒武魂 · 进入世界</button>
         </div>
 
+        <!-- 死亡界面 -->
         <div class="overlay overlay--hidden" id="overlay-over">
-          <p class="overlay__title">你被击败了</p>
+          <p class="overlay__title">魂力耗尽 · 战斗落幕</p>
           <p class="overlay__score" id="death-stats"></p>
-          <button class="overlay__button" type="button" data-action="restart">重新开始</button>
+          <button class="overlay__button" type="button" data-action="restart">涅槃重生</button>
         </div>
 
+        <!-- 暂停界面 -->
         <div class="overlay overlay--hidden" id="overlay-paused">
-          <p class="overlay__title">已暂停</p>
-          <button class="overlay__button" type="button" data-action="resume">继续探索</button>
+          <p class="overlay__title">大森林冥想中</p>
+          <button class="overlay__button" type="button" data-action="resume">继续前行</button>
         </div>
 
+        <!-- 错误提示 -->
         <div class="overlay overlay--hidden" id="overlay-error">
-          <p class="overlay__title">3D 加载失败</p>
-          <p class="overlay__hint" id="error-msg">请用 Chrome 浏览器打开 play.html</p>
+          <p class="overlay__title">3D 引擎加载异常</p>
+          <p class="overlay__hint" id="error-msg">请在 Chrome 浏览器中运行本游戏</p>
         </div>
       </div>
 
+      <!-- 技能快捷释放控制面板 (支持键位与直接点击) -->
+      <section class="skill-bar-container">
+        <!-- 1. 七大武魂魂技 -->
+        <div class="skill-category-title">
+          <span>🌟 七大武魂魂技 (黄·紫·紫·黑·黑·黑·红)</span>
+        </div>
+        <div class="skill-grid">
+          <button class="skill-btn ring-yellow" data-skill="ring1" title="净化与撕裂，克制一切黑暗">
+            <span class="s-key">[1] 第一魂技</span>
+            <span class="s-name">光明龙爪</span>
+            <span class="s-cost">魂力 25</span>
+          </button>
+          <button class="skill-btn ring-purple" data-skill="ring2" title="凝聚光翼飞行，暴增移速并散射龙羽">
+            <span class="s-key">[2] 第二魂技</span>
+            <span class="s-name">圣龙之翼</span>
+            <span class="s-cost">魂力 40</span>
+          </button>
+          <button class="skill-btn ring-purple" data-skill="ring3" title="龙吟声波范围眩晕、失明、降低防御">
+            <span class="s-key">[3] 第三魂技</span>
+            <span class="s-name">光明龙啸</span>
+            <span class="s-cost">魂力 50</span>
+          </button>
+          <button class="skill-btn ring-black" data-skill="ring4" title="金纹龙鳞甲，免疫大部分伤害与控制，反弹冲击波">
+            <span class="s-key">[4] 第四魂技</span>
+            <span class="s-name">圣龙金身</span>
+            <span class="s-cost">魂力 70</span>
+          </button>
+          <button class="skill-btn ring-black" data-skill="ring5" title="天降光明巨剑单体穿透并灼烧生命">
+            <span class="s-key">[5] 第五魂技</span>
+            <span class="s-name">光耀审判击</span>
+            <span class="s-cost">魂力 90</span>
+          </button>
+          <button class="skill-btn ring-black" data-skill="ring6" title="弯曲拐弯自动追踪目标激光柱">
+            <span class="s-key">[6] 第六魂技</span>
+            <span class="s-name">追踪太阳神光</span>
+            <span class="s-cost">魂力 110</span>
+          </button>
+          <button class="skill-btn ring-red" data-skill="ring7" title="化身百米圣龙，全属性暴增300%，免伤且前六魂技0消耗">
+            <span class="s-key">[7] 第七魂技</span>
+            <span class="s-name">光明圣龙真身</span>
+            <span class="s-cost">魂力 150</span>
+          </button>
+        </div>
+
+        <!-- 2. 七大自创魂技 -->
+        <div class="skill-category-title" style="margin-top:8px">
+          <span>⚡ 七大自创魂技</span>
+        </div>
+        <div class="skill-grid">
+          <button class="skill-btn" data-skill="custom1" title="压缩光明魂力，二次金色爆炸">
+            <span class="s-key">[Q] 自创一</span>
+            <span class="s-name">圣龙爆破拳</span>
+            <span class="s-cost">魂力 30</span>
+          </button>
+          <button class="skill-btn" data-skill="custom2" title="光线折射瞬移，原地留下金色残影">
+            <span class="s-key">[E] 自创二</span>
+            <span class="s-name">光影瞬步</span>
+            <span class="s-cost">魂力 20</span>
+          </button>
+          <button class="skill-btn" data-skill="custom3" title="巨大金色龙尾旋转抽飞身边全部敌人">
+            <span class="s-key">[Z] 自创三</span>
+            <span class="s-name">圣龙摆尾</span>
+            <span class="s-cost">魂力 35</span>
+          </button>
+          <button class="skill-btn" data-skill="custom4" title="身前张开太阳般耀眼的金色盾牌">
+            <span class="s-key">[X] 自创四</span>
+            <span class="s-name">光盾守护</span>
+            <span class="s-cost">魂力 40</span>
+          </button>
+          <button class="skill-btn" data-skill="custom5" title="无数细小金光针封穴破除防御">
+            <span class="s-key">[C] 自创五</span>
+            <span class="s-name">光明龙针</span>
+            <span class="s-cost">魂力 35</span>
+          </button>
+          <button class="skill-btn" data-skill="custom6" title="控制金芒飞剑在空中自由穿梭斩击">
+            <span class="s-key">[V] 自创六</span>
+            <span class="s-name">御剑术·光芒</span>
+            <span class="s-cost">魂力 60</span>
+          </button>
+          <button class="skill-btn" data-skill="custom7" title="化作金色巨龙冲向天空再轰砸地面">
+            <span class="s-key">[B] 自创七</span>
+            <span class="s-name">圣龙破天击</span>
+            <span class="s-cost">魂力 120</span>
+          </button>
+        </div>
+
+        <!-- 3. 九万年魂骨技 与 十万年领域 -->
+        <div class="skill-category-title" style="margin-top:8px">
+          <span>👑 九万年魂骨技能 & 十万年圣龙主迹领域</span>
+        </div>
+        <div class="skill-grid">
+          <button class="skill-btn bone" data-skill="boneL" title="挥出撕裂空气的金色龙爪刃，距离远威力大">
+            <span class="s-key">[F] 九万年左臂骨</span>
+            <span class="s-name">圣龙裂空爪</span>
+            <span class="s-cost">魂力 50</span>
+          </button>
+          <button class="skill-btn bone" data-skill="boneR" title="力量暴增，让敌人身体瞬间沉重无法躲闪">
+            <span class="s-key">[G] 九万年右臂骨</span>
+            <span class="s-name">太阳重力拳</span>
+            <span class="s-cost">魂力 55</span>
+          </button>
+          <button class="skill-btn domain" data-skill="domain" style="grid-column: span 2;" title="方圆千米化为金色世界！敌人属性削半且受光明灼烧；佩戴徽章者免伤获圣龙祝福，魂力持续恢复，属性提升30%">
+            <span class="s-key">[T] 十万年神技</span>
+            <span class="s-name">十万年·圣龙主迹领域（徽章版）</span>
+            <span class="s-cost">魂力 140</span>
+          </button>
+        </div>
+      </section>
+
+      <!-- 移动端虚拟按键 -->
       <div class="touch" id="touch-controls" aria-hidden="true">
         <div class="touch__dpad">
           <button class="touch__btn touch__btn--up" type="button" data-hold="up">↑</button>
@@ -71,25 +204,29 @@
           <button class="touch__btn touch__btn--right" type="button" data-hold="right">→</button>
           <button class="touch__btn touch__btn--down" type="button" data-hold="down">↓</button>
         </div>
-        <button class="touch__bite" type="button" data-hold="bite">撕咬</button>
+        <button class="touch__bite" type="button" data-hold="bite">圣龙爪击</button>
       </div>
 
+      <!-- 玩法说明 -->
       <section class="legend">
-        <h2 class="legend__title">怎么玩</h2>
+        <h2 class="legend__title">斗罗大陆 3D 玩法指南</h2>
         <ul class="legend__list">
-          <li>方向键 / WASD 在无限世界中自由移动</li>
-          <li>靠近比自己小的恐龙即可吞食，体型会变大</li>
-          <li>进化：幼龙 → 猎手 → 霸主 → 传说</li>
-          <li>世界没有边界，一直探索一直变强</li>
+          <li><strong>移动与普通攻击：</strong>WASD 或 方向键控制圣龙移动，按 <kbd>空格</kbd> 或 <kbd>J</kbd> 进行爪击撕咬。</li>
+          <li><strong>七大武魂魂技：</strong>按数字键 <kbd>1</kbd> - <kbd>7</kbd> 释放对应武魂技（第七魂技开启百米圣龙真身，全属性+300%且免伤！）。</li>
+          <li><strong>七大自创魂技：</strong>快捷键 <kbd>Q</kbd>、<kbd>E</kbd>、<kbd>Z</kbd>、<kbd>X</kbd>、<kbd>C</kbd>、<kbd>V</kbd>、<kbd>B</kbd> 随时发动瞬步、飞剑与破天击。</li>
+          <li><strong>九万年魂骨技：</strong>按 <kbd>F</kbd> 圣龙裂空爪远距破空，按 <kbd>G</kbd> 太阳重力拳重压定身。</li>
+          <li><strong>十万年圣龙主迹领域：</strong>按 <kbd>T</kbd> 开启领域，方圆千米化为金色世界，敌人属性减半，我方获圣龙祝福急速回蓝！</li>
         </ul>
       </section>
     </main>
 
+    <!-- 脚本引入 -->
     <script src="js/vendor/three.min.js"></script>
     <script src="js/utils.js"></script>
     <script src="js/audio.js"></script>
-    <script src="js/dino.js"></script>
     <script src="js/dinomodel.js"></script>
+    <script src="js/skills.js"></script>
+    <script src="js/dino.js"></script>
     <script src="js/world.js"></script>
     <script src="js/ai.js"></script>
     <script src="js/renderer3d.js"></script>
