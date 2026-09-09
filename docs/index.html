@@ -77,6 +77,19 @@ body {
 .boot-sub { font-size: 14px; color: var(--ink-soft); margin-top: 6px; }
 #boot-msg { font-size: 14px; color: var(--ink-soft); margin-top: 16px; }
 
+#boot-enter {
+  margin-top: 18px;
+  font: inherit;
+  font-size: 16px;
+  font-weight: 700;
+  padding: 10px 28px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--accent-ink);
+  cursor: pointer;
+}
+
 .page {
   width: min(1100px, 100%);
   display: flex;
@@ -424,6 +437,7 @@ body {
       <div class="boot-title">斗罗大陆 · 3D</div>
       <div class="boot-sub">光明圣龙魂帝</div>
       <div id="boot-msg">正在凝聚武魂，请稍候…</div>
+      <button id="boot-enter" type="button">点击进入</button>
     </div>
     <main class="page">
       <header class="page__header">
@@ -2980,6 +2994,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
   var hudTarget = doc.getElementById('hud-target');
   var bootScreen = doc.getElementById('boot-screen');
   var bootMsg = doc.getElementById('boot-msg');
+  var bootEnter = doc.getElementById('boot-enter');
 
   var game = null;
   var skillButtons = {};

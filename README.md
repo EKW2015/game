@@ -2,15 +2,23 @@
 
 第三人称 3D 魂师对战：武魂**光明圣龙**，七环魂帝，含魂技、自创魂技、魂骨与圣龙领域。
 
-## 在线玩
+## 在线玩（点这个就能开）
 
-打开仓库 Pages 或本地 `play.html`（Chrome）。
+用 **Chrome** 打开：
+
+https://htmlpreview.github.io/?https://github.com/EKW2015/game/blob/cursor/douluo-3d-holy-dragon-ef54/play.html
+
+等 10 秒，看到金色魂师和草地就成功了。不要用微信。
+
+GitHub 上的 `play.html` 源码页 / raw 下载链接**不会当游戏运行**（浏览器会显示一堆代码或只下载文件），所以会感觉“打不开”。
 
 ## 本地
 
-1. 双击 `play.html`，或双击 `打开游戏.bat`
-2. 开发时用 `index.html`（需同时能加载 `js/` 与 `css/`）
-3. 重新打包单文件：`node tools/build-play.js`
+1. 把 `play.html` 下载到电脑（约 750KB）
+2. **右键 → 打开方式 → Google Chrome**（不要双击用 IE / Edge 旧内核 / 微信）
+3. Windows 也可双击 `打开游戏.bat`
+4. 开发时用 `index.html`（需同时能加载 `js/` 与 `css/`）
+5. 重新打包单文件：`node tools/build-play.js`
 
 ## 操作
 

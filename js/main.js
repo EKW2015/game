@@ -29,6 +29,7 @@
   var hudTarget = doc.getElementById('hud-target');
   var bootScreen = doc.getElementById('boot-screen');
   var bootMsg = doc.getElementById('boot-msg');
+  var bootEnter = doc.getElementById('boot-enter');
 
   var game = null;
   var skillButtons = {};
