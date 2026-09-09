@@ -39,11 +39,16 @@
   var pickSub = doc.getElementById('pick-sub');
   var bootScreen = doc.getElementById('boot-screen');
   var bootMsg = doc.getElementById('boot-msg');
+  var bootEnter = doc.getElementById('boot-enter');
 
   var game = null;
 
   function hideBoot() {
     if (bootScreen) bootScreen.style.display = 'none';
+  }
+
+  function showBootEnter() {
+    if (bootEnter) bootEnter.style.display = 'inline-block';
   }
 
   function showBootError(msg) {
@@ -232,6 +237,11 @@
         return;
       }
 
+      if (code === 'Enter') {
+        event.preventDefault();
+        if (game.state === 'ready') game.setState('pick');
+        return;
+      }
       if (code === 'KeyP' || code === 'Escape') {
         event.preventDefault();
         game.togglePause();
@@ -250,6 +260,14 @@
 
     // 技能按钮点击释放
     doc.addEventListener('click', function (event) {
+      if (event.target.closest('#boot-enter, #boot-screen')) {
+        hideBoot();
+      }
+      var actionEl = event.target.closest('[data-action]');
+      if (actionEl && actionEl.getAttribute('data-action') === 'reload') {
+        global.location.reload();
+        return;
+      }
       if (!game) return;
       var pickBtn = event.target.closest('[data-pick]');
       if (pickBtn && game.state === 'pick') {
@@ -270,6 +288,7 @@
       if (action === 'start') game.setState('pick');
       else if (action === 'restart') game.restart();
       else if (action === 'resume') game.togglePause();
+      else if (action === 'reload') global.location.reload();
     });
 
     Array.prototype.forEach.call(touchControls.querySelectorAll('[data-hold]'), function (button) {
@@ -382,9 +401,10 @@
 
   function startGame() {
     if (typeof THREE === 'undefined') {
-      showBootError('3D 引擎加载失败<br><br>请换 <b>Chrome 浏览器</b> 打开');
-      if (errorMsg) errorMsg.textContent = '3D 引擎没加载，请换 Chrome 浏览器';
+      showBootError('3D 引擎加载失败<br><br>请用 <b>Chrome</b> 双击打开 <b>play.html</b><br>不要用微信，也不要打开 GitHub 源码页');
+      if (errorMsg) errorMsg.textContent = '3D 引擎没加载，请用 Chrome 打开 play.html';
       showOverlay('error');
+      hideBoot();
       return;
     }
 
@@ -422,11 +442,27 @@
       });
     } catch (err) {
       console.error(err);
-      showBootError('3D 启动失败：' + (err.message || 'WebGL 不可用') + '<br><br>请换 <b>Chrome 浏览器</b> 打开');
-      if (errorMsg) errorMsg.textContent = err.message || 'WebGL 不可用，请用 Chrome 浏览器';
+      showBootError('3D 启动失败：' + (err.message || 'WebGL 不可用') + '<br><br>请用 <b>Chrome</b> 打开 <b>play.html</b>');
+      if (errorMsg) errorMsg.textContent = err.message || 'WebGL 不可用，请用 Chrome 打开 play.html';
       showOverlay('error');
+      hideBoot();
+      showBootEnter();
     }
   }
+
+  if (bootEnter) {
+    bootEnter.addEventListener('click', function (event) {
+      event.preventDefault();
+      event.stopPropagation();
+      hideBoot();
+    });
+  }
+  global.setTimeout(function () {
+    if (bootScreen && bootScreen.style.display !== 'none') {
+      showBootEnter();
+      if (bootMsg) bootMsg.innerHTML = '若画面一直停住：请用 Chrome 双击仓库里的 <b>play.html</b>，不要用微信。';
+    }
+  }, 5000);
 
   bindControls();
   startGame();

@@ -349,12 +349,13 @@ body {
   align-items: center;
   justify-content: center;
   gap: 10px;
-  padding: 20px;
+  padding: 16px 18px 20px;
   text-align: center;
   pointer-events: none;
   background: rgba(10, 16, 24, 0.85);
   backdrop-filter: blur(4px);
   z-index: 30;
+  overflow-y: auto;
 }
 
 .overlay--hidden {
@@ -364,7 +365,8 @@ body {
 #overlay-ready,
 #overlay-pick,
 #overlay-over,
-#overlay-paused {
+#overlay-paused,
+#overlay-error {
   pointer-events: auto;
 }
 
@@ -388,7 +390,8 @@ body {
 
 .overlay__button {
   pointer-events: auto;
-  margin-top: 14px;
+  flex-shrink: 0;
+  margin-top: 8px;
   font: inherit;
   font-size: 15px;
   padding: 12px 36px;
@@ -545,6 +548,7 @@ kbd {
       <div style="font-size:60px;margin-bottom:12px">🐉</div>
       <div style="font-size:26px;font-weight:bold;letter-spacing:2px">3D 斗罗大陆：光明圣龙</div>
       <div id="boot-msg" style="font-size:15px;color:#9bb0c1;margin-top:14px">正在觉醒武魂光明圣龙，构建星斗大森林 3D 世界…</div>
+      <button id="boot-enter" type="button" style="display:none;margin-top:18px;padding:12px 28px;border:0;border-radius:999px;background:#ffd700;color:#1a0f00;font-weight:700;font-size:16px;cursor:pointer">点这里进入比赛</button>
     </div>
 
     <main class="page">
@@ -591,12 +595,10 @@ kbd {
 
         <!-- 游戏初始界面 -->
         <div class="overlay" id="overlay-ready" data-action="start">
-          <p class="overlay__title">全大陆魂师大赛 · 圣龙神辉战队</p>
+          <p class="overlay__title">圣龙神辉战队</p>
           <p class="overlay__hint">「圣龙出世，震碎全场！凯威带队，势不可挡！」</p>
-          <p class="overlay__hint">光明圣龙的神圣光辉 · 白金主宰风队服 · 优雅高贵，极具正义感。</p>
-          <p class="overlay__hint">队长陈凯威带领七人小队，按斗罗大陆赛制 1v1 连战其他队伍。平时是魂师人形，按 7 才释放武魂真身化兽。</p>
-          <p class="overlay__hint">WASD 移动 · 空格攻击 · 1/2/T 魂技 · 7 真身 · U 光明影刃融合技 · I 太阳神凰融合技</p>
           <button class="overlay__button" type="button" data-action="start">进入选人 · 开始比赛</button>
+          <p class="overlay__hint">用 Chrome 打开本页或 play.html · 不要用微信 · 平时是人，按 7 才化兽</p>
         </div>
 
         <div class="overlay overlay--hidden" id="overlay-pick">
@@ -620,7 +622,8 @@ kbd {
         <!-- 错误提示 -->
         <div class="overlay overlay--hidden" id="overlay-error">
           <p class="overlay__title">3D 引擎加载异常</p>
-          <p class="overlay__hint" id="error-msg">请在 Chrome 浏览器中运行本游戏</p>
+          <p class="overlay__hint" id="error-msg">请用 Chrome 打开 play.html，不要用微信，也不要点 GitHub 源码页</p>
+          <button class="overlay__button" type="button" data-action="reload">刷新重试</button>
         </div>
       </div>
 
@@ -4609,11 +4612,16 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
   var pickSub = doc.getElementById('pick-sub');
   var bootScreen = doc.getElementById('boot-screen');
   var bootMsg = doc.getElementById('boot-msg');
+  var bootEnter = doc.getElementById('boot-enter');
 
   var game = null;
 
   function hideBoot() {
     if (bootScreen) bootScreen.style.display = 'none';
+  }
+
+  function showBootEnter() {
+    if (bootEnter) bootEnter.style.display = 'inline-block';
   }
 
   function showBootError(msg) {
@@ -4802,6 +4810,11 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
         return;
       }
 
+      if (code === 'Enter') {
+        event.preventDefault();
+        if (game.state === 'ready') game.setState('pick');
+        return;
+      }
       if (code === 'KeyP' || code === 'Escape') {
         event.preventDefault();
         game.togglePause();
@@ -4820,6 +4833,14 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
 
     // 技能按钮点击释放
     doc.addEventListener('click', function (event) {
+      if (event.target.closest('#boot-enter, #boot-screen')) {
+        hideBoot();
+      }
+      var actionEl = event.target.closest('[data-action]');
+      if (actionEl && actionEl.getAttribute('data-action') === 'reload') {
+        global.location.reload();
+        return;
+      }
       if (!game) return;
       var pickBtn = event.target.closest('[data-pick]');
       if (pickBtn && game.state === 'pick') {
@@ -4840,6 +4861,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
       if (action === 'start') game.setState('pick');
       else if (action === 'restart') game.restart();
       else if (action === 'resume') game.togglePause();
+      else if (action === 'reload') global.location.reload();
     });
 
     Array.prototype.forEach.call(touchControls.querySelectorAll('[data-hold]'), function (button) {
@@ -4952,9 +4974,10 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
 
   function startGame() {
     if (typeof THREE === 'undefined') {
-      showBootError('3D 引擎加载失败<br><br>请换 <b>Chrome 浏览器</b> 打开');
-      if (errorMsg) errorMsg.textContent = '3D 引擎没加载，请换 Chrome 浏览器';
+      showBootError('3D 引擎加载失败<br><br>请用 <b>Chrome</b> 双击打开 <b>play.html</b><br>不要用微信，也不要打开 GitHub 源码页');
+      if (errorMsg) errorMsg.textContent = '3D 引擎没加载，请用 Chrome 打开 play.html';
       showOverlay('error');
+      hideBoot();
       return;
     }
 
@@ -4992,11 +5015,27 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
       });
     } catch (err) {
       console.error(err);
-      showBootError('3D 启动失败：' + (err.message || 'WebGL 不可用') + '<br><br>请换 <b>Chrome 浏览器</b> 打开');
-      if (errorMsg) errorMsg.textContent = err.message || 'WebGL 不可用，请用 Chrome 浏览器';
+      showBootError('3D 启动失败：' + (err.message || 'WebGL 不可用') + '<br><br>请用 <b>Chrome</b> 打开 <b>play.html</b>');
+      if (errorMsg) errorMsg.textContent = err.message || 'WebGL 不可用，请用 Chrome 打开 play.html';
       showOverlay('error');
+      hideBoot();
+      showBootEnter();
     }
   }
+
+  if (bootEnter) {
+    bootEnter.addEventListener('click', function (event) {
+      event.preventDefault();
+      event.stopPropagation();
+      hideBoot();
+    });
+  }
+  global.setTimeout(function () {
+    if (bootScreen && bootScreen.style.display !== 'none') {
+      showBootEnter();
+      if (bootMsg) bootMsg.innerHTML = '若画面一直停住：请用 Chrome 双击仓库里的 <b>play.html</b>，不要用微信。';
+    }
+  }, 5000);
 
   bindControls();
   startGame();

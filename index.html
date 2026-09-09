@@ -15,6 +15,7 @@
       <div style="font-size:60px;margin-bottom:12px">🐉</div>
       <div style="font-size:26px;font-weight:bold;letter-spacing:2px">3D 斗罗大陆：光明圣龙</div>
       <div id="boot-msg" style="font-size:15px;color:#9bb0c1;margin-top:14px">正在觉醒武魂光明圣龙，构建星斗大森林 3D 世界…</div>
+      <button id="boot-enter" type="button" style="display:none;margin-top:18px;padding:12px 28px;border:0;border-radius:999px;background:#ffd700;color:#1a0f00;font-weight:700;font-size:16px;cursor:pointer">点这里进入比赛</button>
     </div>
 
     <main class="page">
@@ -61,12 +62,10 @@
 
         <!-- 游戏初始界面 -->
         <div class="overlay" id="overlay-ready" data-action="start">
-          <p class="overlay__title">全大陆魂师大赛 · 圣龙神辉战队</p>
+          <p class="overlay__title">圣龙神辉战队</p>
           <p class="overlay__hint">「圣龙出世，震碎全场！凯威带队，势不可挡！」</p>
-          <p class="overlay__hint">光明圣龙的神圣光辉 · 白金主宰风队服 · 优雅高贵，极具正义感。</p>
-          <p class="overlay__hint">队长陈凯威带领七人小队，按斗罗大陆赛制 1v1 连战其他队伍。平时是魂师人形，按 7 才释放武魂真身化兽。</p>
-          <p class="overlay__hint">WASD 移动 · 空格攻击 · 1/2/T 魂技 · 7 真身 · U 光明影刃融合技 · I 太阳神凰融合技</p>
           <button class="overlay__button" type="button" data-action="start">进入选人 · 开始比赛</button>
+          <p class="overlay__hint">用 Chrome 打开本页或 play.html · 不要用微信 · 平时是人，按 7 才化兽</p>
         </div>
 
         <div class="overlay overlay--hidden" id="overlay-pick">
@@ -90,7 +89,8 @@
         <!-- 错误提示 -->
         <div class="overlay overlay--hidden" id="overlay-error">
           <p class="overlay__title">3D 引擎加载异常</p>
-          <p class="overlay__hint" id="error-msg">请在 Chrome 浏览器中运行本游戏</p>
+          <p class="overlay__hint" id="error-msg">请用 Chrome 打开 play.html，不要用微信，也不要点 GitHub 源码页</p>
+          <button class="overlay__button" type="button" data-action="reload">刷新重试</button>
         </div>
       </div>
 

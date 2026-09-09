@@ -339,12 +339,13 @@ body {
   align-items: center;
   justify-content: center;
   gap: 10px;
-  padding: 20px;
+  padding: 16px 18px 20px;
   text-align: center;
   pointer-events: none;
   background: rgba(10, 16, 24, 0.85);
   backdrop-filter: blur(4px);
   z-index: 30;
+  overflow-y: auto;
 }
 
 .overlay--hidden {
@@ -354,7 +355,8 @@ body {
 #overlay-ready,
 #overlay-pick,
 #overlay-over,
-#overlay-paused {
+#overlay-paused,
+#overlay-error {
   pointer-events: auto;
 }
 
@@ -378,7 +380,8 @@ body {
 
 .overlay__button {
   pointer-events: auto;
-  margin-top: 14px;
+  flex-shrink: 0;
+  margin-top: 8px;
   font: inherit;
   font-size: 15px;
   padding: 12px 36px;
