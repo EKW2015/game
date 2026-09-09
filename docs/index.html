@@ -361,6 +361,13 @@ body {
   display: none;
 }
 
+#overlay-ready,
+#overlay-pick,
+#overlay-over,
+#overlay-paused {
+  pointer-events: auto;
+}
+
 .overlay__title {
   margin: 0;
   font-size: clamp(22px, 4.5vw, 32px);
@@ -583,7 +590,7 @@ kbd {
         <div class="toast" id="toast"></div>
 
         <!-- 游戏初始界面 -->
-        <div class="overlay" id="overlay-ready">
+        <div class="overlay" id="overlay-ready" data-action="start">
           <p class="overlay__title">全大陆魂师大赛 · 圣龙战队</p>
           <p class="overlay__hint">队长陈凯威（光明圣龙）带领七人小队，按斗罗大陆赛制 1v1 连战其他队伍。</p>
           <p class="overlay__hint">每局结束后可以换人。败者退场，先让对方全员倒下即赢下团队赛，然后继续打下一队。</p>
