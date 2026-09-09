@@ -11,9 +11,10 @@
   var Renderer3D = global.Renderer3D;
   var SkillManager = global.SkillManager;
 
-  var MAX_NPC = 12;
-  var SPAWN_MIN = 350;
-  var SPAWN_MAX = 800;
+  var GRACE_TIME = 12;
+  var MAX_NPC = 8;
+  var SPAWN_MIN = 480;
+  var SPAWN_MAX = 920;
   var DESPAWN_DIST = 1600;
 
   var SOUL_BEAST_NAMES = [
@@ -120,7 +121,12 @@
     var x = this.player.x + Math.cos(angle) * dist;
     var y = this.player.y + Math.sin(angle) * dist;
 
-    var tmpl = SOUL_BEAST_NAMES[U.randInt(0, SOUL_BEAST_NAMES.length - 1)];
+    var tmpl;
+    if (Math.random() < 0.12) {
+      tmpl = SOUL_BEAST_NAMES[SOUL_BEAST_NAMES.length - 1];
+    } else {
+      tmpl = SOUL_BEAST_NAMES[U.randInt(0, SOUL_BEAST_NAMES.length - 2)];
+    }
 
     return this.spawnEntity({
       x: x,
@@ -180,7 +186,7 @@
     var was = this.state;
     this.state = state;
     if (state === 'playing' && was === 'ready') {
-      this.addMessage('武魂觉醒：光明圣龙！按数字键1-7释放七大魂技！', 3.5);
+      this.addMessage('武魂觉醒：光明圣龙！前 12 秒魂兽不会主动攻击。按 1-7 释放魂技，T 展开领域！', 4.0);
     }
     if (this.hooks.onState) this.hooks.onState(state, this);
   };
@@ -265,6 +271,10 @@
 
     this.playTime += dt;
 
+    if (this.player.alive && this.player.hp < this.player.maxHp) {
+      this.player.hp = Math.min(this.player.maxHp, this.player.hp + 28 * dt);
+    }
+
     this.updatePlayer(dt);
     this.updateNPCs(dt);
     this.skills.update(dt);
@@ -327,7 +337,7 @@
 
   Game.prototype.updateNPCs = function (dt) {
     var alive = this.aliveEntities();
-    var ctx = { playTime: this.playTime, player: this.player };
+    var ctx = { playTime: this.playTime, graceTime: GRACE_TIME, player: this.player };
     for (var i = 0; i < this.dinos.length; i++) {
       var d = this.dinos[i];
       if (!d.alive || d.isPlayer) continue;
@@ -349,6 +359,8 @@
       if (d > attacker.biteReach() + victim.radius * 0.7) continue;
 
       var dmg = attacker.biteDamage();
+      if (victim.isPlayer) dmg *= 0.28;
+
       if (victim.takeDamage(dmg, attacker)) {
         this.killEntity(victim, attacker);
       } else {

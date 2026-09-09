@@ -27,6 +27,16 @@
 
     ctx = ctx || {};
     var player = ctx.player;
+    var inGrace = ctx.playTime != null && ctx.playTime < (ctx.graceTime || 0);
+
+    // 开场保护：魂兽先游荡，不主动扑杀魂师
+    if (inGrace) {
+      dino.wanderAngle += U.rand(-0.6, 0.6) * dt;
+      var gx = dino.x + Math.cos(dino.wanderAngle) * 200;
+      var gy = dino.y + Math.sin(dino.wanderAngle) * 200;
+      dino.moveToward(gx, gy, 0.22, dt);
+      return { action: 'grace' };
+    }
 
     // 魂兽AI：如果玩家距离较近且在视野中，主动扑杀玩家或逃跑
     if (player && player.alive) {
