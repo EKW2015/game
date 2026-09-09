@@ -31,6 +31,9 @@
   var hudMyLeft = doc.getElementById('hud-my-left');
   var hudEnLeft = doc.getElementById('hud-en-left');
   var hudTeamWins = doc.getElementById('hud-team-wins');
+  var hudFoeName = doc.getElementById('hud-foe-name');
+  var hudFoeHp = doc.getElementById('hud-foe-hp');
+  var hudFoeHpBar = doc.getElementById('hud-foe-hp-bar');
   var kitFull = doc.getElementById('kit-full');
   var kitMember = doc.getElementById('kit-member');
   var memberSkillGrid = doc.getElementById('member-skill-grid');
@@ -425,6 +428,19 @@
     hudHpBar.style.width = Math.max(0, Math.min(100, (p.hp / p.maxHp) * 100)) + '%';
     hudMp.textContent = Math.round(p.mp) + '/' + p.maxMp;
     hudMpBar.style.width = Math.max(0, Math.min(100, (p.mp / p.maxMp) * 100)) + '%';
+
+    var foe = g.opponent;
+    if (hudFoeName) {
+      if (foe && foe.alive) {
+        hudFoeName.textContent = foe.name + '（' + (foe.martialSoul || '') + '）';
+        if (hudFoeHp) hudFoeHp.textContent = Math.round(foe.hp) + '/' + foe.maxHp;
+        if (hudFoeHpBar) hudFoeHpBar.style.width = Math.max(0, Math.min(100, (foe.hp / foe.maxHp) * 100)) + '%';
+      } else {
+        hudFoeName.textContent = '已倒下';
+        if (hudFoeHp) hudFoeHp.textContent = '0';
+        if (hudFoeHpBar) hudFoeHpBar.style.width = '0%';
+      }
+    }
 
     var isFull = p.kit === 'full' || p.characterId === 'chen';
     if (kitFull) kitFull.classList.toggle('overlay--hidden', !isFull && g.state === 'playing');

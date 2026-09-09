@@ -35,11 +35,12 @@
 
     this.scene = new THREE.Scene();
     this.scene.background = new THREE.Color(0x38556b);
-    this.scene.fog = new THREE.Fog(0x4a6a80, 250, 2800);
+    this.scene.fog = new THREE.Fog(0x4a6a80, 420, 3200);
 
     // 第三人称/自由动作相机视角
-    this.camera = new THREE.PerspectiveCamera(65, 16 / 9, 2, 6000);
-    this.camera.position.set(0, 50, -60);
+    this.camera = new THREE.PerspectiveCamera(58, 16 / 9, 2, 6000);
+    this.camera.position.set(0, 46, 62);
+    this.camera.lookAt(0, 8, 0);
 
     this.renderer = createWebGLRenderer(canvas);
     this.renderer.setPixelRatio(Math.min(global.devicePixelRatio || 1, 2));
@@ -81,6 +82,7 @@
     sun.target = new THREE.Object3D();
     this.scene.add(sun.target);
     this.sun = sun;
+    this._snapCam = true;
   };
 
   Renderer3D.prototype.bindFormAnim = function (group, form) {
@@ -100,6 +102,48 @@
     group.userData.goldenShield = form.userData.goldenShield;
     group.userData.streamers = form.userData.streamers;
   };
+
+  Renderer3D.prototype.makeNameplate = function (text, isEnemy) {
+    var canvas = docCanvas(256, 64);
+    var ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, 256, 64);
+    ctx.fillStyle = isEnemy ? 'rgba(90, 8, 12, 0.82)' : 'rgba(12, 22, 10, 0.82)';
+    roundRect(ctx, 8, 10, 240, 44, 12);
+    ctx.fill();
+    ctx.strokeStyle = isEnemy ? '#ff4455' : '#ffd700';
+    ctx.lineWidth = 3;
+    ctx.stroke();
+    ctx.fillStyle = isEnemy ? '#ffd0d0' : '#ffe9a0';
+    ctx.font = 'bold 26px "Microsoft YaHei","Noto Sans SC",sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText((isEnemy ? '敌 · ' : '我 · ') + text, 128, 32);
+    var tex = new THREE.CanvasTexture(canvas);
+    tex.needsUpdate = true;
+    var mat = new THREE.SpriteMaterial({ map: tex, transparent: true, depthTest: false, depthWrite: false });
+    var spr = new THREE.Sprite(mat);
+    spr.scale.set(3.6, 0.9, 1);
+    spr.position.y = 5.4;
+    spr.renderOrder = 20;
+    return spr;
+  };
+
+  function docCanvas(w, h) {
+    var c = document.createElement('canvas');
+    c.width = w;
+    c.height = h;
+    return c;
+  }
+
+  function roundRect(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+  }
 
   Renderer3D.prototype.createEntityMesh = function (entity) {
     var kind = entity.fighterKind || (entity.isPlayer ? 'dragon' : 'tiger');
@@ -126,6 +170,30 @@
     rings.scale.setScalar(0.48);
     group.add(rings);
     group.userData.rings = rings;
+
+    var ringCol = entity.isPlayer ? 0xffd700 : 0xff2244;
+    var foot = new THREE.Mesh(
+      new THREE.RingGeometry(1.05, 1.45, 28),
+      new THREE.MeshBasicMaterial({ color: ringCol, side: THREE.DoubleSide, transparent: true, opacity: 0.95, depthWrite: false })
+    );
+    foot.rotation.x = -Math.PI / 2;
+    foot.position.y = 0.08;
+    group.add(foot);
+    group.userData.footRing = foot;
+
+    if (!entity.isPlayer) {
+      var marker = new THREE.Mesh(
+        new THREE.ConeGeometry(0.28, 0.7, 4),
+        new THREE.MeshBasicMaterial({ color: 0xff2244, depthTest: false })
+      );
+      marker.rotation.x = Math.PI;
+      marker.position.y = 5.95;
+      marker.renderOrder = 21;
+      group.add(marker);
+      group.userData.marker = marker;
+    }
+
+    group.add(this.makeNameplate(entity.name || (entity.isPlayer ? '我方' : '对手'), !entity.isPlayer));
     this.scene.add(group);
     this.meshes.set(entity.id, group);
     return group;
@@ -150,8 +218,8 @@
       }
     }
 
-    var baseScale = 1.35;
-    if (entity.avatarMode) baseScale = entity.isPlayer ? 3.2 : 2.35;
+    var baseScale = 6.2;
+    if (entity.avatarMode) baseScale = entity.isPlayer ? 9.4 : 8.2;
     group.scale.setScalar(baseScale);
 
     var gy = world.heightAt(entity.x, entity.y);
@@ -161,6 +229,13 @@
     }
     group.position.set(entity.x, targetY, entity.y);
     group.rotation.y = -entity.angle + Math.PI / 2;
+
+    if (group.userData.marker) {
+      group.userData.marker.position.y = 5.7 + Math.sin(Date.now() * 0.006) * 0.18;
+    }
+    if (group.userData.footRing) {
+      group.userData.footRing.rotation.z += dt * 1.4;
+    }
 
     // 金身护盾显隐
     if (group.userData.goldenShield) {
@@ -405,33 +480,56 @@
     }
   };
 
-  // 第三人称史诗追踪跟随摄像机
-  Renderer3D.prototype.updateCamera = function (player, dt) {
+  // 1v1 对战镜头：始终把双方都框进画面，不再跟在背后导致对手出镜
+  Renderer3D.prototype.updateCamera = function (player, dt, opponent) {
     if (!player) return;
 
-    var ground = this.world.heightAt(player.x, player.y);
-    var playerHeight = player.avatarMode ? 45 : 18;
-    var camDistance = player.avatarMode ? 140 : 65;
-    var camHeight = player.avatarMode ? 70 : 35;
+    var lookX;
+    var lookZ;
+    var lookY;
+    var idealX;
+    var idealY;
+    var idealZ;
+    var ground;
 
-    // 相机位于角色后上方
-    var camBackAngle = player.angle + Math.PI;
-    var idealX = player.x + Math.cos(camBackAngle) * camDistance;
-    var idealZ = player.y + Math.sin(camBackAngle) * camDistance;
-    var idealY = ground + camHeight;
-    if (player.isFlying) {
-      idealY += 25;
+    if (opponent && opponent.alive) {
+      lookX = (player.x + opponent.x) * 0.5;
+      lookZ = (player.y + opponent.y) * 0.5;
+      var dx = opponent.x - player.x;
+      var dz = opponent.y - player.y;
+      var dist = Math.max(16, Math.hypot(dx, dz));
+      var side = Math.atan2(dz, dx) + Math.PI * 0.5;
+      var camDist = Math.min(88, Math.max(36, dist * 1.05 + 28));
+      var camH = 22 + Math.min(36, dist * 0.42);
+      if (player.avatarMode || opponent.avatarMode) {
+        camDist += 18;
+        camH += 14;
+      }
+      ground = this.world.heightAt(lookX, lookZ);
+      idealX = lookX + Math.cos(side) * camDist;
+      idealZ = lookZ + Math.sin(side) * camDist;
+      idealY = ground + camH;
+      lookY = ground + (player.avatarMode || opponent.avatarMode ? 14 : 8);
+    } else {
+      ground = this.world.heightAt(player.x, player.y);
+      var playerHeight = player.avatarMode ? 45 : 18;
+      var camDistance = player.avatarMode ? 140 : 65;
+      var camHeight = player.avatarMode ? 70 : 35;
+      var camBackAngle = player.angle + Math.PI;
+      idealX = player.x + Math.cos(camBackAngle) * camDistance;
+      idealZ = player.y + Math.sin(camBackAngle) * camDistance;
+      idealY = ground + camHeight;
+      if (player.isFlying) idealY += 25;
+      lookX = player.x + Math.cos(player.angle) * 40;
+      lookY = ground + playerHeight;
+      lookZ = player.y + Math.sin(player.angle) * 40;
     }
 
-    var lerp = 1 - Math.pow(0.0005, dt);
+    var lerp = this._snapCam ? 1 : (1 - Math.pow(0.0005, dt));
+    this._snapCam = false;
     this.camera.position.x += (idealX - this.camera.position.x) * lerp;
     this.camera.position.y += (idealY - this.camera.position.y) * lerp;
     this.camera.position.z += (idealZ - this.camera.position.z) * lerp;
-
-    var lookDist = 40;
-    var lookX = player.x + Math.cos(player.angle) * lookDist;
-    var lookY = ground + playerHeight;
-    var lookZ = player.y + Math.sin(player.angle) * lookDist;
     this.camera.lookAt(lookX, lookY, lookZ);
 
     this.world.update(player.x, player.y);
@@ -442,6 +540,10 @@
       this.sun.target.position.set(player.x, 0, player.y);
       this.sun.target.updateMatrixWorld();
     }
+  };
+
+  Renderer3D.prototype.snapCombatCamera = function () {
+    this._snapCam = true;
   };
 
   Renderer3D.prototype.resize = function (width, height) {

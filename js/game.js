@@ -177,10 +177,11 @@
     this.playTime = 0;
     this.pendingRoundEnd = false;
 
-    this.player = this.spawnFromMember(mine, true, -70, 0, 0);
-    this.opponent = this.spawnFromMember(foe, false, 70, 0, Math.PI);
+    this.player = this.spawnFromMember(mine, true, -20, 0, 0);
+    this.opponent = this.spawnFromMember(foe, false, 20, 0, Math.PI);
     this.currentPlayerId = mine.id;
     this.currentEnemyId = foe.id;
+    if (this.r3d && this.r3d.snapCombatCamera) this.r3d.snapCombatCamera();
 
     this.addMessage('第 ' + this.roundIndex + ' 局 1v1：' + mine.name + ' VS ' + foe.name, 3.2);
     if (mine.id === 'chen' && this.playerTeam && this.playerTeam.slogan) {
@@ -307,7 +308,7 @@
       if (part.life <= 0) this.particles.splice(p, 1);
     }
 
-    this.r3d.updateCamera(this.player, dt);
+    this.r3d.updateCamera(this.player, dt, this.opponent);
 
     if (this.state !== 'playing') {
       return;

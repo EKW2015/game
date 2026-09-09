@@ -185,6 +185,7 @@
     for (var t = 0; t < treeCount; t++) {
       var tx = ox + 30 + rand() * (CHUNK_SIZE - 60);
       var tz = oz + 30 + rand() * (CHUNK_SIZE - 60);
+      if (tx * tx + tz * tz < 110 * 110) continue; // 中央对战场留空，避免大树挡住对手
       var th = this.heightAt(tx, tz);
       var scale = 1.0 + rand() * 0.9;
 
@@ -210,6 +211,7 @@
     for (var r = 0; r < 3 + Math.floor(rand() * 4); r++) {
       var rx = ox + rand() * CHUNK_SIZE;
       var rz = oz + rand() * CHUNK_SIZE;
+      if (rx * rx + rz * rz < 90 * 90) continue;
       var rh = this.heightAt(rx, rz);
       var rock = new THREE.Mesh(
         new THREE.DodecahedronGeometry(5 + rand() * 8),
