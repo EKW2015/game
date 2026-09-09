@@ -1,16 +1,14 @@
 # 🐉 3D 斗罗大陆：圣龙神辉战队
 
-## 打不开？请按这个下载（不要在 GitHub 网页里直接点）
+## 直接玩（用 Chrome 打开下面这个链接）
 
-GitHub 里打开 `play.html` 只会看到源码。微信里也打不开。
+https://litter.catbox.moe/t174w6.html
 
-1. 打开：https://github.com/EKW2015/game/blob/cursor/douluo-3d-game-33ae/play.html
-2. 点右上角 **Download raw file** 下载
-3. 文件大约 **800KB**（太小就是下错了）
-4. 用 **Chrome** 双击下载好的 `play.html`
-5. 应直接出现 7 张选人卡片，点「陈凯威」开打
+不要用微信。不要点 GitHub 源码页。打开后会出现 7 张选人卡片，点「陈凯威」开打。
 
-也可下载整个仓库后双击 `打开游戏.bat`。
+如果链接失效，再下载这个文件，用 Chrome 双击打开：  
+https://github.com/EKW2015/game/blob/cursor/douluo-3d-game-33ae/play.html  
+（点右上角 Download raw file，约 800KB）
 
 ---
 
