@@ -3,22 +3,23 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <meta name="description" content="无限 3D 恐龙世界：自由探索、捕食、进化。" />
-    <meta name="theme-color" content="#1a3d28" />
-    <title>无限恐龙世界 3D</title>
-    <style>html,body{background:#0f2418!important;min-height:100vh;margin:0}</style>
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='14' font-size='14'>🦖</text></svg>" />
+    <meta name="description" content="斗罗大陆 3D：光明圣龙魂帝，七环魂技、自创魂技、魂骨与圣龙领域。" />
+    <meta name="theme-color" content="#1a1408" />
+    <title>斗罗大陆 · 光明圣龙魂帝 3D</title>
+    <style>html,body{background:#120e08!important;min-height:100vh;margin:0}</style>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='14' font-size='14'>🐉</text></svg>" />
     <link rel="stylesheet" href="css/style.css" />
   </head>
   <body>
-    <div id="boot-screen" style="position:fixed;inset:0;background:#0f2418;z-index:99999;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#5cd65c;font-family:sans-serif;text-align:center;padding:20px">
-      <div style="font-size:56px;margin-bottom:12px">🦖</div>
-      <div style="font-size:24px;font-weight:bold">无限恐龙世界 3D</div>
-      <div id="boot-msg" style="font-size:15px;color:#9cb8a8;margin-top:14px">正在加载 3D 引擎，请稍候…</div>
+    <div id="boot-screen">
+      <div class="boot-mark">龍</div>
+      <div class="boot-title">斗罗大陆 · 3D</div>
+      <div class="boot-sub">光明圣龙魂帝</div>
+      <div id="boot-msg">正在凝聚武魂，请稍候…</div>
     </div>
     <main class="page">
       <header class="page__header">
-        <h1 class="page__title">无限恐龙世界 <span class="badge-3d">3D</span></h1>
+        <h1 class="page__title">斗罗大陆 <span class="badge-3d">3D</span></h1>
         <div class="page__tools">
           <button id="btn-sound" class="tool" type="button" aria-pressed="false">音效：开</button>
           <button id="btn-pause" class="tool" type="button">暂停</button>
@@ -26,36 +27,45 @@
       </header>
 
       <div class="stage" id="stage">
-        <canvas id="game" class="stage__canvas" role="img" aria-label="无限 3D 恐龙世界"></canvas>
-        <div class="crosshair" aria-hidden="true"></div>
+        <canvas id="game" class="stage__canvas" role="img" aria-label="斗罗大陆 3D"></canvas>
 
         <div class="hud" id="hud">
-          <div class="hud__panel">
-            <div>阶段: <strong id="hud-stage">幼龙</strong></div>
-            <div>体型: <strong id="hud-mass">45</strong></div>
-            <div>击杀: <strong id="hud-kills">0</strong></div>
+          <div class="hud__left">
+            <div class="hud__name">
+              <div class="hud__title" id="hud-title">光明圣龙魂帝</div>
+              <div class="hud__rank" id="hud-rank">七环魂帝 · 圣龙徽章</div>
+            </div>
+            <div class="bar bar--hp"><span id="bar-hp"></span><em id="hud-hp">2200</em></div>
+            <div class="bar bar--soul"><span id="bar-soul"></span><em id="hud-soul">1200</em></div>
+            <div class="rings" id="soul-rings" aria-hidden="true"></div>
+            <div class="buffs" id="hud-buffs"></div>
           </div>
-          <div class="hud__remain">最高击杀 <strong id="hud-best">0</strong></div>
+          <div class="hud__right">
+            <div>击杀 <strong id="hud-kills">0</strong></div>
+            <div>最高 <strong id="hud-best">0</strong></div>
+            <div class="hud__target" id="hud-target">锁定：无</div>
+          </div>
         </div>
 
         <div class="toast" id="toast"></div>
+        <div class="skillbar" id="skill-bar"></div>
 
         <div class="overlay" id="overlay-ready">
-          <p class="overlay__title">无限 3D 恐龙世界 🌍</p>
-          <p class="overlay__hint">第一人称视角 · 无限大地图 · 自由探索</p>
-          <p class="overlay__hint">方向键移动 · 靠近小恐龙吞食 · 不断进化变大</p>
-          <button class="overlay__button" type="button" data-action="start">进入世界</button>
+          <p class="overlay__title">斗罗大陆 · 光明圣龙</p>
+          <p class="overlay__hint">七环魂帝 · 武魂光明圣龙 · 佩戴圣龙徽章</p>
+          <p class="overlay__hint">WASD 移动 · 鼠标转动视角 · J 普攻 · 1-7 魂技 · Q/E/R/F/T/Y/C 自创 · Z/X 魂骨 · V 领域</p>
+          <button class="overlay__button" type="button" data-action="start">释放武魂</button>
         </div>
 
         <div class="overlay overlay--hidden" id="overlay-over">
-          <p class="overlay__title">你被击败了</p>
+          <p class="overlay__title">魂力耗尽</p>
           <p class="overlay__score" id="death-stats"></p>
-          <button class="overlay__button" type="button" data-action="restart">重新开始</button>
+          <button class="overlay__button" type="button" data-action="restart">重入魂殿</button>
         </div>
 
         <div class="overlay overlay--hidden" id="overlay-paused">
-          <p class="overlay__title">已暂停</p>
-          <button class="overlay__button" type="button" data-action="resume">继续探索</button>
+          <p class="overlay__title">暂停</p>
+          <button class="overlay__button" type="button" data-action="resume">继续</button>
         </div>
 
         <div class="overlay overlay--hidden" id="overlay-error">
@@ -71,16 +81,19 @@
           <button class="touch__btn touch__btn--right" type="button" data-hold="right">→</button>
           <button class="touch__btn touch__btn--down" type="button" data-hold="down">↓</button>
         </div>
-        <button class="touch__bite" type="button" data-hold="bite">撕咬</button>
+        <div class="touch__actions">
+          <button class="touch__bite" type="button" data-hold="attack">普攻</button>
+          <button class="touch__bite touch__bite--jump" type="button" data-hold="jump">跳/飞</button>
+        </div>
       </div>
 
       <section class="legend">
-        <h2 class="legend__title">怎么玩</h2>
+        <h2 class="legend__title">魂技与操作</h2>
         <ul class="legend__list">
-          <li>方向键 / WASD 在无限世界中自由移动</li>
-          <li>靠近比自己小的恐龙即可吞食，体型会变大</li>
-          <li>进化：幼龙 → 猎手 → 霸主 → 传说</li>
-          <li>世界没有边界，一直探索一直变强</li>
+          <li>1-7：魂技（龙爪 / 光翼 / 龙啸 / 金身 / 审判 / 神光 / 真身）</li>
+          <li>Q 瞬步 · E 爆破拳 · R 摆尾 · F 光盾 · T 龙针 · Y 御剑 · C 破天击</li>
+          <li>Z 裂空爪（左臂骨）· X 重力拳（右臂骨）· V 圣龙主迹领域</li>
+          <li>空格跳跃；光翼开启后可滞空。佩戴徽章的友军不受领域伤害</li>
         </ul>
       </section>
     </main>
@@ -88,8 +101,9 @@
     <script src="js/vendor/three.min.js"></script>
     <script src="js/utils.js"></script>
     <script src="js/audio.js"></script>
-    <script src="js/dino.js"></script>
-    <script src="js/dinomodel.js"></script>
+    <script src="js/unit.js"></script>
+    <script src="js/skills.js"></script>
+    <script src="js/models.js"></script>
     <script src="js/world.js"></script>
     <script src="js/ai.js"></script>
     <script src="js/renderer3d.js"></script>

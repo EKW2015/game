@@ -3,14 +3,14 @@
 
   var U = global.Utils;
 
-  function nearest(dino, others, skipPlayer) {
+  function nearestEnemy(unit, others) {
     var best = null;
     var bestD = Infinity;
     for (var i = 0; i < others.length; i++) {
       var o = others[i];
-      if (!o.alive || o.id === dino.id) continue;
-      if (skipPlayer && o.isPlayer) continue;
-      var d = U.dist(dino.x, dino.y, o.x, o.y);
+      if (!o.alive || o.id === unit.id) continue;
+      if (o.team === unit.team) continue;
+      var d = U.dist(unit.x, unit.y, o.x, o.y);
       if (d < bestD) {
         bestD = d;
         best = o;
@@ -19,57 +19,63 @@
     return { target: best, dist: bestD };
   }
 
-  function updateAI(dino, others, dt, ctx) {
-    if (!dino.alive || dino.isPlayer) return;
+  function updateAI(unit, others, dt, ctx) {
+    if (!unit.alive || unit.isPlayer) return;
+    if (unit.buffs.stun > 0) return { action: 'stun' };
 
     ctx = ctx || {};
-    var inGrace = ctx.playTime != null && ctx.playTime < (ctx.graceTime || 0);
+    var hunt = nearestEnemy(unit, others);
+    var target = hunt.target;
+    var range = unit.attackReach() + (target ? target.radius : 0);
 
-    // 简单模式：保护期内只漫游，不攻击
-    if (inGrace) {
-      dino.wanderAngle += U.rand(-0.6, 0.6) * dt;
-      var wx = dino.x + Math.cos(dino.wanderAngle) * 200;
-      var wy = dino.y + Math.sin(dino.wanderAngle) * 200;
-      dino.moveToward(wx, wy, 0.2, dt);
-      return { action: 'grace' };
+    if (unit.isAlly && ctx.player) {
+      var pd = U.dist(unit.x, unit.y, ctx.player.x, ctx.player.y);
+      if (pd > 220) {
+        unit.moveToward(ctx.player.x, ctx.player.y, 0.7, dt);
+        return { action: 'follow' };
+      }
     }
 
-    // 简单模式：AI 基本无视玩家，只互相打闹
-    var hunt = nearest(dino, others, true);
-    var target = hunt.target;
-    var biteRange = dino.biteReach() + (target ? target.radius : 0);
+    if (unit.buffs.gravity > 0) {
+      return { action: 'heavy' };
+    }
 
-    if (target) {
-      var canEat = dino.canEat(target);
-      var ratio = dino.eatRatio(target);
-      var similar = ratio > 0.75 && ratio < 1.12;
+    if (target && hunt.dist < 260) {
+      if (unit.buffs.blind > 0 && Math.random() < 0.45) {
+        unit.wanderAngle += U.rand(-1, 1) * dt;
+        unit.moveToward(
+          unit.x + Math.cos(unit.wanderAngle) * 80,
+          unit.y + Math.sin(unit.wanderAngle) * 80,
+          0.35,
+          dt
+        );
+        return { action: 'blind' };
+      }
 
-      if (canEat && hunt.dist < dino.radius + target.radius + 30) {
-        dino.moveToward(target.x, target.y, 0.6, dt);
-        if (hunt.dist < biteRange && dino.tryBite()) {
-          return { action: 'bite', target: target };
-        }
+      if (hunt.dist > range * 0.85) {
+        unit.moveToward(target.x, target.y, 0.72, dt);
         return { action: 'chase', target: target };
       }
-
-      if (target.canEat(dino) && hunt.dist < target.radius * 2) {
-        var fleeX = dino.x + (dino.x - target.x);
-        var fleeY = dino.y + (dino.y - target.y);
-        dino.moveToward(fleeX, fleeY, 0.8, dt);
-        return { action: 'flee', target: target };
-      }
-
-      if (similar && hunt.dist < dino.radius * 3 && Math.random() < 0.008) {
-        if (hunt.dist < biteRange && dino.tryBite()) {
-          return { action: 'bite', target: target };
-        }
-      }
+      unit.angle = U.angleTo(unit.x, unit.y, target.x, target.y);
+      if (unit.tryAttack()) return { action: 'attack', target: target };
+      return { action: 'engage', target: target };
     }
 
-    dino.wanderAngle += U.rand(-0.8, 0.8) * dt;
-    var wanderX = dino.x + Math.cos(dino.wanderAngle) * 200;
-    var wanderY = dino.y + Math.sin(dino.wanderAngle) * 200;
-    dino.moveToward(wanderX, wanderY, 0.22, dt);
+    if (unit.isAlly && ctx.player) {
+      var ax = ctx.player.x + Math.cos(unit.wanderAngle) * 50;
+      var ay = ctx.player.y + Math.sin(unit.wanderAngle) * 50;
+      unit.wanderAngle += dt * 0.4;
+      unit.moveToward(ax, ay, 0.28, dt);
+      return { action: 'guard' };
+    }
+
+    unit.wanderAngle += U.rand(-0.8, 0.8) * dt;
+    unit.moveToward(
+      unit.x + Math.cos(unit.wanderAngle) * 180,
+      unit.y + Math.sin(unit.wanderAngle) * 180,
+      0.22,
+      dt
+    );
     return { action: 'wander' };
   }
 

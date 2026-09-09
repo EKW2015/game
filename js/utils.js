@@ -31,22 +31,15 @@
     return a;
   }
 
-  function radiusFromMass(mass) {
-    return Math.sqrt(mass) * 6.5 + 28;
+  function facingDot(unit, tx, ty) {
+    var dx = tx - unit.x;
+    var dy = ty - unit.y;
+    var len = Math.hypot(dx, dy) || 1;
+    return (Math.cos(unit.angle) * dx + Math.sin(unit.angle) * dy) / len;
   }
 
-  function massFromRadius(r) {
-    return Math.max(1, ((r - 8) / 2.8) * ((r - 8) / 2.8));
-  }
-
-  function evolutionStage(mass) {
-    if (mass < 35) return 0;
-    if (mass < 90) return 1;
-    if (mass < 180) return 2;
-    return 3;
-  }
-
-  var STAGE_NAMES = ['幼龙', '猎手', '霸主', '传说'];
+  var RING_COLORS = ['#f5c542', '#b44cff', '#b44cff', '#1a1a1a', '#1a1a1a', '#1a1a1a', '#e23b3b'];
+  var RING_GLOW = ['#ffe27a', '#d9a0ff', '#d9a0ff', '#444444', '#444444', '#444444', '#ff6b6b'];
 
   global.Utils = {
     clamp: clamp,
@@ -56,11 +49,8 @@
     dist: dist,
     angleTo: angleTo,
     wrapAngle: wrapAngle,
-    radiusFromMass: radiusFromMass,
-    massFromRadius: massFromRadius,
-    evolutionStage: evolutionStage,
-    stageName: function (mass) {
-      return STAGE_NAMES[evolutionStage(mass)];
-    }
+    facingDot: facingDot,
+    RING_COLORS: RING_COLORS,
+    RING_GLOW: RING_GLOW
   };
 })(window);

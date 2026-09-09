@@ -1,10 +1,8 @@
 /**
- * 无限世界：按区块 procedural 生成地形、植被，跟随玩家加载/卸载。
+ * 斗罗大陆地形：魂殿广场、黄金魂兽林、白玉石柱。
  */
 (function (global) {
   'use strict';
-
-  var U = global.Utils;
 
   var CHUNK_SIZE = 480;
   var VIEW_RADIUS = 2;
@@ -26,17 +24,31 @@
     this.scene = scene;
     this.chunks = new Map();
     this.groundMat = new THREE.MeshStandardMaterial({
-      color: 0x3a6b42,
+      color: 0x6b8a4a,
       roughness: 0.95,
-      metalness: 0.01
+      metalness: 0.02
     });
-    this.grassMat = new THREE.MeshStandardMaterial({
-      color: 0x4d8a54,
-      roughness: 0.98
+    this.goldGrass = new THREE.MeshStandardMaterial({
+      color: 0xc2b46a,
+      roughness: 0.92
     });
-    this.trunkMat = new THREE.MeshStandardMaterial({ color: 0x4a3018, roughness: 0.9 });
-    this.leafMat = new THREE.MeshStandardMaterial({ color: 0x2f6b38, roughness: 0.85 });
-    this.rockMat = new THREE.MeshStandardMaterial({ color: 0x5a5a62, roughness: 0.95 });
+    this.trunkMat = new THREE.MeshStandardMaterial({ color: 0xe8dcc0, roughness: 0.7, metalness: 0.08 });
+    this.leafMat = new THREE.MeshStandardMaterial({
+      color: 0xe8c35a,
+      roughness: 0.45,
+      metalness: 0.25,
+      emissive: 0x6a5010,
+      emissiveIntensity: 0.15
+    });
+    this.rockMat = new THREE.MeshStandardMaterial({ color: 0xd8d0c4, roughness: 0.88 });
+    this.marble = new THREE.MeshStandardMaterial({ color: 0xf2ead8, roughness: 0.4, metalness: 0.12 });
+    this.goldMat = new THREE.MeshStandardMaterial({
+      color: 0xe8c35a,
+      roughness: 0.28,
+      metalness: 0.7,
+      emissive: 0x8a6a18,
+      emissiveIntensity: 0.25
+    });
   }
 
   World.prototype.key = function (cx, cz) {
@@ -48,6 +60,48 @@
       Math.sin(x * 0.004) * Math.cos(z * 0.004) * 8 +
       Math.sin(x * 0.013 + 1.2) * Math.sin(z * 0.011) * 3
     );
+  };
+
+  World.prototype.buildPlaza = function (group) {
+    var floor = new THREE.Mesh(new THREE.CylinderGeometry(90, 90, 2.2, 48), this.marble);
+    floor.position.set(0, 1.1, 0);
+    floor.receiveShadow = true;
+    group.add(floor);
+
+    var ringColors = [0xf5c542, 0xb44cff, 0xb44cff, 0x222222, 0x222222, 0x222222, 0xe23b3b];
+    for (var i = 0; i < 7; i++) {
+      var r = 18 + i * 8;
+      var torus = new THREE.Mesh(
+        new THREE.TorusGeometry(r, 0.55, 8, 48),
+        new THREE.MeshStandardMaterial({
+          color: ringColors[i],
+          emissive: ringColors[i],
+          emissiveIntensity: 0.35,
+          metalness: 0.4,
+          roughness: 0.35
+        })
+      );
+      torus.rotation.x = Math.PI / 2;
+      torus.position.y = 2.3;
+      group.add(torus);
+    }
+
+    for (var p = 0; p < 8; p++) {
+      var a = (p / 8) * Math.PI * 2;
+      var px = Math.cos(a) * 78;
+      var pz = Math.sin(a) * 78;
+      var col = new THREE.Mesh(new THREE.CylinderGeometry(2.2, 2.8, 28, 10), this.marble);
+      col.position.set(px, 14, pz);
+      col.castShadow = true;
+      group.add(col);
+      var cap = new THREE.Mesh(new THREE.SphereGeometry(3.2, 10, 8), this.goldMat);
+      cap.position.set(px, 30, pz);
+      group.add(cap);
+    }
+
+    var altar = new THREE.Mesh(new THREE.CylinderGeometry(8, 10, 4, 12), this.goldMat);
+    altar.position.y = 3.2;
+    group.add(altar);
   };
 
   World.prototype.buildChunk = function (cx, cz) {
@@ -74,53 +128,56 @@
     ground.geometry.computeVertexNormals();
     group.add(ground);
 
-    // 草斑块
-    for (var g = 0; g < 12; g++) {
+    for (var g = 0; g < 10; g++) {
       var gx = ox + rand() * CHUNK_SIZE;
       var gz = oz + rand() * CHUNK_SIZE;
       var patch = new THREE.Mesh(
-        new THREE.CircleGeometry(18 + rand() * 24, 8),
-        this.grassMat
+        new THREE.CircleGeometry(16 + rand() * 28, 8),
+        this.goldGrass
       );
       patch.rotation.x = -Math.PI / 2;
-      patch.position.set(gx, this.heightAt(gx, gz) + 0.08, gz);
+      patch.position.set(gx, this.heightAt(gx, gz) + 0.1, gz);
       patch.receiveShadow = true;
       group.add(patch);
     }
 
-    // 树木
-    var treeCount = 4 + Math.floor(rand() * 5);
+    if (cx === 0 && cz === 0) {
+      this.buildPlaza(group);
+    }
+
+    var treeCount = (cx === 0 && cz === 0) ? 3 : 5 + Math.floor(rand() * 5);
     for (var t = 0; t < treeCount; t++) {
-      var tx = ox + 40 + rand() * (CHUNK_SIZE - 80);
-      var tz = oz + 40 + rand() * (CHUNK_SIZE - 80);
+      var tx = ox + 50 + rand() * (CHUNK_SIZE - 100);
+      var tz = oz + 50 + rand() * (CHUNK_SIZE - 100);
+      if (cx === 0 && cz === 0 && Math.hypot(tx, tz) < 110) continue;
       var th = this.heightAt(tx, tz);
-      var scale = 0.9 + rand() * 0.7;
+      var scale = 0.9 + rand() * 0.8;
 
       var trunk = new THREE.Mesh(
-        new THREE.CylinderGeometry(2.2 * scale, 3.2 * scale, 22 * scale, 8),
+        new THREE.CylinderGeometry(1.8 * scale, 2.6 * scale, 24 * scale, 8),
         this.trunkMat
       );
-      trunk.position.set(tx, th + 11 * scale, tz);
+      trunk.position.set(tx, th + 12 * scale, tz);
       trunk.castShadow = true;
       group.add(trunk);
 
       var crown = new THREE.Mesh(
-        new THREE.SphereGeometry(14 * scale, 10, 10),
+        new THREE.SphereGeometry(12 * scale, 10, 10),
         this.leafMat
       );
       crown.position.set(tx, th + 28 * scale, tz);
-      crown.scale.set(1, 1.15, 1);
+      crown.scale.set(1, 1.1, 1);
       crown.castShadow = true;
       group.add(crown);
     }
 
-    // 岩石
-    for (var r = 0; r < 3 + Math.floor(rand() * 4); r++) {
+    for (var r = 0; r < 2 + Math.floor(rand() * 3); r++) {
       var rx = ox + rand() * CHUNK_SIZE;
       var rz = oz + rand() * CHUNK_SIZE;
+      if (cx === 0 && cz === 0 && Math.hypot(rx, rz) < 100) continue;
       var rh = this.heightAt(rx, rz);
       var rock = new THREE.Mesh(
-        new THREE.DodecahedronGeometry(5 + rand() * 10, 1),
+        new THREE.DodecahedronGeometry(4 + rand() * 8, 0),
         this.rockMat
       );
       rock.position.set(rx, rh + 3, rz);

@@ -3,31 +3,30 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <meta name="description" content="无限 3D 恐龙世界：自由探索、捕食、进化。" />
-    <meta name="theme-color" content="#1a3d28" />
-    <title>无限恐龙世界 3D</title>
-    <style>html,body{background:#0f2418!important;min-height:100vh;margin:0}</style>
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='14' font-size='14'>🦖</text></svg>" />
+    <meta name="description" content="斗罗大陆 3D：光明圣龙魂帝，七环魂技、自创魂技、魂骨与圣龙领域。" />
+    <meta name="theme-color" content="#1a1408" />
+    <title>斗罗大陆 · 光明圣龙魂帝 3D</title>
+    <style>html,body{background:#120e08!important;min-height:100vh;margin:0}</style>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='14' font-size='14'>🐉</text></svg>" />
     <style>:root {
-  --page-bg: #0f2418;
-  --card-bg: #1a3d28;
-  --ink: #e8f0e8;
-  --ink-soft: #9cb8a8;
-  --line: rgba(200, 230, 210, 0.16);
-  --accent: #5cd65c;
-  --accent-ink: #0f2418;
-  --win: #ffcc66;
-  --shadow: 0 18px 40px -24px rgba(0, 0, 0, 0.7);
+  --page-bg: #120e08;
+  --card-bg: #1c160c;
+  --ink: #f4ead0;
+  --ink-soft: #c4b48a;
+  --line: rgba(232, 195, 90, 0.22);
+  --accent: #e8c35a;
+  --accent-ink: #1a1408;
+  --hp: #e05a4a;
+  --soul: #5ad0e0;
+  --win: #ffe27a;
+  --shadow: 0 18px 40px -24px rgba(0, 0, 0, 0.75);
   --radius: 14px;
   color-scheme: dark;
 }
 
-* {
-  box-sizing: border-box;
-}
+* { box-sizing: border-box; }
 
-html,
-body {
+html, body {
   margin: 0;
   padding: 0;
 }
@@ -38,15 +37,48 @@ body {
   align-items: center;
   justify-content: center;
   padding: 24px 16px calc(24px + env(safe-area-inset-bottom));
-  background: var(--page-bg);
+  background:
+    radial-gradient(1200px 500px at 50% -10%, rgba(232, 195, 90, 0.16), transparent 55%),
+    var(--page-bg);
   color: var(--ink);
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
     "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", sans-serif;
   -webkit-font-smoothing: antialiased;
 }
 
+#boot-screen {
+  position: fixed;
+  inset: 0;
+  background: #120e08;
+  z-index: 99999;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent);
+  text-align: center;
+  padding: 20px;
+}
+
+.boot-mark {
+  width: 88px;
+  height: 88px;
+  border: 2px solid var(--accent);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 42px;
+  margin-bottom: 14px;
+  box-shadow: 0 0 30px rgba(232, 195, 90, 0.35);
+}
+
+.boot-title { font-size: 26px; font-weight: 700; letter-spacing: 0.18em; }
+.boot-sub { font-size: 14px; color: var(--ink-soft); margin-top: 6px; }
+#boot-msg { font-size: 14px; color: var(--ink-soft); margin-top: 16px; }
+
 .page {
-  width: min(1000px, 100%);
+  width: min(1100px, 100%);
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -64,14 +96,11 @@ body {
   margin: 0;
   font-size: clamp(20px, 4vw, 28px);
   font-weight: 700;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.12em;
   color: var(--accent);
 }
 
-.page__tools {
-  display: flex;
-  gap: 8px;
-}
+.page__tools { display: flex; gap: 8px; }
 
 .tool {
   font: inherit;
@@ -82,18 +111,10 @@ body {
   background: var(--card-bg);
   color: var(--ink-soft);
   cursor: pointer;
-  transition: color 0.2s ease, border-color 0.2s ease;
 }
 
-.tool:hover {
-  color: var(--ink);
-  border-color: var(--ink-soft);
-}
-
-.tool:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
-}
+.tool:hover { color: var(--ink); border-color: var(--accent); }
+.tool:disabled { opacity: 0.45; cursor: not-allowed; }
 
 .stage {
   position: relative;
@@ -102,7 +123,7 @@ body {
   background: var(--card-bg);
   box-shadow: var(--shadow);
   border: 1px solid var(--line);
-  touch-action: manipulation;
+  touch-action: none;
   user-select: none;
   min-height: 360px;
 }
@@ -113,42 +134,8 @@ body {
   min-height: 360px;
   height: auto;
   aspect-ratio: 16 / 9;
-  background: #7ec8f0;
-}
-
-.crosshair {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  width: 18px;
-  height: 18px;
-  margin: -9px 0 0 -9px;
-  pointer-events: none;
-  opacity: 0.55;
-}
-
-.crosshair::before,
-.crosshair::after {
-  content: "";
-  position: absolute;
-  background: rgba(255, 255, 255, 0.85);
-  border-radius: 1px;
-}
-
-.crosshair::before {
-  left: 50%;
-  top: 2px;
-  width: 2px;
-  height: 14px;
-  margin-left: -1px;
-}
-
-.crosshair::after {
-  top: 50%;
-  left: 2px;
-  width: 14px;
-  height: 2px;
-  margin-top: -1px;
+  background: #8eb4d4;
+  cursor: crosshair;
 }
 
 .badge-3d {
@@ -156,15 +143,14 @@ body {
   font-size: 0.45em;
   padding: 2px 8px;
   border-radius: 6px;
-  background: linear-gradient(135deg, #5cd65c, #3a9ad9);
-  color: #0f2418;
+  background: linear-gradient(135deg, #e8c35a, #b44cff);
+  color: #1a1408;
   vertical-align: middle;
-  letter-spacing: 0.05em;
 }
 
 .hud {
   position: absolute;
-  inset: 0;
+  inset: 0 0 auto 0;
   pointer-events: none;
   padding: 12px;
   display: flex;
@@ -172,43 +158,139 @@ body {
   align-items: flex-start;
 }
 
-.hud__panel {
-  background: rgba(0, 0, 0, 0.5);
-  color: #e8f0e8;
+.hud__left, .hud__right {
+  background: rgba(10, 8, 4, 0.55);
   padding: 8px 12px;
-  border-radius: 8px;
+  border-radius: 10px;
   font-size: 12px;
-  line-height: 1.7;
+  line-height: 1.6;
+  border: 1px solid var(--line);
 }
 
-.hud__panel strong {
-  color: #5cd65c;
+.hud__title { color: var(--accent); font-weight: 700; letter-spacing: 0.08em; }
+.hud__rank { color: var(--ink-soft); font-size: 11px; }
+.hud__right { color: var(--ink-soft); text-align: right; }
+.hud__right strong { color: var(--accent); }
+.hud__target { margin-top: 4px; color: #fff4c0; max-width: 180px; }
+
+.bar {
+  position: relative;
+  width: 220px;
+  height: 12px;
+  margin-top: 6px;
+  background: rgba(0, 0, 0, 0.45);
+  border-radius: 999px;
+  overflow: hidden;
 }
 
-.hud__remain {
-  background: rgba(0, 0, 0, 0.5);
-  color: #ffcc66;
-  padding: 6px 12px;
-  border-radius: 8px;
-  font-size: 13px;
+.bar span {
+  display: block;
+  height: 100%;
+  width: 100%;
+  transform-origin: left center;
+  transform: scaleX(1);
+}
+
+.bar--hp span { background: linear-gradient(90deg, #8a2020, var(--hp)); }
+.bar--soul span { background: linear-gradient(90deg, #1a6a78, var(--soul)); }
+
+.bar em {
+  position: absolute;
+  inset: 0;
+  font-style: normal;
+  font-size: 10px;
+  text-align: center;
+  line-height: 12px;
+  color: #fff;
+  text-shadow: 0 1px 2px #000;
+}
+
+.rings {
+  display: flex;
+  gap: 5px;
+  margin-top: 8px;
+}
+
+.rings i {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  display: block;
+}
+
+.buffs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 6px;
+  max-width: 240px;
+}
+
+.buffs b {
   font-weight: 600;
+  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: rgba(232, 195, 90, 0.2);
+  color: var(--accent);
 }
 
 .toast {
   position: absolute;
-  top: 50%;
+  top: 46%;
   left: 50%;
   transform: translate(-50%, -80px);
-  background: rgba(0, 0, 0, 0.55);
-  color: #fff;
+  background: rgba(12, 8, 2, 0.7);
+  color: var(--accent);
   padding: 8px 18px;
   border-radius: 999px;
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 700;
+  letter-spacing: 0.08em;
   opacity: 0;
   transition: opacity 0.2s ease;
   pointer-events: none;
   white-space: nowrap;
+  border: 1px solid var(--line);
+}
+
+.skillbar {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  pointer-events: auto;
+  justify-content: center;
+}
+
+.sk {
+  position: relative;
+  min-width: 52px;
+  height: 46px;
+  padding: 4px 6px 4px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: rgba(12, 8, 2, 0.72);
+  color: var(--ink);
+  cursor: pointer;
+  font: inherit;
+  line-height: 1.1;
+}
+
+.sk:hover { border-color: var(--accent); }
+.sk.is-cd { opacity: 0.55; }
+.sk small { display: block; font-size: 9px; color: var(--ink-soft); }
+.sk .sk-name { display: block; font-size: 10px; font-weight: 700; max-width: 64px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sk .sk-key {
+  position: absolute;
+  top: 2px;
+  right: 4px;
+  font-size: 9px;
+  color: var(--accent);
 }
 
 .overlay {
@@ -222,42 +304,25 @@ body {
   padding: 16px;
   text-align: center;
   pointer-events: none;
-  background: rgba(10, 24, 16, 0.55);
-  backdrop-filter: blur(1px);
+  background: rgba(12, 8, 2, 0.58);
+  backdrop-filter: blur(2px);
 }
 
-.overlay--hidden {
-  display: none;
-}
+.overlay--hidden { display: none; }
 
 .overlay__title {
   margin: 0;
   font-size: clamp(20px, 4vw, 28px);
   font-weight: 700;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.16em;
+  color: var(--accent);
 }
 
-.overlay__title--win {
-  color: var(--win);
-}
-
-.overlay__hint,
-.overlay__score {
+.overlay__hint, .overlay__score {
   margin: 0;
   font-size: 13px;
   color: var(--ink-soft);
-  max-width: 420px;
-}
-
-.overlay__score strong {
-  color: var(--ink);
-}
-
-.overlay__record {
-  display: block;
-  margin-top: 6px;
-  font-size: 14px;
-  color: var(--accent);
+  max-width: 520px;
 }
 
 .overlay__button {
@@ -270,23 +335,11 @@ body {
   border-radius: 999px;
   background: var(--accent);
   color: var(--accent-ink);
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
 }
 
-.overlay__button:hover {
-  filter: brightness(1.08);
-}
-
-kbd {
-  display: inline-block;
-  min-width: 20px;
-  padding: 1px 6px;
-  border: 1px solid var(--line);
-  border-radius: 5px;
-  background: var(--card-bg);
-  font-size: 11px;
-}
+.overlay__button:hover { filter: brightness(1.08); }
 
 .touch {
   display: none;
@@ -316,23 +369,24 @@ kbd {
 .touch__btn--right { grid-column: 3; grid-row: 2; }
 .touch__btn--down { grid-column: 2; grid-row: 3; }
 
+.touch__actions { display: flex; flex-direction: column; gap: 8px; flex: 1; }
+
 .touch__bite {
-  flex: 1;
   font: inherit;
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 600;
-  padding: 20px;
+  padding: 16px;
   border-radius: 12px;
   border: 1px solid var(--line);
-  background: #c44a4a;
+  background: #a87820;
   color: #fff;
   cursor: pointer;
 }
 
+.touch__bite--jump { background: #3a6a88; }
+
 @media (pointer: coarse) {
-  .touch {
-    display: flex;
-  }
+  .touch { display: flex; }
 }
 
 .legend {
@@ -347,7 +401,7 @@ kbd {
   font-size: 13px;
   font-weight: 600;
   color: var(--ink-soft);
-  letter-spacing: 0.1em;
+  letter-spacing: 0.12em;
 }
 
 .legend__list {
@@ -359,23 +413,18 @@ kbd {
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
   font-size: 13px;
 }
-
-.legend__note {
-  margin: 12px 0 0;
-  font-size: 12px;
-  color: var(--ink-soft);
-}
 </style>
   </head>
   <body>
-    <div id="boot-screen" style="position:fixed;inset:0;background:#0f2418;z-index:99999;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#5cd65c;font-family:sans-serif;text-align:center;padding:20px">
-      <div style="font-size:56px;margin-bottom:12px">🦖</div>
-      <div style="font-size:24px;font-weight:bold">无限恐龙世界 3D</div>
-      <div id="boot-msg" style="font-size:15px;color:#9cb8a8;margin-top:14px">正在加载 3D 引擎，请稍候…</div>
+    <div id="boot-screen">
+      <div class="boot-mark">龍</div>
+      <div class="boot-title">斗罗大陆 · 3D</div>
+      <div class="boot-sub">光明圣龙魂帝</div>
+      <div id="boot-msg">正在凝聚武魂，请稍候…</div>
     </div>
     <main class="page">
       <header class="page__header">
-        <h1 class="page__title">无限恐龙世界 <span class="badge-3d">3D</span></h1>
+        <h1 class="page__title">斗罗大陆 <span class="badge-3d">3D</span></h1>
         <div class="page__tools">
           <button id="btn-sound" class="tool" type="button" aria-pressed="false">音效：开</button>
           <button id="btn-pause" class="tool" type="button">暂停</button>
@@ -383,36 +432,45 @@ kbd {
       </header>
 
       <div class="stage" id="stage">
-        <canvas id="game" class="stage__canvas" role="img" aria-label="无限 3D 恐龙世界"></canvas>
-        <div class="crosshair" aria-hidden="true"></div>
+        <canvas id="game" class="stage__canvas" role="img" aria-label="斗罗大陆 3D"></canvas>
 
         <div class="hud" id="hud">
-          <div class="hud__panel">
-            <div>阶段: <strong id="hud-stage">幼龙</strong></div>
-            <div>体型: <strong id="hud-mass">45</strong></div>
-            <div>击杀: <strong id="hud-kills">0</strong></div>
+          <div class="hud__left">
+            <div class="hud__name">
+              <div class="hud__title" id="hud-title">光明圣龙魂帝</div>
+              <div class="hud__rank" id="hud-rank">七环魂帝 · 圣龙徽章</div>
+            </div>
+            <div class="bar bar--hp"><span id="bar-hp"></span><em id="hud-hp">2200</em></div>
+            <div class="bar bar--soul"><span id="bar-soul"></span><em id="hud-soul">1200</em></div>
+            <div class="rings" id="soul-rings" aria-hidden="true"></div>
+            <div class="buffs" id="hud-buffs"></div>
           </div>
-          <div class="hud__remain">最高击杀 <strong id="hud-best">0</strong></div>
+          <div class="hud__right">
+            <div>击杀 <strong id="hud-kills">0</strong></div>
+            <div>最高 <strong id="hud-best">0</strong></div>
+            <div class="hud__target" id="hud-target">锁定：无</div>
+          </div>
         </div>
 
         <div class="toast" id="toast"></div>
+        <div class="skillbar" id="skill-bar"></div>
 
         <div class="overlay" id="overlay-ready">
-          <p class="overlay__title">无限 3D 恐龙世界 🌍</p>
-          <p class="overlay__hint">真实 3D 恐龙 · 无限大地图 · 自由探索</p>
-          <p class="overlay__hint">方向键移动 · 靠近小恐龙吞食 · 不断进化变大</p>
-          <button class="overlay__button" type="button" data-action="start">进入世界</button>
+          <p class="overlay__title">斗罗大陆 · 光明圣龙</p>
+          <p class="overlay__hint">七环魂帝 · 武魂光明圣龙 · 佩戴圣龙徽章</p>
+          <p class="overlay__hint">WASD 移动 · 鼠标转动视角 · J 普攻 · 1-7 魂技 · Q/E/R/F/T/Y/C 自创 · Z/X 魂骨 · V 领域</p>
+          <button class="overlay__button" type="button" data-action="start">释放武魂</button>
         </div>
 
         <div class="overlay overlay--hidden" id="overlay-over">
-          <p class="overlay__title">你被击败了</p>
+          <p class="overlay__title">魂力耗尽</p>
           <p class="overlay__score" id="death-stats"></p>
-          <button class="overlay__button" type="button" data-action="restart">重新开始</button>
+          <button class="overlay__button" type="button" data-action="restart">重入魂殿</button>
         </div>
 
         <div class="overlay overlay--hidden" id="overlay-paused">
-          <p class="overlay__title">已暂停</p>
-          <button class="overlay__button" type="button" data-action="resume">继续探索</button>
+          <p class="overlay__title">暂停</p>
+          <button class="overlay__button" type="button" data-action="resume">继续</button>
         </div>
 
         <div class="overlay overlay--hidden" id="overlay-error">
@@ -428,16 +486,19 @@ kbd {
           <button class="touch__btn touch__btn--right" type="button" data-hold="right">→</button>
           <button class="touch__btn touch__btn--down" type="button" data-hold="down">↓</button>
         </div>
-        <button class="touch__bite" type="button" data-hold="bite">撕咬</button>
+        <div class="touch__actions">
+          <button class="touch__bite" type="button" data-hold="attack">普攻</button>
+          <button class="touch__bite touch__bite--jump" type="button" data-hold="jump">跳/飞</button>
+        </div>
       </div>
 
       <section class="legend">
-        <h2 class="legend__title">怎么玩</h2>
+        <h2 class="legend__title">魂技与操作</h2>
         <ul class="legend__list">
-          <li>方向键 / WASD 在无限世界中自由移动</li>
-          <li>靠近比自己小的恐龙即可吞食，体型会变大</li>
-          <li>进化：幼龙 → 猎手 → 霸主 → 传说</li>
-          <li>世界没有边界，一直探索一直变强</li>
+          <li>1-7：魂技（龙爪 / 光翼 / 龙啸 / 金身 / 审判 / 神光 / 真身）</li>
+          <li>Q 瞬步 · E 爆破拳 · R 摆尾 · F 光盾 · T 龙针 · Y 御剑 · C 破天击</li>
+          <li>Z 裂空爪（左臂骨）· X 重力拳（右臂骨）· V 圣龙主迹领域</li>
+          <li>空格跳跃；光翼开启后可滞空。佩戴徽章的友军不受领域伤害</li>
         </ul>
       </section>
     </main>
@@ -483,22 +544,15 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     return a;
   }
 
-  function radiusFromMass(mass) {
-    return Math.sqrt(mass) * 6.5 + 28;
+  function facingDot(unit, tx, ty) {
+    var dx = tx - unit.x;
+    var dy = ty - unit.y;
+    var len = Math.hypot(dx, dy) || 1;
+    return (Math.cos(unit.angle) * dx + Math.sin(unit.angle) * dy) / len;
   }
 
-  function massFromRadius(r) {
-    return Math.max(1, ((r - 8) / 2.8) * ((r - 8) / 2.8));
-  }
-
-  function evolutionStage(mass) {
-    if (mass < 35) return 0;
-    if (mass < 90) return 1;
-    if (mass < 180) return 2;
-    return 3;
-  }
-
-  var STAGE_NAMES = ['幼龙', '猎手', '霸主', '传说'];
+  var RING_COLORS = ['#f5c542', '#b44cff', '#b44cff', '#1a1a1a', '#1a1a1a', '#1a1a1a', '#e23b3b'];
+  var RING_GLOW = ['#ffe27a', '#d9a0ff', '#d9a0ff', '#444444', '#444444', '#444444', '#ff6b6b'];
 
   global.Utils = {
     clamp: clamp,
@@ -508,12 +562,9 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     dist: dist,
     angleTo: angleTo,
     wrapAngle: wrapAngle,
-    radiusFromMass: radiusFromMass,
-    massFromRadius: massFromRadius,
-    evolutionStage: evolutionStage,
-    stageName: function (mass) {
-      return STAGE_NAMES[evolutionStage(mass)];
-    }
+    facingDot: facingDot,
+    RING_COLORS: RING_COLORS,
+    RING_GLOW: RING_GLOW
   };
 })(window);
 
@@ -544,12 +595,12 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     var t0 = ac.currentTime + (opts.delay || 0);
     var osc = ac.createOscillator();
     var gain = ac.createGain();
-    osc.type = opts.type || 'square';
+    osc.type = opts.type || 'sine';
     osc.frequency.setValueAtTime(opts.from, t0);
-    if (opts.to) osc.frequency.exponentialRampToValueAtTime(opts.to, t0 + opts.duration);
+    if (opts.to) osc.frequency.exponentialRampToValueAtTime(Math.max(20, opts.to), t0 + opts.duration);
     var vol = opts.volume == null ? 0.1 : opts.volume;
     gain.gain.setValueAtTime(0.0001, t0);
-    gain.gain.exponentialRampToValueAtTime(vol, t0 + 0.01);
+    gain.gain.exponentialRampToValueAtTime(vol, t0 + 0.012);
     gain.gain.exponentialRampToValueAtTime(0.0001, t0 + opts.duration);
     osc.connect(gain);
     gain.connect(ac.destination);
@@ -557,23 +608,46 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     osc.stop(t0 + opts.duration + 0.02);
   }
 
+  function chord(base, steps) {
+    for (var i = 0; i < steps.length; i++) {
+      tone({ from: base * steps[i], duration: 0.16, volume: 0.05, delay: i * 0.05, type: 'triangle' });
+    }
+  }
+
   global.Sfx = {
-    bite: function () {
-      tone({ type: 'sawtooth', from: 180, to: 90, duration: 0.08, volume: 0.08 });
+    attack: function () {
+      tone({ type: 'sawtooth', from: 240, to: 90, duration: 0.09, volume: 0.07 });
     },
-    eat: function () {
-      tone({ from: 320, to: 640, duration: 0.15, volume: 0.1 });
-      tone({ from: 520, to: 880, duration: 0.12, volume: 0.08, delay: 0.08 });
+    skill: function (kind) {
+      if (kind === 'claw') {
+        tone({ type: 'sawtooth', from: 520, to: 180, duration: 0.14, volume: 0.08 });
+        tone({ type: 'triangle', from: 880, to: 440, duration: 0.12, volume: 0.05, delay: 0.04 });
+      } else if (kind === 'wings') {
+        chord(392, [1, 1.25, 1.5]);
+      } else if (kind === 'roar') {
+        tone({ type: 'sawtooth', from: 140, to: 55, duration: 0.45, volume: 0.12 });
+      } else if (kind === 'golden') {
+        chord(523, [1, 1.26, 1.5, 2]);
+      } else if (kind === 'judgment') {
+        tone({ type: 'square', from: 220, to: 880, duration: 0.28, volume: 0.09 });
+      } else if (kind === 'sunbeam') {
+        tone({ type: 'sine', from: 660, to: 1320, duration: 0.35, volume: 0.07 });
+      } else if (kind === 'truebody') {
+        chord(220, [1, 1.5, 2, 3]);
+        tone({ type: 'triangle', from: 110, to: 330, duration: 0.6, volume: 0.1, delay: 0.1 });
+      } else if (kind === 'flash') {
+        tone({ type: 'sine', from: 980, to: 1960, duration: 0.08, volume: 0.06 });
+      } else if (kind === 'domain') {
+        chord(174, [1, 1.5, 2, 2.5, 3]);
+      } else {
+        tone({ type: 'triangle', from: 480, to: 240, duration: 0.16, volume: 0.07 });
+      }
     },
-    evolve: function () {
-      tone({ from: 440, duration: 0.1, volume: 0.09 });
-      tone({ from: 660, duration: 0.1, volume: 0.09, delay: 0.1 });
-      tone({ from: 880, duration: 0.18, volume: 0.1, delay: 0.2 });
+    hit: function () {
+      tone({ type: 'square', from: 160, to: 70, duration: 0.07, volume: 0.06 });
     },
     win: function () {
-      tone({ from: 523, duration: 0.12, volume: 0.1 });
-      tone({ from: 659, duration: 0.12, volume: 0.1, delay: 0.12 });
-      tone({ from: 784, duration: 0.25, volume: 0.12, delay: 0.24 });
+      chord(523, [1, 1.25, 1.5, 2]);
     },
     die: function () {
       tone({ type: 'sawtooth', from: 400, to: 60, duration: 0.5, volume: 0.12 });
@@ -597,82 +671,176 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
 
   var U = global.Utils;
 
-  var STAGE_COLORS = [
-    { body: '#4caf7a', belly: '#8fd4a8', eye: '#1a3d2e' },
-    { body: '#4a8fd4', belly: '#9ec8f0', eye: '#1a2d4a' },
-    { body: '#e07a3a', belly: '#f0b878', eye: '#4a2010' },
-    { body: '#d44a4a', belly: '#f09090', eye: '#3a1010' }
-  ];
-
-  var PLAYER_COLORS = { body: '#5cd65c', belly: '#b8f0b8', eye: '#1a4a1a' };
-
-  function Dino(opts) {
-    this.id = opts.id;
-    this.isPlayer = !!opts.isPlayer;
-    this.x = opts.x;
-    this.y = opts.y;
-    this.vx = 0;
-    this.vy = 0;
-    this.angle = opts.angle || 0;
-    this.mass = opts.mass || 18;
-    this.radius = U.radiusFromMass(this.mass);
-    this.stage = U.evolutionStage(this.mass);
-    this.hp = opts.hp || 100;
-    this.maxHp = this.hp;
-    this.biteCooldown = 0;
-    this.biteAnim = 0;
-    this.alive = true;
-    this.kills = 0;
-    this.ai = opts.ai || null;
-    this.wanderAngle = U.rand(0, Math.PI * 2);
-    this.name = opts.name || (this.isPlayer ? '你' : '恐龙');
+  function emptyBuffs() {
+    return {
+      wings: 0,
+      golden: 0,
+      trueBody: 0,
+      shield: 0,
+      stun: 0,
+      blind: 0,
+      defDown: 0,
+      burn: 0,
+      gravity: 0,
+      sealed: 0,
+      blessing: 0,
+      domainCurse: 0,
+      reflectPulse: 0
+    };
   }
 
-  Dino.prototype.syncStats = function () {
-    this.radius = U.radiusFromMass(this.mass);
-    var newStage = U.evolutionStage(this.mass);
-    if (newStage !== this.stage) {
-      this.stage = newStage;
-      this.maxHp = 80 + this.stage * 35 + this.mass * 0.4;
-      this.hp = Math.min(this.hp + 25, this.maxHp);
-      return true;
+  function Unit(opts) {
+    opts = opts || {};
+    this.id = opts.id;
+    this.isPlayer = !!opts.isPlayer;
+    this.isAlly = !!opts.isAlly;
+    this.kind = opts.kind || 'master';
+    this.martialSoul = opts.martialSoul || 'shadow';
+    this.attr = opts.attr || 'beast';
+    this.hasBadge = !!opts.hasBadge;
+    this.name = opts.name || '魂师';
+    this.title = opts.title || '';
+    this.rank = opts.rank || '魂尊';
+    this.rings = opts.rings || 4;
+
+    this.x = opts.x || 0;
+    this.y = opts.y || 0;
+    this.h = opts.h || 0;
+    this.vx = 0;
+    this.vy = 0;
+    this.vh = 0;
+    this.angle = opts.angle || 0;
+    this.yaw = this.angle;
+
+    this.baseHp = opts.hp || 400;
+    this.baseAtk = opts.atk || 40;
+    this.baseDef = opts.def || 24;
+    this.baseSpd = opts.spd || 120;
+    this.baseSoul = opts.soul || 200;
+
+    this.maxHp = this.baseHp;
+    this.hp = this.baseHp;
+    this.maxSoul = this.baseSoul;
+    this.soul = this.baseSoul;
+
+    this.radius = opts.radius || (this.kind === 'ape' ? 22 : this.kind === 'wolf' ? 16 : 14);
+    this.alive = true;
+    this.kills = 0;
+    this.hitFlash = 0;
+    this.attackAnim = 0;
+    this.attackCd = 0;
+    this.castLock = 0;
+    this.wanderAngle = U.rand(0, Math.PI * 2);
+    this.buffs = emptyBuffs();
+    this.cooldowns = {};
+    this.wantReflect = false;
+    this.pendingHit = false;
+    this.team = this.isPlayer || this.isAlly ? 'light' : 'dark';
+  }
+
+  Unit.prototype.mul = function () {
+    var m = 1;
+    if (this.buffs.trueBody > 0) m *= 4;
+    if (this.buffs.blessing > 0) m *= 1.3;
+    if (this.buffs.domainCurse > 0) m *= 0.5;
+    return m;
+  };
+
+  Unit.prototype.getAtk = function () {
+    var v = this.baseAtk * this.mul();
+    if (this.buffs.wings > 0) v *= 1.08;
+    return v;
+  };
+
+  Unit.prototype.getDef = function () {
+    var v = this.baseDef * this.mul();
+    if (this.buffs.defDown > 0) v *= 0.55;
+    if (this.buffs.golden > 0) v *= 1.8;
+    return v;
+  };
+
+  Unit.prototype.getSpd = function () {
+    if (this.buffs.stun > 0 || this.buffs.gravity > 0) {
+      return this.buffs.gravity > 0 && this.buffs.stun <= 0 ? this.baseSpd * 0.12 : 0;
     }
-    return false;
+    var v = this.baseSpd * this.mul();
+    if (this.buffs.wings > 0) v *= 1.85;
+    if (this.buffs.sealed > 0) v *= 0.75;
+    if (this.isPlayer) v *= 1.12;
+    return v;
   };
 
-  Dino.prototype.speed = function () {
-    var base = 140 + this.stage * 18 - this.mass * 0.35;
-    return this.isPlayer ? base * 1.35 : base * 0.85;
+  Unit.prototype.canAct = function () {
+    return this.alive && this.buffs.stun <= 0 && this.castLock <= 0;
   };
 
-  Dino.prototype.biteDamage = function () {
-    return 12 + this.stage * 8 + this.mass * 0.15;
+  Unit.prototype.isImmune = function () {
+    return this.buffs.trueBody > 0 || this.buffs.golden > 0;
   };
 
-  Dino.prototype.canEat = function (other) {
-    if (this.isPlayer) {
-      return this.radius > other.radius * 1.02 && this.mass > other.mass * 1.05;
+  Unit.prototype.immuneCC = function () {
+    return this.buffs.trueBody > 0 || this.buffs.golden > 0;
+  };
+
+  Unit.prototype.applyBuff = function (name, duration) {
+    if (this.immuneCC() && (name === 'stun' || name === 'blind' || name === 'gravity' || name === 'sealed')) {
+      return false;
     }
-    return this.radius > other.radius * 1.12 && this.mass > other.mass * 1.15;
+    this.buffs[name] = Math.max(this.buffs[name] || 0, duration);
+    return true;
   };
 
-  Dino.prototype.eatRatio = function (other) {
-    return this.radius / other.radius;
+  Unit.prototype.tickBuffs = function (dt) {
+    var b = this.buffs;
+    for (var k in b) {
+      if (b[k] > 0) {
+        b[k] -= dt;
+        if (b[k] < 0) b[k] = 0;
+      }
+    }
+    if (this.hitFlash > 0) this.hitFlash -= dt;
+    if (this.attackAnim > 0) this.attackAnim -= dt;
+    if (this.attackCd > 0) this.attackCd -= dt;
+    if (this.castLock > 0) this.castLock -= dt;
+    for (var id in this.cooldowns) {
+      if (this.cooldowns[id] > 0) {
+        this.cooldowns[id] -= dt;
+        if (this.cooldowns[id] < 0) this.cooldowns[id] = 0;
+      }
+    }
   };
 
-  Dino.prototype.moveToward = function (tx, ty, power, dt) {
+  Unit.prototype.regen = function (dt) {
+    if (!this.alive) return;
+    var hpRate = this.isPlayer ? 18 : 8;
+    var soulRate = this.isPlayer ? 28 : 10;
+    if (this.buffs.blessing > 0) {
+      hpRate += 35;
+      soulRate += 90;
+    }
+    this.hp = Math.min(this.maxHp, this.hp + hpRate * dt);
+    this.soul = Math.min(this.maxSoul, this.soul + soulRate * dt);
+    if (this.buffs.burn > 0) {
+      this.hp -= (12 + this.maxHp * 0.008) * dt;
+    }
+  };
+
+  Unit.prototype.moveToward = function (tx, ty, power, dt) {
+    if (this.buffs.stun > 0) return;
     var a = U.angleTo(this.x, this.y, tx, ty);
     this.angle = a;
-    var spd = this.speed() * power;
-    this.vx += Math.cos(a) * spd * dt * 3.5;
-    this.vy += Math.sin(a) * spd * dt * 3.5;
+    this.yaw = a;
+    var spd = this.getSpd() * power;
+    this.vx += Math.cos(a) * spd * dt * 3.4;
+    this.vy += Math.sin(a) * spd * dt * 3.4;
   };
 
-  Dino.prototype.applyFriction = function (dt) {
-    var drag = Math.pow(0.12, dt);
+  Unit.prototype.applyFriction = function (dt) {
+    var drag = Math.pow(0.08, dt);
     this.vx *= drag;
     this.vy *= drag;
-    var max = this.speed() * 1.1;
+    this.vh *= Math.pow(0.18, dt);
+    var max = Math.max(40, this.getSpd() * 1.15);
     var v = Math.hypot(this.vx, this.vy);
     if (v > max) {
       this.vx = (this.vx / v) * max;
@@ -680,38 +848,71 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     }
   };
 
-  Dino.prototype.updateMotion = function (world, dt) {
+  Unit.prototype.updateMotion = function (world, dt) {
+    if (this.buffs.stun > 0) {
+      this.vx = 0;
+      this.vy = 0;
+    }
     this.x += this.vx * dt;
     this.y += this.vy * dt;
+    this.h += this.vh * dt;
 
-    if (Math.hypot(this.vx, this.vy) > 8) {
-      this.angle = Math.atan2(this.vy, this.vx);
+    var flying = this.buffs.wings > 0 || this.buffs.trueBody > 0;
+    if (!flying) {
+      this.vh -= 220 * dt;
+      if (this.h <= 0) {
+        this.h = 0;
+        this.vh = 0;
+      }
+    } else {
+      this.h = U.clamp(this.h, 0, this.buffs.trueBody > 0 ? 90 : 70);
     }
 
-    if (this.biteCooldown > 0) this.biteCooldown -= dt;
-    if (this.biteAnim > 0) this.biteAnim -= dt;
+    if (Math.hypot(this.vx, this.vy) > 8 && this.buffs.stun <= 0) {
+      this.angle = Math.atan2(this.vy, this.vx);
+    }
   };
 
-  Dino.prototype.groundY = function (world) {
-    if (!world || !world.heightAt) return 0;
-    return world.heightAt(this.x, this.y);
-  };
-
-  Dino.prototype.tryBite = function () {
-    if (this.biteCooldown > 0) return false;
-    this.biteCooldown = 0.38 - this.stage * 0.04;
-    this.biteAnim = 0.18;
+  Unit.prototype.tryAttack = function () {
+    if (this.attackCd > 0 || this.buffs.stun > 0) return false;
+    this.attackCd = 0.42;
+    this.attackAnim = 0.2;
+    this.pendingHit = true;
     return true;
   };
 
-  Dino.prototype.biteReach = function () {
-    return this.radius * 1.55;
+  Unit.prototype.attackReach = function () {
+    return this.radius * 1.7 + (this.buffs.trueBody > 0 ? 28 : 0);
   };
 
-  Dino.prototype.takeDamage = function (amount, from) {
+  Unit.prototype.takeDamage = function (amount, from, opts) {
+    opts = opts || {};
+    if (!this.alive) return false;
+    if (this.buffs.trueBody > 0 && !opts.trueDmg) {
+      this.hitFlash = 0.08;
+      return false;
+    }
+
+    if (this.buffs.golden > 0 && !opts.trueDmg) {
+      amount *= 0.1;
+      this.wantReflect = true;
+    }
+
+    if (this.buffs.shield > 0 && from && !opts.trueDmg) {
+      if (U.facingDot(this, from.x, from.y) > 0.15) {
+        amount *= 0.12;
+      }
+    }
+
+    var def = this.getDef();
+    amount = amount * (90 / (90 + def));
+    if (opts.vsDark && this.attr === 'dark') amount *= 1.65;
+    if (opts.penetrate) amount *= 1.35;
+
     this.hp -= amount;
-    if (from) {
-      var push = 120 + from.mass * 0.5;
+    this.hitFlash = 0.16;
+    if (from && !this.buffs.gravity) {
+      var push = (opts.knock || 80) * (this.buffs.gravity > 0 ? 0.2 : 1);
       var a = U.angleTo(from.x, from.y, this.x, this.y);
       this.vx += Math.cos(a) * push;
       this.vy += Math.sin(a) * push;
@@ -719,260 +920,647 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     return this.hp <= 0;
   };
 
-  Dino.prototype.absorb = function (other) {
-    this.mass += other.mass * 0.85;
-    this.kills += 1;
-    var evolved = this.syncStats();
-    this.hp = Math.min(this.maxHp, this.hp + other.mass * 0.3);
-    return evolved;
-  };
-
-  Dino.prototype.colors = function () {
-    if (this.isPlayer) return PLAYER_COLORS;
-    return STAGE_COLORS[this.stage];
-  };
-
-  Dino.prototype.draw = function (ctx) {
-    if (!this.alive) return;
-
-    var c = this.colors();
-    var r = this.radius;
-    var bite = this.biteAnim > 0 ? this.biteAnim / 0.18 : 0;
-
-    ctx.save();
-    ctx.translate(this.x, this.y);
-    ctx.rotate(this.angle);
-
-    // 尾巴
-    ctx.fillStyle = c.body;
-    ctx.beginPath();
-    ctx.moveTo(-r * 0.35, 0);
-    ctx.lineTo(-r * 1.35, -r * 0.22);
-    ctx.lineTo(-r * 1.1, 0);
-    ctx.lineTo(-r * 1.35, r * 0.22);
-    ctx.closePath();
-    ctx.fill();
-
-    // 身体
-    ctx.fillStyle = c.belly;
-    ctx.beginPath();
-    ctx.ellipse(0, 0, r * 0.95, r * 0.72, 0, 0, Math.PI * 2);
-    ctx.fill();
-
-    ctx.fillStyle = c.body;
-    ctx.beginPath();
-    ctx.ellipse(r * 0.05, 0, r * 0.82, r * 0.62, 0, 0, Math.PI * 2);
-    ctx.fill();
-
-    // 头
-    var headX = r * 0.72 + bite * r * 0.25;
-    ctx.beginPath();
-    ctx.arc(headX, 0, r * 0.48, 0, Math.PI * 2);
-    ctx.fill();
-
-    // 嘴
-    ctx.fillStyle = c.eye;
-    ctx.beginPath();
-    ctx.moveTo(headX + r * 0.2, -r * 0.12);
-    ctx.lineTo(headX + r * 0.55 + bite * r * 0.2, -r * 0.05);
-    ctx.lineTo(headX + r * 0.55 + bite * r * 0.2, r * 0.05);
-    ctx.lineTo(headX + r * 0.2, r * 0.12);
-    ctx.closePath();
-    ctx.fill();
-
-    // 眼睛
-    ctx.fillStyle = '#fff';
-    ctx.beginPath();
-    ctx.arc(headX + r * 0.08, -r * 0.18, r * 0.14, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = c.eye;
-    ctx.beginPath();
-    ctx.arc(headX + r * 0.12, -r * 0.18, r * 0.07, 0, Math.PI * 2);
-    ctx.fill();
-
-    // 腿（俯视小点）
-    ctx.fillStyle = c.body;
-    var leg = r * 0.18;
-    ctx.fillRect(-r * 0.15, -r * 0.55, leg, leg);
-    ctx.fillRect(-r * 0.15, r * 0.38, leg, leg);
-    ctx.fillRect(r * 0.2, -r * 0.45, leg, leg);
-    ctx.fillRect(r * 0.2, r * 0.28, leg, leg);
-
-  ctx.restore();
-
-    // 血条（受伤或玩家时显示）
-    if (this.hp < this.maxHp || this.isPlayer) {
-      var barW = r * 1.6;
-      var bx = this.x - barW / 2;
-      var by = this.y - r - 10;
-      ctx.fillStyle = 'rgba(0,0,0,0.35)';
-      ctx.fillRect(bx, by, barW, 5);
-      ctx.fillStyle = this.isPlayer ? '#5cd65c' : '#e06060';
-      ctx.fillRect(bx, by, barW * (this.hp / this.maxHp), 5);
+  Unit.prototype.colors = function () {
+    if (this.isPlayer || this.martialSoul === 'brightDragon') {
+      return { body: '#f4e6c1', robe: '#f7f1de', trim: '#e8c35a', accent: '#fff4c2', eye: '#3a2a10', hair: '#f2ead2' };
     }
+    if (this.attr === 'light') {
+      return { body: '#efe8d8', robe: '#dce8f8', trim: '#8ec5ff', accent: '#c9e4ff', eye: '#244060', hair: '#f0e8c8' };
+    }
+    if (this.kind === 'wolf') {
+      return { body: '#2a2438', robe: '#1a1228', trim: '#6b3cff', accent: '#4b2a88', eye: '#c040ff', hair: '#1a1020' };
+    }
+    if (this.kind === 'ape') {
+      return { body: '#4a3828', robe: '#3a2a1c', trim: '#8a6030', accent: '#c09050', eye: '#201000', hair: '#2a1c10' };
+    }
+    return { body: '#2c2434', robe: '#1c1428', trim: '#6a4a88', accent: '#3a2050', eye: '#e8d8ff', hair: '#120c18' };
+  };
 
-    // 玩家标记
-    if (this.isPlayer) {
-      ctx.fillStyle = '#5cd65c';
-      ctx.font = 'bold 11px sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText('你', this.x, this.y - r - 16);
+  global.Unit = Unit;
+})(window);
+
+(function (global) {
+  'use strict';
+
+  var U = global.Utils;
+
+  var LIST = [
+    { id: 'claw', name: '光明龙爪', group: 'soul', slot: 1, key: 'Digit1', hotkey: '1', cost: 70, cd: 2.4, color: '#f5c542', desc: '右爪凝聚金光，净化撕裂，克制黑暗' },
+    { id: 'wings', name: '圣龙之翼', group: 'soul', slot: 2, key: 'Digit2', hotkey: '2', cost: 130, cd: 14, duration: 9, color: '#b44cff', desc: '光翼飞行，大幅加速，龙羽覆盖打击' },
+    { id: 'roar', name: '光明龙啸', group: 'soul', slot: 3, key: 'Digit3', hotkey: '3', cost: 150, cd: 8, color: '#b44cff', desc: '龙吟音波，范围内眩晕致盲并削防' },
+    { id: 'golden', name: '圣龙金身', group: 'soul', slot: 4, key: 'Digit4', hotkey: '4', cost: 210, cd: 16, duration: 6, color: '#222222', desc: '金纹龙鳞，免疫大部伤害与控制并反震' },
+    { id: 'judgment', name: '光耀审判击', group: 'soul', slot: 5, key: 'Digit5', hotkey: '5', cost: 190, cd: 9, color: '#222222', desc: '锁定目标，天空光剑贯穿并灼烧生命' },
+    { id: 'sunbeam', name: '追踪太阳神光', group: 'soul', slot: 6, key: 'Digit6', hotkey: '6', cost: 170, cd: 8, color: '#222222', desc: '金光光柱锁定后弯曲追踪直至命中' },
+    { id: 'truebody', name: '光明圣龙真身', group: 'soul', slot: 7, key: 'Digit7', hotkey: '7', cost: 420, cd: 28, duration: 10, color: '#e23b3b', desc: '化身百米圣龙，全属性+300%，免疫伤害，前六魂技无消耗' },
+    { id: 'punch', name: '圣龙爆破拳', group: 'self', slot: 1, key: 'KeyE', hotkey: 'E', cost: 55, cd: 2.8, color: '#ffd36a', desc: '拳中压缩圣力，命中二次金光爆炸' },
+    { id: 'flash', name: '光影瞬步', group: 'self', slot: 2, key: 'KeyQ', hotkey: 'Q', cost: 40, cd: 3.2, color: '#fff4b0', desc: '光折射瞬移，原地残影迷惑敌人' },
+    { id: 'tail', name: '圣龙摆尾', group: 'self', slot: 3, key: 'KeyR', hotkey: 'R', cost: 85, cd: 5.5, color: '#e8c35a', desc: '金龙尾横扫，击退周围敌人' },
+    { id: 'shield', name: '光盾守护', group: 'self', slot: 4, key: 'KeyF', hotkey: 'F', cost: 95, cd: 10, duration: 5, color: '#ffe27a', desc: '双手合十，身前展开日轮金盾' },
+    { id: 'needles', name: '光明龙针', group: 'self', slot: 5, key: 'KeyT', hotkey: 'T', cost: 75, cd: 6, color: '#fff1a8', desc: '金针点穴封穴，破防并短暂定身' },
+    { id: 'swords', name: '御剑术·光芒', group: 'self', slot: 6, key: 'KeyY', hotkey: 'Y', cost: 115, cd: 7.5, color: '#f0d56a', desc: '魂力金剑在空中穿梭斩杀' },
+    { id: 'skystrike', name: '圣龙破天击', group: 'self', slot: 7, key: 'KeyC', hotkey: 'C', cost: 230, cd: 14, color: '#ffcc55', desc: '化龙冲天再砸落，高额范围终结' },
+    { id: 'rending', name: '圣龙裂空爪', group: 'bone', slot: 1, key: 'KeyZ', hotkey: 'Z', cost: 140, cd: 7, color: '#ffb347', desc: '九万年左臂骨：金龙爪刃远程撕裂' },
+    { id: 'gravity', name: '太阳重力拳', group: 'bone', slot: 2, key: 'KeyX', hotkey: 'X', cost: 150, cd: 8, color: '#ff9a3c', desc: '九万年右臂骨：暴增力量，命中重力枷锁' },
+    { id: 'domain', name: '圣龙主迹领域', group: 'domain', slot: 1, key: 'KeyV', hotkey: 'V', cost: 360, cd: 26, duration: 12, color: '#ffe9a0', desc: '千米金界。无徽章者光焰灼烧且属性-50%；有徽章者圣龙祝福' }
+  ];
+
+  var BY_ID = {};
+  var BY_KEY = {};
+  for (var i = 0; i < LIST.length; i++) {
+    BY_ID[LIST[i].id] = LIST[i];
+    BY_KEY[LIST[i].key] = LIST[i];
+  }
+
+  function soulFree(caster, skill) {
+    return caster.buffs.trueBody > 0 && skill.group === 'soul' && skill.id !== 'truebody';
+  }
+
+  function pay(caster, skill) {
+    if (soulFree(caster, skill)) return true;
+    if (caster.soul < skill.cost) return false;
+    caster.soul -= skill.cost;
+    return true;
+  }
+
+  var Cast = {
+    claw: function (ctx) {
+      var c = ctx.caster;
+      c.attackAnim = 0.28;
+      ctx.game.addEffect({ type: 'claw', x: c.x, y: c.y, angle: c.angle, owner: c.id, life: 0.32 });
+      ctx.game.hitCone(c, 58, 0.72, c.getAtk() * 1.35, {
+        vsDark: true,
+        knock: 140,
+        purify: true
+      });
+    },
+    wings: function (ctx) {
+      var c = ctx.caster;
+      c.applyBuff('wings', 9);
+      ctx.game.addEffect({ type: 'wingsBurst', x: c.x, y: c.y, owner: c.id, life: 0.6 });
+    },
+    roar: function (ctx) {
+      var c = ctx.caster;
+      ctx.game.addEffect({ type: 'roar', x: c.x, y: c.y, owner: c.id, life: 0.7, r: 110 });
+      var foes = ctx.game.enemiesOf(c);
+      for (var i = 0; i < foes.length; i++) {
+        var e = foes[i];
+        if (U.dist(c.x, c.y, e.x, e.y) > 110) continue;
+        ctx.game.hurt(c, e, c.getAtk() * 0.85, { knock: 40 });
+        e.applyBuff('stun', 1.6);
+        e.applyBuff('blind', 2.4);
+        e.applyBuff('defDown', 4);
+      }
+    },
+    golden: function (ctx) {
+      ctx.caster.applyBuff('golden', 6);
+      ctx.game.addEffect({ type: 'golden', x: ctx.caster.x, y: ctx.caster.y, owner: ctx.caster.id, life: 0.8 });
+    },
+    judgment: function (ctx) {
+      var t = ctx.target;
+      if (!t) return;
+      ctx.game.addProjectile({
+        type: 'judgment',
+        x: t.x,
+        y: t.y,
+        h: 160,
+        vx: 0,
+        vy: 0,
+        vh: -220,
+        life: 1.1,
+        owner: ctx.caster.id,
+        targetId: t.id,
+        damage: ctx.caster.getAtk() * 2.2,
+        penetrate: true,
+        burn: 5,
+        color: '#ffe27a',
+        radius: 10
+      });
+    },
+    sunbeam: function (ctx) {
+      var t = ctx.target;
+      if (!t) return;
+      var c = ctx.caster;
+      var a = U.angleTo(c.x, c.y, t.x, t.y);
+      ctx.game.addProjectile({
+        type: 'sunbeam',
+        x: c.x + Math.cos(a) * 16,
+        y: c.y + Math.sin(a) * 16,
+        h: 18 + c.h,
+        vx: Math.cos(a) * 320,
+        vy: Math.sin(a) * 320,
+        vh: 0,
+        life: 2.4,
+        owner: c.id,
+        targetId: t.id,
+        homing: 780,
+        damage: c.getAtk() * 1.7,
+        color: '#ffd36a',
+        radius: 6
+      });
+    },
+    truebody: function (ctx) {
+      var c = ctx.caster;
+      c.applyBuff('trueBody', 10);
+      c.h = Math.max(c.h, 18);
+      ctx.game.addEffect({ type: 'truebody', x: c.x, y: c.y, owner: c.id, life: 1.1 });
+    },
+    punch: function (ctx) {
+      var c = ctx.caster;
+      c.attackAnim = 0.24;
+      ctx.game.addEffect({ type: 'punch', x: c.x, y: c.y, angle: c.angle, owner: c.id, life: 0.35 });
+      var hit = ctx.game.hitCone(c, 42, 0.55, c.getAtk() * 1.15, { knock: 90 });
+      if (hit > 0) {
+        var fx = c.x + Math.cos(c.angle) * 28;
+        var fy = c.y + Math.sin(c.angle) * 28;
+        ctx.game.addEffect({ type: 'burst', x: fx, y: fy, life: 0.4, r: 36 });
+        ctx.game.aoe(c, fx, fy, 36, c.getAtk() * 0.7, { knock: 160 });
+      }
+    },
+    flash: function (ctx) {
+      var c = ctx.caster;
+      ctx.game.addEffect({ type: 'afterimage', x: c.x, y: c.y, angle: c.angle, h: c.h, owner: c.id, life: 0.7 });
+      var dist = 92;
+      c.x += Math.cos(c.angle) * dist;
+      c.y += Math.sin(c.angle) * dist;
+      c.vx += Math.cos(c.angle) * 120;
+      c.vy += Math.sin(c.angle) * 120;
+      ctx.game.addEffect({ type: 'flash', x: c.x, y: c.y, life: 0.25 });
+    },
+    tail: function (ctx) {
+      var c = ctx.caster;
+      ctx.game.addEffect({ type: 'tail', x: c.x, y: c.y, owner: c.id, life: 0.45, r: 70 });
+      ctx.game.aoe(c, c.x, c.y, 70, c.getAtk() * 1.05, { knock: 280 });
+    },
+    shield: function (ctx) {
+      ctx.caster.applyBuff('shield', 5);
+      ctx.game.addEffect({ type: 'shield', x: ctx.caster.x, y: ctx.caster.y, owner: ctx.caster.id, life: 0.5 });
+    },
+    needles: function (ctx) {
+      var c = ctx.caster;
+      var t = ctx.target;
+      var a = t ? U.angleTo(c.x, c.y, t.x, t.y) : c.angle;
+      for (var i = 0; i < 9; i++) {
+        var spread = (i - 4) * 0.07;
+        var ang = a + spread;
+        ctx.game.addProjectile({
+          type: 'needle',
+          x: c.x + Math.cos(ang) * 10,
+          y: c.y + Math.sin(ang) * 10,
+          h: 12 + c.h,
+          vx: Math.cos(ang) * 420,
+          vy: Math.sin(ang) * 420,
+          vh: 0,
+          life: 1.1,
+          owner: c.id,
+          damage: c.getAtk() * 0.28,
+          seal: 1.4,
+          defDown: 3.5,
+          color: '#fff4c0',
+          radius: 2.2
+        });
+      }
+    },
+    swords: function (ctx) {
+      var c = ctx.caster;
+      for (var i = 0; i < 5; i++) {
+        ctx.game.addProjectile({
+          type: 'sword',
+          x: c.x,
+          y: c.y,
+          h: 22 + i * 4 + c.h,
+          vx: 0,
+          vy: 0,
+          vh: 0,
+          life: 3.2,
+          owner: c.id,
+          delay: 0.18 * i,
+          homing: 520,
+          damage: c.getAtk() * 0.72,
+          color: '#ffe27a',
+          radius: 4,
+          orbit: true
+        });
+      }
+    },
+    skystrike: function (ctx) {
+      var c = ctx.caster;
+      var t = ctx.target;
+      var tx = t ? t.x : c.x + Math.cos(c.angle) * 140;
+      var ty = t ? t.y : c.y + Math.sin(c.angle) * 140;
+      c.castLock = 1.15;
+      ctx.game.addEffect({
+        type: 'skystrike',
+        x: c.x,
+        y: c.y,
+        tx: tx,
+        ty: ty,
+        owner: c.id,
+        life: 1.15,
+        phase: 0
+      });
+      c.h = 70;
+      c.x = tx;
+      c.y = ty;
+      ctx.game.aoe(c, tx, ty, 95, c.getAtk() * 2.4, { knock: 320 });
+    },
+    rending: function (ctx) {
+      var c = ctx.caster;
+      var a = c.angle;
+      ctx.game.addProjectile({
+        type: 'blade',
+        x: c.x + Math.cos(a) * 18,
+        y: c.y + Math.sin(a) * 18,
+        h: 14 + c.h,
+        vx: Math.cos(a) * 480,
+        vy: Math.sin(a) * 480,
+        vh: 0,
+        life: 1.3,
+        owner: c.id,
+        damage: c.getAtk() * 1.9,
+        color: '#ffd36a',
+        radius: 8,
+        pierce: 4
+      });
+    },
+    gravity: function (ctx) {
+      var c = ctx.caster;
+      c.attackAnim = 0.3;
+      ctx.game.addEffect({ type: 'gravity', x: c.x, y: c.y, angle: c.angle, owner: c.id, life: 0.4 });
+      var foes = ctx.game.hitConeUnits(c, 40, 0.5);
+      for (var i = 0; i < foes.length; i++) {
+        ctx.game.hurt(c, foes[i], c.getAtk() * 1.6, { knock: 40 });
+        foes[i].applyBuff('gravity', 3.2);
+      }
+    },
+    domain: function (ctx) {
+      var c = ctx.caster;
+      ctx.game.startDomain(c, 12, 280);
     }
   };
 
-  global.Dino = Dino;
+  global.Skills = {
+    list: LIST,
+    byId: BY_ID,
+    byKey: BY_KEY,
+    soulFree: soulFree,
+    pay: pay,
+    cast: Cast
+  };
 })(window);
 
 /**
- * 真实感 3D 恐龙模型工厂（T-Rex 风格）。
+ * 斗罗大陆单位模型：魂师、魂兽、光明圣龙真身。
  */
 (function (global) {
   'use strict';
 
   function hex(h) {
-    return parseInt(h.replace('#', ''), 16);
+    return parseInt(String(h).replace('#', ''), 16);
   }
 
-  function mat(color, roughness) {
-    return new THREE.MeshStandardMaterial({
+  function mat(color, roughness, metalness, emissive) {
+    var m = new THREE.MeshStandardMaterial({
       color: hex(color),
-      roughness: roughness == null ? 0.72 : roughness,
-      metalness: 0.04
+      roughness: roughness == null ? 0.7 : roughness,
+      metalness: metalness == null ? 0.08 : metalness
+    });
+    if (emissive) {
+      m.emissive = new THREE.Color(hex(emissive));
+      m.emissiveIntensity = 0.55;
+    }
+    return m;
+  }
+
+  function glowMat(color, opacity) {
+    return new THREE.MeshBasicMaterial({
+      color: hex(color),
+      transparent: true,
+      opacity: opacity == null ? 0.55 : opacity,
+      side: THREE.DoubleSide,
+      depthWrite: false
     });
   }
 
-  function createRealisticDino(colors) {
-    var group = new THREE.Group();
-    var skin = mat(colors.body);
-    var belly = mat(colors.belly, 0.82);
-    var dark = mat(colors.eye, 0.65);
-    var claw = mat('#2a2a2a', 0.5);
-
-    // 躯干
-    var torso = new THREE.Mesh(new THREE.BoxGeometry(2.6, 2.2, 3.8), skin);
-    torso.position.set(0, 2.8, 0);
-    torso.castShadow = true;
-    group.add(torso);
-
-    var chest = new THREE.Mesh(new THREE.SphereGeometry(1.55, 12, 10), belly);
-    chest.position.set(0, 2.4, 0.4);
-    chest.scale.set(1.4, 0.9, 1.5);
-    chest.castShadow = true;
-    group.add(chest);
-
-    // 骨盆
-    var pelvis = new THREE.Mesh(new THREE.BoxGeometry(2.1, 1.6, 2.2), skin);
-    pelvis.position.set(0, 2.5, -1.4);
-    pelvis.castShadow = true;
-    group.add(pelvis);
-
-    // 颈
-    var neck = new THREE.Mesh(new THREE.CylinderGeometry(0.75, 1.05, 1.8, 10), skin);
-    neck.rotation.x = -0.45;
-    neck.position.set(0, 3.6, 1.8);
-    neck.castShadow = true;
-    group.add(neck);
-
-    // 头
-    var head = new THREE.Mesh(new THREE.BoxGeometry(1.35, 1.25, 2.4), skin);
-    head.position.set(0, 4.25, 3.1);
-    head.castShadow = true;
-    group.add(head);
-    group.userData.head = head;
-
-    var snout = new THREE.Mesh(new THREE.BoxGeometry(1.05, 0.75, 1.8), skin);
-    snout.position.set(0, 4.05, 4.35);
-    snout.castShadow = true;
-    group.add(snout);
-
-    var jaw = new THREE.Mesh(new THREE.BoxGeometry(1.0, 0.35, 1.7), dark);
-    jaw.position.set(0, 3.75, 4.25);
-    group.add(jaw);
-    group.userData.jaw = jaw;
-
-    // 牙（简化）
-    for (var ti = 0; ti < 5; ti++) {
-      var tooth = new THREE.Mesh(new THREE.ConeGeometry(0.06, 0.22, 4), new THREE.MeshStandardMaterial({ color: 0xf0f0e8 }));
-      tooth.position.set(-0.35 + ti * 0.18, 3.62, 4.9 + ti * 0.05);
-      group.add(tooth);
-    }
-
-    // 眼
-    var eyeW = new THREE.Mesh(new THREE.SphereGeometry(0.18, 8, 8), new THREE.MeshStandardMaterial({ color: 0xffffff }));
-    eyeW.position.set(0.48, 4.55, 3.85);
-    group.add(eyeW);
-    var eye = new THREE.Mesh(new THREE.SphereGeometry(0.1, 6, 6), dark);
-    eye.position.set(0.52, 4.55, 3.95);
-    group.add(eye);
-
-    // 小臂
-    var armL = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.1, 0.7, 6), skin);
-    armL.rotation.z = 0.8;
-    armL.position.set(-1.05, 3.0, 1.2);
-    group.add(armL);
-    var armR = armL.clone();
-    armR.position.x = 1.05;
-    armR.rotation.z = -0.8;
-    group.add(armR);
-
-    // 尾巴（多节，更真实）
-    group.userData.tail = [];
-    var tailLen = 5;
-    for (var i = 0; i < tailLen; i++) {
-      var t = i / tailLen;
-      var seg = new THREE.Mesh(
-        new THREE.SphereGeometry(1.1 - t * 0.85, 10, 8),
-        skin
+  function addSoulRings(parent, count) {
+    var pivot = new THREE.Group();
+    pivot.position.y = 7.2;
+    var rings = [];
+    var n = count || 7;
+    for (var i = 0; i < n; i++) {
+      var col = global.Utils.RING_GLOW[Math.min(i, 6)];
+      var torus = new THREE.Mesh(
+        new THREE.TorusGeometry(5.2 + i * 0.42, 0.16, 8, 28),
+        glowMat(col, 0.72)
       );
-      seg.scale.set(1.1 - t * 0.3, 0.75 - t * 0.2, 1.3 - t * 0.5);
-      seg.position.set(0, 2.6 - t * 0.3, -2.6 - i * 1.35);
-      seg.castShadow = true;
-      group.add(seg);
-      group.userData.tail.push(seg);
+      torus.rotation.x = Math.PI / 2;
+      torus.rotation.z = i * 0.15;
+      pivot.add(torus);
+      rings.push(torus);
     }
-
-    // 四条粗腿
-    group.userData.legs = [];
-    var legPos = [
-      [0.95, 0, 1.1, 'fl'],
-      [-0.95, 0, 1.1, 'fr'],
-      [0.85, 0, -1.0, 'bl'],
-      [-0.85, 0, -1.0, 'br']
-    ];
-    for (var li = 0; li < legPos.length; li++) {
-      var lx = legPos[li][0];
-      var lz = legPos[li][2];
-      var upper = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.48, 1.6, 10), skin);
-      upper.position.set(lx, 1.6, lz);
-      upper.castShadow = true;
-      group.add(upper);
-
-      var lower = new THREE.Mesh(new THREE.CylinderGeometry(0.34, 0.38, 1.5, 10), skin);
-      lower.position.set(lx, 0.55, lz + 0.15);
-      lower.castShadow = true;
-      group.add(lower);
-
-      var foot = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.25, 0.85), claw);
-      foot.position.set(lx, 0.12, lz + 0.35);
-      foot.castShadow = true;
-      group.add(foot);
-
-      group.userData.legs.push({ upper: upper, lower: lower, foot: foot });
-    }
-
-    return group;
+    parent.add(pivot);
+    parent.userData.ringPivot = pivot;
+    parent.userData.rings = rings;
+    return pivot;
   }
 
-  global.DinoModel = { create: createRealisticDino, hex: hex };
+  function createHumanoid(colors, opts) {
+    opts = opts || {};
+    var g = new THREE.Group();
+    var human = new THREE.Group();
+    g.add(human);
+    g.userData.human = human;
+
+    var skin = mat(colors.body, 0.62, 0.04);
+    var robe = mat(colors.robe, 0.78, 0.06);
+    var trim = mat(colors.trim, 0.35, 0.55, colors.trim);
+    var hairM = mat(colors.hair, 0.7, 0.02);
+    var gold = mat('#e8c35a', 0.28, 0.7, '#c9a227');
+
+    var hips = new THREE.Mesh(new THREE.BoxGeometry(2.4, 1.3, 1.5), robe);
+    hips.position.y = 5.1;
+    hips.castShadow = true;
+    human.add(hips);
+
+    var torso = new THREE.Mesh(new THREE.BoxGeometry(2.7, 3.2, 1.7), robe);
+    torso.position.y = 7.3;
+    torso.castShadow = true;
+    human.add(torso);
+
+    var collar = new THREE.Mesh(new THREE.BoxGeometry(2.9, 0.35, 1.9), trim);
+    collar.position.y = 8.9;
+    human.add(collar);
+
+    var head = new THREE.Mesh(new THREE.SphereGeometry(0.95, 12, 10), skin);
+    head.position.y = 10.3;
+    head.castShadow = true;
+    human.add(head);
+    g.userData.head = head;
+
+    var hair = new THREE.Mesh(new THREE.SphereGeometry(1.02, 10, 8), hairM);
+    hair.position.y = 10.55;
+    hair.scale.set(1.05, 0.85, 1.15);
+    human.add(hair);
+
+    var eyeL = new THREE.Mesh(new THREE.SphereGeometry(0.13, 8, 8), mat('#fff8e0', 0.4));
+    eyeL.position.set(-0.32, 10.35, 0.82);
+    human.add(eyeL);
+    var pupil = new THREE.Mesh(new THREE.SphereGeometry(0.07, 6, 6), mat(colors.eye, 0.3, 0.2, colors.trim));
+    pupil.position.set(-0.32, 10.35, 0.92);
+    human.add(pupil);
+    var eyeR = eyeL.clone();
+    eyeR.position.x = 0.32;
+    human.add(eyeR);
+    var pupilR = pupil.clone();
+    pupilR.position.x = 0.32;
+    human.add(pupilR);
+
+    g.userData.legs = [];
+    var legX = [0.7, -0.7];
+    for (var i = 0; i < 2; i++) {
+      var upper = new THREE.Mesh(new THREE.BoxGeometry(0.7, 2.2, 0.75), robe);
+      upper.position.set(legX[i], 3.6, 0);
+      upper.castShadow = true;
+      human.add(upper);
+      var lower = new THREE.Mesh(new THREE.BoxGeometry(0.62, 2.0, 0.7), robe);
+      lower.position.set(legX[i], 1.6, 0.05);
+      lower.castShadow = true;
+      human.add(lower);
+      var boot = new THREE.Mesh(new THREE.BoxGeometry(0.72, 0.45, 1.05), trim);
+      boot.position.set(legX[i], 0.35, 0.18);
+      human.add(boot);
+      g.userData.legs.push({ upper: upper, lower: lower });
+    }
+
+    g.userData.arms = [];
+    var armX = [1.7, -1.7];
+    for (var a = 0; a < 2; a++) {
+      var arm = new THREE.Group();
+      arm.position.set(armX[a], 8.4, 0);
+      var ua = new THREE.Mesh(new THREE.BoxGeometry(0.55, 1.8, 0.55), robe);
+      ua.position.y = -0.7;
+      arm.add(ua);
+      var la = new THREE.Mesh(new THREE.BoxGeometry(0.48, 1.6, 0.48), skin);
+      la.position.y = -2.2;
+      arm.add(la);
+      var claw = new THREE.Mesh(new THREE.ConeGeometry(0.22, 0.9, 5), gold);
+      claw.rotation.x = Math.PI;
+      claw.position.set(0, -3.15, 0.15);
+      arm.add(claw);
+      var claw2 = claw.clone();
+      claw2.position.x = 0.18;
+      arm.add(claw2);
+      human.add(arm);
+      g.userData.arms.push(arm);
+    }
+
+    var wings = new THREE.Group();
+    wings.visible = false;
+    var wingM = glowMat('#ffe9a0', 0.5);
+    var wL = new THREE.Mesh(new THREE.ConeGeometry(1.1, 6.5, 4), wingM);
+    wL.rotation.z = 1.15;
+    wL.rotation.x = 0.2;
+    wL.position.set(-2.8, 8.2, -0.6);
+    var wR = wL.clone();
+    wR.rotation.z = -1.15;
+    wR.position.x = 2.8;
+    wings.add(wL);
+    wings.add(wR);
+    g.add(wings);
+    g.userData.wings = wings;
+    g.userData.wingL = wL;
+    g.userData.wingR = wR;
+
+    var shield = new THREE.Mesh(new THREE.CircleGeometry(3.4, 24), glowMat('#ffe27a', 0.45));
+    shield.position.set(0, 7.2, 2.6);
+    shield.visible = false;
+    g.add(shield);
+    g.userData.shieldMesh = shield;
+
+    var goldAura = new THREE.Mesh(
+      new THREE.SphereGeometry(3.6, 12, 10),
+      new THREE.MeshBasicMaterial({ color: 0xffe27a, transparent: true, opacity: 0.16, wireframe: true })
+    );
+    goldAura.position.y = 7;
+    goldAura.visible = false;
+    g.add(goldAura);
+    g.userData.goldAura = goldAura;
+
+    if (opts.rings) addSoulRings(g, opts.rings);
+
+    var dragon = createDragon(true);
+    dragon.visible = false;
+    dragon.scale.setScalar(0.55);
+    dragon.position.y = 4;
+    g.add(dragon);
+    g.userData.dragon = dragon;
+
+    return g;
+  }
+
+  function createDragon(playerGold) {
+    var g = new THREE.Group();
+    var gold = mat(playerGold ? '#e8c35a' : '#c9a227', 0.32, 0.62, '#ffd36a');
+    var pale = mat('#fff6d0', 0.5, 0.3, '#fff1b0');
+    var horn = mat('#fff8e8', 0.4, 0.2);
+
+    var head = new THREE.Mesh(new THREE.BoxGeometry(2.4, 2.0, 3.4), gold);
+    head.position.set(0, 3.2, 6.2);
+    head.castShadow = true;
+    g.add(head);
+    g.userData.head = head;
+
+    var snout = new THREE.Mesh(new THREE.BoxGeometry(1.7, 1.1, 2.2), pale);
+    snout.position.set(0, 2.7, 8.2);
+    g.add(snout);
+
+    var hornL = new THREE.Mesh(new THREE.ConeGeometry(0.28, 2.4, 6), horn);
+    hornL.position.set(-0.7, 4.6, 5.4);
+    hornL.rotation.x = 0.4;
+    g.add(hornL);
+    var hornR = hornL.clone();
+    hornR.position.x = 0.7;
+    g.add(hornR);
+
+    var eye = new THREE.Mesh(new THREE.SphereGeometry(0.22, 8, 8), mat('#fffde8', 0.2, 0.1, '#fffde8'));
+    eye.position.set(0.9, 3.5, 7.1);
+    g.add(eye);
+    var eye2 = eye.clone();
+    eye2.position.x = -0.9;
+    g.add(eye2);
+
+    g.userData.body = [];
+    for (var i = 0; i < 10; i++) {
+      var t = i / 9;
+      var seg = new THREE.Mesh(
+        new THREE.SphereGeometry(1.55 - t * 0.95, 10, 8),
+        i % 2 ? pale : gold
+      );
+      seg.scale.set(1.15, 0.85, 1.35);
+      seg.position.set(0, 2.6 - t * 0.15, 3.6 - i * 1.55);
+      seg.castShadow = true;
+      g.add(seg);
+      g.userData.body.push(seg);
+    }
+
+    var wM = glowMat('#ffe9a0', 0.55);
+    var wingL = new THREE.Mesh(new THREE.ConeGeometry(2.4, 8, 4), wM);
+    wingL.rotation.z = 1.2;
+    wingL.position.set(-3.5, 4.2, 1.2);
+    g.add(wingL);
+    var wingR = wingL.clone();
+    wingR.rotation.z = -1.2;
+    wingR.position.x = 3.5;
+    g.add(wingR);
+    g.userData.wingL = wingL;
+    g.userData.wingR = wingR;
+
+    return g;
+  }
+
+  function createWolf(colors) {
+    var g = new THREE.Group();
+    var fur = mat(colors.body, 0.85, 0.04);
+    var accent = mat(colors.accent, 0.5, 0.15, colors.trim);
+
+    var body = new THREE.Mesh(new THREE.SphereGeometry(1.8, 10, 8), fur);
+    body.scale.set(1.3, 0.9, 1.9);
+    body.position.y = 2.4;
+    body.castShadow = true;
+    g.add(body);
+
+    var head = new THREE.Mesh(new THREE.SphereGeometry(1.15, 10, 8), fur);
+    head.position.set(0, 3.1, 2.5);
+    g.add(head);
+    g.userData.head = head;
+
+    var snout = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.55, 1.3), accent);
+    snout.position.set(0, 2.7, 3.4);
+    g.add(snout);
+
+    var earL = new THREE.Mesh(new THREE.ConeGeometry(0.28, 0.9, 5), fur);
+    earL.position.set(-0.55, 4.1, 2.3);
+    g.add(earL);
+    var earR = earL.clone();
+    earR.position.x = 0.55;
+    g.add(earR);
+
+    g.userData.legs = [];
+    var pts = [[0.8, 1.2], [-0.8, 1.2], [0.75, -1.1], [-0.75, -1.1]];
+    for (var i = 0; i < pts.length; i++) {
+      var leg = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.28, 2.2, 6), fur);
+      leg.position.set(pts[i][0], 1.1, pts[i][1]);
+      g.add(leg);
+      g.userData.legs.push({ upper: leg, lower: leg });
+    }
+
+    var tail = new THREE.Mesh(new THREE.SphereGeometry(0.45, 8, 6), fur);
+    tail.scale.set(0.7, 0.6, 2.2);
+    tail.position.set(0, 2.6, -2.6);
+    g.add(tail);
+    g.userData.tail = [tail];
+    addSoulRings(g, 3);
+    return g;
+  }
+
+  function createApe(colors) {
+    var g = new THREE.Group();
+    var fur = mat(colors.body, 0.88, 0.02);
+    var gold = mat(colors.trim, 0.4, 0.4);
+
+    var torso = new THREE.Mesh(new THREE.SphereGeometry(2.4, 10, 8), fur);
+    torso.position.y = 4.2;
+    torso.scale.set(1.15, 1.3, 0.9);
+    torso.castShadow = true;
+    g.add(torso);
+
+    var head = new THREE.Mesh(new THREE.SphereGeometry(1.4, 10, 8), fur);
+    head.position.y = 7.4;
+    g.add(head);
+    g.userData.head = head;
+
+    var armL = new THREE.Mesh(new THREE.CylinderGeometry(0.45, 0.55, 4.2, 8), fur);
+    armL.position.set(-2.6, 3.6, 0.4);
+    armL.rotation.z = 0.35;
+    g.add(armL);
+    var armR = armL.clone();
+    armR.position.x = 2.6;
+    armR.rotation.z = -0.35;
+    g.add(armR);
+    g.userData.arms = [armL, armR];
+
+    g.userData.legs = [];
+    var l1 = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.6, 3.2, 8), fur);
+    l1.position.set(0.9, 1.5, 0);
+    g.add(l1);
+    var l2 = l1.clone();
+    l2.position.x = -0.9;
+    g.add(l2);
+    g.userData.legs.push({ upper: l1, lower: l1 }, { upper: l2, lower: l2 });
+
+    var band = new THREE.Mesh(new THREE.TorusGeometry(1.6, 0.12, 6, 16), gold);
+    band.position.y = 7.4;
+    band.rotation.x = Math.PI / 2;
+    g.add(band);
+    addSoulRings(g, 5);
+    return g;
+  }
+
+  function create(unit) {
+    var c = unit.colors();
+    if (unit.kind === 'wolf') return createWolf(c);
+    if (unit.kind === 'ape') return createApe(c);
+    if (unit.kind === 'dragon') return createDragon(unit.attr === 'light');
+    return createHumanoid(c, { rings: unit.isPlayer ? 7 : unit.rings });
+  }
+
+  global.UnitModel = { create: create, hex: hex, mat: mat };
 })(window);
 
 /**
- * 无限世界：按区块 procedural 生成地形、植被，跟随玩家加载/卸载。
+ * 斗罗大陆地形：魂殿广场、黄金魂兽林、白玉石柱。
  */
 (function (global) {
   'use strict';
-
-  var U = global.Utils;
 
   var CHUNK_SIZE = 480;
   var VIEW_RADIUS = 2;
@@ -994,17 +1582,31 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     this.scene = scene;
     this.chunks = new Map();
     this.groundMat = new THREE.MeshStandardMaterial({
-      color: 0x3a6b42,
+      color: 0x6b8a4a,
       roughness: 0.95,
-      metalness: 0.01
+      metalness: 0.02
     });
-    this.grassMat = new THREE.MeshStandardMaterial({
-      color: 0x4d8a54,
-      roughness: 0.98
+    this.goldGrass = new THREE.MeshStandardMaterial({
+      color: 0xc2b46a,
+      roughness: 0.92
     });
-    this.trunkMat = new THREE.MeshStandardMaterial({ color: 0x4a3018, roughness: 0.9 });
-    this.leafMat = new THREE.MeshStandardMaterial({ color: 0x2f6b38, roughness: 0.85 });
-    this.rockMat = new THREE.MeshStandardMaterial({ color: 0x5a5a62, roughness: 0.95 });
+    this.trunkMat = new THREE.MeshStandardMaterial({ color: 0xe8dcc0, roughness: 0.7, metalness: 0.08 });
+    this.leafMat = new THREE.MeshStandardMaterial({
+      color: 0xe8c35a,
+      roughness: 0.45,
+      metalness: 0.25,
+      emissive: 0x6a5010,
+      emissiveIntensity: 0.15
+    });
+    this.rockMat = new THREE.MeshStandardMaterial({ color: 0xd8d0c4, roughness: 0.88 });
+    this.marble = new THREE.MeshStandardMaterial({ color: 0xf2ead8, roughness: 0.4, metalness: 0.12 });
+    this.goldMat = new THREE.MeshStandardMaterial({
+      color: 0xe8c35a,
+      roughness: 0.28,
+      metalness: 0.7,
+      emissive: 0x8a6a18,
+      emissiveIntensity: 0.25
+    });
   }
 
   World.prototype.key = function (cx, cz) {
@@ -1016,6 +1618,48 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
       Math.sin(x * 0.004) * Math.cos(z * 0.004) * 8 +
       Math.sin(x * 0.013 + 1.2) * Math.sin(z * 0.011) * 3
     );
+  };
+
+  World.prototype.buildPlaza = function (group) {
+    var floor = new THREE.Mesh(new THREE.CylinderGeometry(90, 90, 2.2, 48), this.marble);
+    floor.position.set(0, 1.1, 0);
+    floor.receiveShadow = true;
+    group.add(floor);
+
+    var ringColors = [0xf5c542, 0xb44cff, 0xb44cff, 0x222222, 0x222222, 0x222222, 0xe23b3b];
+    for (var i = 0; i < 7; i++) {
+      var r = 18 + i * 8;
+      var torus = new THREE.Mesh(
+        new THREE.TorusGeometry(r, 0.55, 8, 48),
+        new THREE.MeshStandardMaterial({
+          color: ringColors[i],
+          emissive: ringColors[i],
+          emissiveIntensity: 0.35,
+          metalness: 0.4,
+          roughness: 0.35
+        })
+      );
+      torus.rotation.x = Math.PI / 2;
+      torus.position.y = 2.3;
+      group.add(torus);
+    }
+
+    for (var p = 0; p < 8; p++) {
+      var a = (p / 8) * Math.PI * 2;
+      var px = Math.cos(a) * 78;
+      var pz = Math.sin(a) * 78;
+      var col = new THREE.Mesh(new THREE.CylinderGeometry(2.2, 2.8, 28, 10), this.marble);
+      col.position.set(px, 14, pz);
+      col.castShadow = true;
+      group.add(col);
+      var cap = new THREE.Mesh(new THREE.SphereGeometry(3.2, 10, 8), this.goldMat);
+      cap.position.set(px, 30, pz);
+      group.add(cap);
+    }
+
+    var altar = new THREE.Mesh(new THREE.CylinderGeometry(8, 10, 4, 12), this.goldMat);
+    altar.position.y = 3.2;
+    group.add(altar);
   };
 
   World.prototype.buildChunk = function (cx, cz) {
@@ -1042,53 +1686,56 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     ground.geometry.computeVertexNormals();
     group.add(ground);
 
-    // 草斑块
-    for (var g = 0; g < 12; g++) {
+    for (var g = 0; g < 10; g++) {
       var gx = ox + rand() * CHUNK_SIZE;
       var gz = oz + rand() * CHUNK_SIZE;
       var patch = new THREE.Mesh(
-        new THREE.CircleGeometry(18 + rand() * 24, 8),
-        this.grassMat
+        new THREE.CircleGeometry(16 + rand() * 28, 8),
+        this.goldGrass
       );
       patch.rotation.x = -Math.PI / 2;
-      patch.position.set(gx, this.heightAt(gx, gz) + 0.08, gz);
+      patch.position.set(gx, this.heightAt(gx, gz) + 0.1, gz);
       patch.receiveShadow = true;
       group.add(patch);
     }
 
-    // 树木
-    var treeCount = 4 + Math.floor(rand() * 5);
+    if (cx === 0 && cz === 0) {
+      this.buildPlaza(group);
+    }
+
+    var treeCount = (cx === 0 && cz === 0) ? 3 : 5 + Math.floor(rand() * 5);
     for (var t = 0; t < treeCount; t++) {
-      var tx = ox + 40 + rand() * (CHUNK_SIZE - 80);
-      var tz = oz + 40 + rand() * (CHUNK_SIZE - 80);
+      var tx = ox + 50 + rand() * (CHUNK_SIZE - 100);
+      var tz = oz + 50 + rand() * (CHUNK_SIZE - 100);
+      if (cx === 0 && cz === 0 && Math.hypot(tx, tz) < 110) continue;
       var th = this.heightAt(tx, tz);
-      var scale = 0.9 + rand() * 0.7;
+      var scale = 0.9 + rand() * 0.8;
 
       var trunk = new THREE.Mesh(
-        new THREE.CylinderGeometry(2.2 * scale, 3.2 * scale, 22 * scale, 8),
+        new THREE.CylinderGeometry(1.8 * scale, 2.6 * scale, 24 * scale, 8),
         this.trunkMat
       );
-      trunk.position.set(tx, th + 11 * scale, tz);
+      trunk.position.set(tx, th + 12 * scale, tz);
       trunk.castShadow = true;
       group.add(trunk);
 
       var crown = new THREE.Mesh(
-        new THREE.SphereGeometry(14 * scale, 10, 10),
+        new THREE.SphereGeometry(12 * scale, 10, 10),
         this.leafMat
       );
       crown.position.set(tx, th + 28 * scale, tz);
-      crown.scale.set(1, 1.15, 1);
+      crown.scale.set(1, 1.1, 1);
       crown.castShadow = true;
       group.add(crown);
     }
 
-    // 岩石
-    for (var r = 0; r < 3 + Math.floor(rand() * 4); r++) {
+    for (var r = 0; r < 2 + Math.floor(rand() * 3); r++) {
       var rx = ox + rand() * CHUNK_SIZE;
       var rz = oz + rand() * CHUNK_SIZE;
+      if (cx === 0 && cz === 0 && Math.hypot(rx, rz) < 100) continue;
       var rh = this.heightAt(rx, rz);
       var rock = new THREE.Mesh(
-        new THREE.DodecahedronGeometry(5 + rand() * 10, 1),
+        new THREE.DodecahedronGeometry(4 + rand() * 8, 0),
         this.rockMat
       );
       rock.position.set(rx, rh + 3, rz);
@@ -1135,14 +1782,14 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
 
   var U = global.Utils;
 
-  function nearest(dino, others, skipPlayer) {
+  function nearestEnemy(unit, others) {
     var best = null;
     var bestD = Infinity;
     for (var i = 0; i < others.length; i++) {
       var o = others[i];
-      if (!o.alive || o.id === dino.id) continue;
-      if (skipPlayer && o.isPlayer) continue;
-      var d = U.dist(dino.x, dino.y, o.x, o.y);
+      if (!o.alive || o.id === unit.id) continue;
+      if (o.team === unit.team) continue;
+      var d = U.dist(unit.x, unit.y, o.x, o.y);
       if (d < bestD) {
         bestD = d;
         best = o;
@@ -1151,57 +1798,63 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     return { target: best, dist: bestD };
   }
 
-  function updateAI(dino, others, dt, ctx) {
-    if (!dino.alive || dino.isPlayer) return;
+  function updateAI(unit, others, dt, ctx) {
+    if (!unit.alive || unit.isPlayer) return;
+    if (unit.buffs.stun > 0) return { action: 'stun' };
 
     ctx = ctx || {};
-    var inGrace = ctx.playTime != null && ctx.playTime < (ctx.graceTime || 0);
+    var hunt = nearestEnemy(unit, others);
+    var target = hunt.target;
+    var range = unit.attackReach() + (target ? target.radius : 0);
 
-    // 简单模式：保护期内只漫游，不攻击
-    if (inGrace) {
-      dino.wanderAngle += U.rand(-0.6, 0.6) * dt;
-      var wx = dino.x + Math.cos(dino.wanderAngle) * 200;
-      var wy = dino.y + Math.sin(dino.wanderAngle) * 200;
-      dino.moveToward(wx, wy, 0.2, dt);
-      return { action: 'grace' };
+    if (unit.isAlly && ctx.player) {
+      var pd = U.dist(unit.x, unit.y, ctx.player.x, ctx.player.y);
+      if (pd > 220) {
+        unit.moveToward(ctx.player.x, ctx.player.y, 0.7, dt);
+        return { action: 'follow' };
+      }
     }
 
-    // 简单模式：AI 基本无视玩家，只互相打闹
-    var hunt = nearest(dino, others, true);
-    var target = hunt.target;
-    var biteRange = dino.biteReach() + (target ? target.radius : 0);
+    if (unit.buffs.gravity > 0) {
+      return { action: 'heavy' };
+    }
 
-    if (target) {
-      var canEat = dino.canEat(target);
-      var ratio = dino.eatRatio(target);
-      var similar = ratio > 0.75 && ratio < 1.12;
+    if (target && hunt.dist < 260) {
+      if (unit.buffs.blind > 0 && Math.random() < 0.45) {
+        unit.wanderAngle += U.rand(-1, 1) * dt;
+        unit.moveToward(
+          unit.x + Math.cos(unit.wanderAngle) * 80,
+          unit.y + Math.sin(unit.wanderAngle) * 80,
+          0.35,
+          dt
+        );
+        return { action: 'blind' };
+      }
 
-      if (canEat && hunt.dist < dino.radius + target.radius + 30) {
-        dino.moveToward(target.x, target.y, 0.6, dt);
-        if (hunt.dist < biteRange && dino.tryBite()) {
-          return { action: 'bite', target: target };
-        }
+      if (hunt.dist > range * 0.85) {
+        unit.moveToward(target.x, target.y, 0.72, dt);
         return { action: 'chase', target: target };
       }
-
-      if (target.canEat(dino) && hunt.dist < target.radius * 2) {
-        var fleeX = dino.x + (dino.x - target.x);
-        var fleeY = dino.y + (dino.y - target.y);
-        dino.moveToward(fleeX, fleeY, 0.8, dt);
-        return { action: 'flee', target: target };
-      }
-
-      if (similar && hunt.dist < dino.radius * 3 && Math.random() < 0.008) {
-        if (hunt.dist < biteRange && dino.tryBite()) {
-          return { action: 'bite', target: target };
-        }
-      }
+      unit.angle = U.angleTo(unit.x, unit.y, target.x, target.y);
+      if (unit.tryAttack()) return { action: 'attack', target: target };
+      return { action: 'engage', target: target };
     }
 
-    dino.wanderAngle += U.rand(-0.8, 0.8) * dt;
-    var wanderX = dino.x + Math.cos(dino.wanderAngle) * 200;
-    var wanderY = dino.y + Math.sin(dino.wanderAngle) * 200;
-    dino.moveToward(wanderX, wanderY, 0.22, dt);
+    if (unit.isAlly && ctx.player) {
+      var ax = ctx.player.x + Math.cos(unit.wanderAngle) * 50;
+      var ay = ctx.player.y + Math.sin(unit.wanderAngle) * 50;
+      unit.wanderAngle += dt * 0.4;
+      unit.moveToward(ax, ay, 0.28, dt);
+      return { action: 'guard' };
+    }
+
+    unit.wanderAngle += U.rand(-0.8, 0.8) * dt;
+    unit.moveToward(
+      unit.x + Math.cos(unit.wanderAngle) * 180,
+      unit.y + Math.sin(unit.wanderAngle) * 180,
+      0.22,
+      dt
+    );
     return { action: 'wander' };
   }
 
@@ -1209,26 +1862,50 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
 })(window);
 
 /**
- * 无限 3D 世界渲染：真实恐龙、区块地形、第一人称相机。
+ * 第三人称斗罗大陆渲染：魂师、魂环、魂技特效、领域金界。
  */
 (function (global) {
   'use strict';
 
-  var DinoModel = global.DinoModel;
+  var UnitModel = global.UnitModel;
   var World = global.World;
+
+  function NullRenderer() {
+    var self = this;
+    this.world = {
+      heightAt: function () { return 0; },
+      update: function () {},
+      groundMat: { color: { setHex: function () {} } }
+    };
+    this.meshes = new Map();
+    this.fxMeshes = [];
+    this.domainMesh = null;
+    this.camera = { position: { x: 0, y: 40, z: 0 } };
+    this.createUnitMesh = function () {};
+    this.updateUnitMesh = function () {};
+    this.syncFx = function () {};
+    this.updateCamera = function () {};
+    this.setDomainLook = function () {};
+    this.resize = function () {};
+    this.render = function () {};
+    this.clearUnits = function () {};
+  }
 
   function Renderer3D(canvas) {
     if (typeof THREE === 'undefined') throw new Error('Three.js 未加载');
 
     this.meshes = new Map();
+    this.fxMeshes = [];
     this.particleMeshes = [];
 
     this.scene = new THREE.Scene();
-    this.scene.background = new THREE.Color(0x7ec8f0);
-    this.scene.fog = new THREE.Fog(0xa8daf5, 280, 3200);
+    this.normalFog = 0xc9b882;
+    this.domainFog = 0xf0d56a;
+    this.scene.background = new THREE.Color(0x8eb4d4);
+    this.scene.fog = new THREE.Fog(this.normalFog, 220, 2800);
 
-    this.camera = new THREE.PerspectiveCamera(72, 16 / 9, 2, 5000);
-    this.camera.position.set(0, 80, 0);
+    this.camera = new THREE.PerspectiveCamera(60, 16 / 9, 1.2, 5000);
+    this.camera.position.set(0, 40, 70);
 
     this.renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true });
     if (!this.renderer.getContext()) throw new Error('WebGL 不可用');
@@ -1236,17 +1913,49 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    this.renderer.toneMappingExposure = 1.05;
+    this.renderer.toneMappingExposure = 1.12;
 
     this.setupLights();
     this.world = new World(this.scene);
+    this.camYaw = 0;
+    this.camPitch = 0.42;
+    this.shake = 0;
+
+    this.domainMesh = new THREE.Mesh(
+      new THREE.CylinderGeometry(280, 280, 16, 48, 1, true),
+      new THREE.MeshBasicMaterial({
+        color: 0xffe27a,
+        transparent: true,
+        opacity: 0.18,
+        side: THREE.DoubleSide,
+        depthWrite: false
+      })
+    );
+    this.domainMesh.visible = false;
+    this.scene.add(this.domainMesh);
+
+    this.domainFloor = new THREE.Mesh(
+      new THREE.CircleGeometry(280, 48),
+      new THREE.MeshBasicMaterial({
+        color: 0xffd36a,
+        transparent: true,
+        opacity: 0.22,
+        side: THREE.DoubleSide,
+        depthWrite: false
+      })
+    );
+    this.domainFloor.rotation.x = -Math.PI / 2;
+    this.domainFloor.visible = false;
+    this.scene.add(this.domainFloor);
   }
 
   Renderer3D.prototype.setupLights = function () {
-    this.scene.add(new THREE.AmbientLight(0xbfd4ff, 0.45));
-    this.scene.add(new THREE.HemisphereLight(0x87ceeb, 0x3d5c32, 0.55));
+    this.ambient = new THREE.AmbientLight(0xfff2d0, 0.48);
+    this.scene.add(this.ambient);
+    this.hemi = new THREE.HemisphereLight(0x9ec8ff, 0x6a7a40, 0.55);
+    this.scene.add(this.hemi);
 
-    var sun = new THREE.DirectionalLight(0xfff0cc, 1.35);
+    var sun = new THREE.DirectionalLight(0xfff0cc, 1.4);
     sun.position.set(400, 700, 200);
     sun.castShadow = true;
     sun.shadow.mapSize.set(2048, 2048);
@@ -1264,120 +1973,206 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     this.sun = sun;
   };
 
-  Renderer3D.prototype.createDinoMesh = function (dino) {
-    var group = DinoModel.create(dino.colors());
-    if (dino.isPlayer) {
-      var ring = new THREE.Mesh(
-        new THREE.RingGeometry(2.8, 3.2, 32),
-        new THREE.MeshBasicMaterial({ color: 0x66ff66, transparent: true, opacity: 0.45, side: THREE.DoubleSide })
-      );
-      ring.rotation.x = -Math.PI / 2;
-      ring.position.y = 0.2;
-      group.add(ring);
-    }
+  Renderer3D.prototype.createUnitMesh = function (unit) {
+    var group = UnitModel.create(unit);
     this.scene.add(group);
-    this.meshes.set(dino.id, group);
+    this.meshes.set(unit.id, group);
     return group;
   };
 
-  Renderer3D.prototype.updateDinoMesh = function (dino, world) {
-    if (dino.isPlayer) {
-      var existing = this.meshes.get(dino.id);
-      if (existing) existing.visible = false;
-      return;
-    }
-
-    var group = this.meshes.get(dino.id) || this.createDinoMesh(dino);
-    if (!dino.alive) {
+  Renderer3D.prototype.updateUnitMesh = function (unit, world) {
+    var group = this.meshes.get(unit.id) || this.createUnitMesh(unit);
+    if (!unit.alive) {
       group.visible = false;
       return;
     }
     group.visible = true;
 
-    var scale = dino.radius / 34;
+    var gy = world.heightAt(unit.x, unit.y);
+    var trueBody = unit.buffs.trueBody > 0;
+    var scale = (unit.radius / 14) * (trueBody ? 3.4 : 1);
     group.scale.setScalar(scale);
-    var gy = world.heightAt(dino.x, dino.y);
-    group.position.set(dino.x, gy, dino.y);
-    group.rotation.y = -dino.angle + Math.PI / 2;
+    group.position.set(unit.x, gy + unit.h, unit.y);
+    group.rotation.y = -unit.angle + Math.PI;
 
-    var bite = dino.biteAnim > 0 ? dino.biteAnim / 0.18 : 0;
-    if (group.userData.jaw) {
-      group.userData.jaw.position.z = 4.25 + bite * 0.5;
-      group.userData.jaw.rotation.x = bite * 0.35;
+    if (group.userData.human) group.userData.human.visible = !trueBody;
+    if (group.userData.dragon) group.userData.dragon.visible = trueBody;
+    if (group.userData.ringPivot) group.userData.ringPivot.visible = !trueBody;
+
+    if (group.userData.wings) {
+      group.userData.wings.visible = unit.buffs.wings > 0 && !trueBody;
     }
-    if (group.userData.head) {
-      group.userData.head.rotation.x = -bite * 0.12;
+    if (group.userData.goldAura) {
+      group.userData.goldAura.visible = unit.buffs.golden > 0 && !trueBody;
+      group.userData.goldAura.rotation.y += 0.03;
+    }
+    if (group.userData.shieldMesh) {
+      group.userData.shieldMesh.visible = unit.buffs.shield > 0 && !trueBody;
     }
 
-    var moving = Math.hypot(dino.vx, dino.vy) > 15;
-    if (group.userData.legs && moving) {
-      var t = Date.now() * 0.009;
+    var t = Date.now() * 0.001;
+    if (group.userData.ringPivot) {
+      group.userData.ringPivot.rotation.y = t * 0.7;
+      var rings = group.userData.rings || [];
+      for (var r = 0; r < rings.length; r++) {
+        rings[r].rotation.z = Math.sin(t * 0.8 + r) * 0.25;
+      }
+    }
+
+    var moving = Math.hypot(unit.vx, unit.vy) > 12;
+    var attack = unit.attackAnim > 0 ? unit.attackAnim / 0.28 : 0;
+    if (group.userData.legs && !trueBody) {
       for (var i = 0; i < group.userData.legs.length; i++) {
-        var swing = Math.sin(t + (i % 2) * Math.PI) * 0.35;
-        group.userData.legs[i].upper.rotation.x = swing;
-        group.userData.legs[i].lower.rotation.x = -swing * 0.6;
+        var swing = moving ? Math.sin(t * 8 + (i % 2) * Math.PI) * 0.45 : 0;
+        if (group.userData.legs[i].upper) group.userData.legs[i].upper.rotation.x = swing;
+        if (group.userData.legs[i].lower && group.userData.legs[i].lower !== group.userData.legs[i].upper) {
+          group.userData.legs[i].lower.rotation.x = -swing * 0.5;
+        }
+      }
+    }
+    if (group.userData.arms && !trueBody && group.userData.arms[1]) {
+      group.userData.arms[1].rotation.x = -attack * 1.4;
+      if (group.userData.arms[0]) group.userData.arms[0].rotation.x = attack * 0.3;
+    }
+
+    if (group.userData.wingL) {
+      var flap = Math.sin(t * 6) * 0.25;
+      group.userData.wingL.rotation.y = flap;
+      if (group.userData.wingR) group.userData.wingR.rotation.y = -flap;
+    }
+
+    if (trueBody && group.userData.dragon && group.userData.dragon.userData.body) {
+      var segs = group.userData.dragon.userData.body;
+      for (var s = 0; s < segs.length; s++) {
+        segs[s].position.x = Math.sin(t * 3 + s * 0.5) * 0.35;
       }
     }
 
-    if (group.userData.tail) {
-      var w = Date.now() * 0.005;
-      for (var j = 0; j < group.userData.tail.length; j++) {
-        group.userData.tail[j].rotation.y = Math.sin(w + j * 0.6) * 0.08;
-      }
+    if (unit.hitFlash > 0) {
+      group.traverse(function (child) {
+        if (child.material && child.material.emissive) {
+          child.material.emissiveIntensity = 0.8;
+        }
+      });
     }
   };
 
-  Renderer3D.prototype.syncParticles = function (particles, world) {
-    while (this.particleMeshes.length > particles.length) {
-      this.scene.remove(this.particleMeshes.pop());
-    }
-    while (this.particleMeshes.length < particles.length) {
+  Renderer3D.prototype.allocFx = function (n) {
+    while (this.fxMeshes.length < n) {
       var m = new THREE.Mesh(
-        new THREE.SphereGeometry(1, 6, 6),
-        new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true })
+        new THREE.SphereGeometry(1, 8, 8),
+        new THREE.MeshBasicMaterial({ color: 0xffe27a, transparent: true, opacity: 0.8 })
       );
       this.scene.add(m);
-      this.particleMeshes.push(m);
+      this.fxMeshes.push(m);
     }
-    for (var i = 0; i < particles.length; i++) {
-      var p = particles[i];
-      var m = this.particleMeshes[i];
-      var gy = world.heightAt(p.x, p.y);
-      m.position.set(p.x, gy + 6 + p.size * 3, p.y);
-      m.scale.setScalar(p.size * p.life * 3);
-      m.material.color.set(p.color);
-      m.material.opacity = p.life;
-      m.visible = p.life > 0;
+    for (var i = n; i < this.fxMeshes.length; i++) this.fxMeshes[i].visible = false;
+  };
+
+  Renderer3D.prototype.syncFx = function (projectiles, effects, particles, world) {
+    var items = [];
+    var i;
+    for (i = 0; i < projectiles.length; i++) {
+      var p = projectiles[i];
+      items.push({
+        x: p.x,
+        y: world.heightAt(p.x, p.y) + (p.h || 10),
+        z: p.y,
+        s: p.type === 'judgment' ? 14 : p.type === 'blade' ? 8 : p.type === 'sword' ? 5 : 3,
+        color: p.color || '#ffe27a',
+        opacity: Math.min(1, p.life)
+      });
+    }
+    for (i = 0; i < effects.length; i++) {
+      var e = effects[i];
+      var gy = world.heightAt(e.x, e.y);
+      var size = e.r ? e.r * 0.08 : 6;
+      if (e.type === 'roar' || e.type === 'tail' || e.type === 'burst') size = (e.r || 40) * 0.12 * (1.2 - e.life);
+      items.push({
+        x: e.x,
+        y: gy + 8,
+        z: e.y,
+        s: size,
+        color: e.type === 'roar' ? '#fff4c0' : '#ffd36a',
+        opacity: Math.min(0.7, e.life)
+      });
+    }
+    for (i = 0; i < particles.length; i++) {
+      var part = particles[i];
+      items.push({
+        x: part.x,
+        y: world.heightAt(part.x, part.y) + 6 + part.size * 2,
+        z: part.y,
+        s: part.size * part.life * 2.5,
+        color: part.color,
+        opacity: part.life
+      });
+    }
+
+    this.allocFx(items.length);
+    for (i = 0; i < items.length; i++) {
+      var it = items[i];
+      var mesh = this.fxMeshes[i];
+      mesh.visible = true;
+      mesh.position.set(it.x, it.y, it.z);
+      mesh.scale.setScalar(Math.max(0.4, it.s));
+      mesh.material.color.set(it.color);
+      mesh.material.opacity = it.opacity;
     }
   };
 
-  Renderer3D.prototype.updateCamera = function (player, dt) {
-    if (!player) return;
-
-    var ground = this.world.heightAt(player.x, player.y);
-    var eyeHeight = player.radius * 0.55 + 16;
-    var idealX = player.x;
-    var idealY = ground + eyeHeight;
-    var idealZ = player.y;
-
-    var lerp = 1 - Math.pow(0.0008, dt);
-    this.camera.position.x += (idealX - this.camera.position.x) * lerp;
-    this.camera.position.y += (idealY - this.camera.position.y) * lerp;
-    this.camera.position.z += (idealZ - this.camera.position.z) * lerp;
-
-    var lookDist = 140;
-    var lookX = player.x + Math.cos(player.angle) * lookDist;
-    var lookY = ground + eyeHeight * 0.95;
-    var lookZ = player.y + Math.sin(player.angle) * lookDist;
-    this.camera.lookAt(lookX, lookY, lookZ);
-
-    this.world.update(player.x, player.y);
-
-    if (this.sun) {
+  Renderer3D.prototype.setDomainLook = function (domain, player) {
+    var on = !!(domain && domain.life > 0);
+    this.domainMesh.visible = on;
+    this.domainFloor.visible = on;
+    if (on) {
+      this.domainMesh.position.set(domain.x, 8, domain.y);
+      this.domainFloor.position.set(domain.x, 1.6, domain.y);
+      this.scene.fog.color.setHex(this.domainFog);
+      this.scene.background.setHex(0xf0c85a);
+      this.ambient.color.setHex(0xffe9a0);
+      this.ambient.intensity = 0.85;
+    } else {
+      this.scene.fog.color.setHex(this.normalFog);
+      this.scene.background.setHex(0x8eb4d4);
+      this.ambient.color.setHex(0xfff2d0);
+      this.ambient.intensity = 0.48;
+    }
+    if (player && this.sun) {
       this.sun.position.set(player.x + 350, 650, player.y + 120);
       this.sun.target.position.set(player.x, 0, player.y);
       this.sun.target.updateMatrixWorld();
     }
+  };
+
+  Renderer3D.prototype.updateCamera = function (player, dt, look) {
+    if (!player) return;
+    look = look || {};
+    if (look.yaw != null) this.camYaw = look.yaw;
+    else this.camYaw = player.angle;
+
+    var ground = this.world.heightAt(player.x, player.y);
+    var trueBody = player.buffs.trueBody > 0;
+    var dist = trueBody ? 150 : 58;
+    var height = trueBody ? 70 : 26;
+    var yaw = this.camYaw;
+    var idealX = player.x - Math.cos(yaw) * dist;
+    var idealZ = player.y - Math.sin(yaw) * dist;
+    var idealY = ground + player.h + height;
+
+    if (this.shake > 0) {
+      idealX += (Math.random() - 0.5) * this.shake * 4;
+      idealY += (Math.random() - 0.5) * this.shake * 2;
+      this.shake -= dt;
+    }
+
+    var lerp = 1 - Math.pow(0.0004, dt);
+    this.camera.position.x += (idealX - this.camera.position.x) * lerp;
+    this.camera.position.y += (idealY - this.camera.position.y) * lerp;
+    this.camera.position.z += (idealZ - this.camera.position.z) * lerp;
+
+    this.camera.lookAt(player.x, ground + player.h + (trueBody ? 28 : 12), player.y);
+    this.world.update(player.x, player.y);
   };
 
   Renderer3D.prototype.resize = function (width, height) {
@@ -1390,63 +2185,83 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     this.renderer.render(this.scene, this.camera);
   };
 
-  Renderer3D.prototype.clearDinos = function () {
+  Renderer3D.prototype.clearUnits = function () {
     this.meshes.forEach(function (g) { this.scene.remove(g); }, this);
     this.meshes.clear();
   };
 
   global.Renderer3D = Renderer3D;
+  global.NullRenderer = NullRenderer;
 })(window);
 
 /**
- * 无限 3D 恐龙世界 —— 自由探索、捕食、进化。
+ * 斗罗大陆 · 光明圣龙魂帝 3D 战斗。
  */
 (function (global) {
   'use strict';
 
   var U = global.Utils;
-  var Dino = global.Dino;
+  var Unit = global.Unit;
   var AI = global.AI;
   var Sfx = global.Sfx;
+  var Skills = global.Skills;
   var Renderer3D = global.Renderer3D;
+  var NullRenderer = global.NullRenderer;
 
-  var GRACE_TIME = 10;
-  var PLAYER_START_MASS = 45;
-  var MAX_NPC = 10;
-  var SPAWN_MIN = 280;
-  var SPAWN_MAX = 750;
-  var DESPAWN_DIST = 1400;
+  var GRACE_TIME = 6;
+  var MAX_NPC = 9;
+  var SPAWN_MIN = 160;
+  var SPAWN_MAX = 620;
+  var DESPAWN_DIST = 1300;
 
-  var AI_NAMES = [
-    '暴龙', '迅猛龙', '棘龙', '甲龙', '剑龙',
-    '异特龙', '镰刀龙', '三角龙', '双脊龙', '禽龙', '重爪龙', '角龙'
+  var ENEMY_TYPES = [
+    { name: '暗影魂师', kind: 'master', martialSoul: 'shadow', attr: 'dark', rank: '魂王', rings: 5, hp: 520, atk: 48, def: 28, spd: 110, soul: 180, radius: 14 },
+    { name: '幽冥魔狼', kind: 'wolf', martialSoul: 'darkWolf', attr: 'dark', rank: '千年魂兽', rings: 3, hp: 380, atk: 42, def: 18, spd: 150, soul: 80, radius: 16 },
+    { name: '邪火魂师', kind: 'master', martialSoul: 'shadow', attr: 'dark', rank: '魂帝', rings: 6, hp: 780, atk: 62, def: 36, spd: 100, soul: 240, radius: 15 },
+    { name: '光明凤魂师', kind: 'master', martialSoul: 'lightBird', attr: 'light', rank: '魂王', rings: 5, hp: 560, atk: 44, def: 30, spd: 125, soul: 200, radius: 14 },
+    { name: '泰坦猿', kind: 'ape', martialSoul: 'titanApe', attr: 'beast', rank: '万年魂兽', rings: 5, hp: 1400, atk: 80, def: 55, spd: 85, soul: 120, radius: 24 }
   ];
 
   function Game(canvas, hooks) {
     this.canvas = canvas;
     this.hooks = hooks || {};
     this.state = 'ready';
-    this.input = { up: false, down: false, left: false, right: false, bite: false };
+    this.input = {
+      up: false, down: false, left: false, right: false,
+      jump: false, attack: false
+    };
     this.particles = [];
+    this.projectiles = [];
+    this.effects = [];
     this.messages = [];
     this.nextId = 1;
-    this.evolveFlash = 0;
     this.playTime = 0;
     this.highKills = this.loadHighKills();
+    this.domain = null;
+    this.lockTarget = null;
+    this.lookYaw = 0;
 
-    this.r3d = new Renderer3D(canvas);
+    if (typeof THREE !== 'undefined' && canvas && canvas.getContext) {
+      try {
+        this.r3d = new Renderer3D(canvas);
+      } catch (err) {
+        this.r3d = new NullRenderer();
+      }
+    } else {
+      this.r3d = new NullRenderer();
+    }
     this.world = this.r3d.world;
 
     this.reset();
     this.resize();
     this.lastTime = 0;
     this.tick = this.tick.bind(this);
-    global.requestAnimationFrame(this.tick);
+    if (global.requestAnimationFrame) global.requestAnimationFrame(this.tick);
   }
 
   Game.prototype.loadHighKills = function () {
     try {
-      return parseInt(global.localStorage.getItem('dinoWorld.kills'), 10) || 0;
+      return parseInt(global.localStorage.getItem('douluo.kills'), 10) || 0;
     } catch (e) {
       return 0;
     }
@@ -1454,74 +2269,106 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
 
   Game.prototype.saveHighKills = function () {
     try {
-      global.localStorage.setItem('dinoWorld.kills', String(this.highKills));
+      global.localStorage.setItem('douluo.kills', String(this.highKills));
     } catch (e) {}
   };
 
   Game.prototype.reset = function () {
-    this.dinos = [];
+    this.units = [];
     this.particles = [];
+    this.projectiles = [];
+    this.effects = [];
     this.messages = [];
     this.nextId = 1;
-    this.evolveFlash = 0;
     this.playTime = 0;
+    this.domain = null;
+    this.lockTarget = null;
+    this.lookYaw = 0;
+    if (this.r3d && this.r3d.clearUnits) this.r3d.clearUnits();
 
-    if (this.r3d) this.r3d.clearDinos();
-
-    this.player = this.spawnDino({
+    this.player = this.spawnUnit({
       isPlayer: true,
+      isAlly: true,
       x: 0,
-      y: 0,
-      mass: PLAYER_START_MASS,
-      hp: 250,
-      name: '你'
+      y: 12,
+      kind: 'master',
+      martialSoul: 'brightDragon',
+      attr: 'light',
+      hasBadge: true,
+      name: '你',
+      title: '光明圣龙魂帝',
+      rank: '七环魂帝',
+      rings: 7,
+      hp: 2200,
+      atk: 160,
+      def: 110,
+      spd: 155,
+      soul: 1200,
+      radius: 15
+    });
+    this.lookYaw = this.player.angle;
+
+    this.spawnUnit({
+      isAlly: true,
+      x: 40,
+      y: -20,
+      kind: 'master',
+      martialSoul: 'lightBird',
+      attr: 'light',
+      hasBadge: true,
+      name: '徽章护卫',
+      title: '圣龙徽章',
+      rank: '魂王',
+      rings: 5,
+      hp: 700,
+      atk: 50,
+      def: 32,
+      spd: 120,
+      soul: 260,
+      radius: 14
     });
 
-    for (var i = 0; i < 6; i++) {
-      this.spawnNpcNearPlayer();
-    }
+    for (var i = 0; i < 6; i++) this.spawnNpcNearPlayer();
   };
 
-  Game.prototype.spawnDino = function (opts) {
-    var dino = new Dino({
-      id: this.nextId++,
-      isPlayer: opts.isPlayer,
-      x: opts.x,
-      y: opts.y,
-      mass: opts.mass || U.rand(12, 28),
-      angle: U.rand(0, Math.PI * 2),
-      hp: opts.hp,
-      name: opts.name || '恐龙'
-    });
-    dino.syncStats();
-    this.dinos.push(dino);
-    if (this.r3d) this.r3d.createDinoMesh(dino);
-    return dino;
+  Game.prototype.spawnUnit = function (opts) {
+    opts = opts || {};
+    opts.id = this.nextId++;
+    var unit = new Unit(opts);
+    this.units.push(unit);
+    if (this.r3d && this.r3d.createUnitMesh) this.r3d.createUnitMesh(unit);
+    return unit;
   };
 
   Game.prototype.spawnNpcNearPlayer = function () {
     if (!this.player) return null;
     var angle = U.rand(0, Math.PI * 2);
     var dist = U.rand(SPAWN_MIN, SPAWN_MAX);
-    var x = this.player.x + Math.cos(angle) * dist;
-    var y = this.player.y + Math.sin(angle) * dist;
-
-    var mass = U.rand(10, 22);
-    if (Math.random() < 0.25) mass = U.rand(this.player.mass * 0.55, this.player.mass * 0.95);
-
-    return this.spawnDino({
-      x: x,
-      y: y,
-      mass: mass,
-      name: AI_NAMES[U.randInt(0, AI_NAMES.length - 1)]
+    var t = ENEMY_TYPES[U.randInt(0, ENEMY_TYPES.length - 1)];
+    var u = this.spawnUnit({
+      x: this.player.x + Math.cos(angle) * dist,
+      y: this.player.y + Math.sin(angle) * dist,
+      kind: t.kind,
+      martialSoul: t.martialSoul,
+      attr: t.attr,
+      name: t.name,
+      rank: t.rank,
+      rings: t.rings,
+      hp: t.hp * U.rand(0.85, 1.2),
+      atk: t.atk,
+      def: t.def,
+      spd: t.spd,
+      soul: t.soul,
+      radius: t.radius
     });
+    return u;
   };
 
   Game.prototype.nearbyNpcCount = function () {
     var n = 0;
-    for (var i = 0; i < this.dinos.length; i++) {
-      var d = this.dinos[i];
-      if (!d.alive || d.isPlayer) continue;
+    for (var i = 0; i < this.units.length; i++) {
+      var d = this.units[i];
+      if (!d.alive || d.isPlayer || d.isAlly) continue;
       if (U.dist(d.x, d.y, this.player.x, this.player.y) < SPAWN_MAX + 200) n++;
     }
     return n;
@@ -1529,30 +2376,65 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
 
   Game.prototype.cleanupFar = function () {
     var p = this.player;
-    for (var i = this.dinos.length - 1; i >= 0; i--) {
-      var d = this.dinos[i];
-      if (d.isPlayer || !d.alive) continue;
+    for (var i = this.units.length - 1; i >= 0; i--) {
+      var d = this.units[i];
+      if (d.isPlayer || d.isAlly || !d.alive) continue;
       if (U.dist(d.x, d.y, p.x, p.y) > DESPAWN_DIST) {
         d.alive = false;
-        this.r3d.meshes.delete(d.id);
-        this.dinos.splice(i, 1);
+        if (this.r3d.meshes) this.r3d.meshes.delete(d.id);
+        this.units.splice(i, 1);
       }
     }
   };
 
   Game.prototype.maintainPopulation = function () {
     this.cleanupFar();
-    while (this.nearbyNpcCount() < MAX_NPC) {
-      this.spawnNpcNearPlayer();
-    }
+    while (this.nearbyNpcCount() < MAX_NPC) this.spawnNpcNearPlayer();
   };
 
-  Game.prototype.aliveDinos = function () {
+  Game.prototype.aliveUnits = function () {
     var out = [];
-    for (var i = 0; i < this.dinos.length; i++) {
-      if (this.dinos[i].alive) out.push(this.dinos[i]);
+    for (var i = 0; i < this.units.length; i++) {
+      if (this.units[i].alive) out.push(this.units[i]);
     }
     return out;
+  };
+
+  Game.prototype.enemiesOf = function (unit) {
+    var out = [];
+    for (var i = 0; i < this.units.length; i++) {
+      var u = this.units[i];
+      if (!u.alive || u.id === unit.id) continue;
+      if (u.team === unit.team) continue;
+      out.push(u);
+    }
+    return out;
+  };
+
+  Game.prototype.unitById = function (id) {
+    for (var i = 0; i < this.units.length; i++) {
+      if (this.units[i].id === id) return this.units[i];
+    }
+    return null;
+  };
+
+  Game.prototype.getTarget = function (caster, range) {
+    range = range || 320;
+    var best = null;
+    var bestScore = -999;
+    var foes = this.enemiesOf(caster);
+    for (var i = 0; i < foes.length; i++) {
+      var e = foes[i];
+      var d = U.dist(caster.x, caster.y, e.x, e.y);
+      if (d > range) continue;
+      var face = U.facingDot(caster, e.x, e.y);
+      var score = face * 2 - d / range;
+      if (score > bestScore) {
+        bestScore = score;
+        best = e;
+      }
+    }
+    return best;
   };
 
   Game.prototype.setState = function (state) {
@@ -1560,14 +2442,13 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     var was = this.state;
     this.state = state;
     if (state === 'playing' && was === 'ready') {
-      this.addMessage('无限世界：自由探索，变大变强！', 3);
+      this.addMessage('武魂：光明圣龙 · 七环魂帝出征！', 3);
     }
     if (this.hooks.onState) this.hooks.onState(state, this);
   };
 
   Game.prototype.press = function (action) {
-    if (action === 'bite') this.input.bite = true;
-    else if (action in this.input) this.input[action] = true;
+    if (action in this.input) this.input[action] = true;
     if (this.state === 'ready') this.setState('playing');
     else if (this.state === 'over') {
       this.reset();
@@ -1576,8 +2457,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
   };
 
   Game.prototype.release = function (action) {
-    if (action === 'bite') this.input.bite = false;
-    else if (action in this.input) this.input[action] = false;
+    if (action in this.input) this.input[action] = false;
   };
 
   Game.prototype.restart = function () {
@@ -1606,8 +2486,137 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     }
   };
 
+  Game.prototype.addEffect = function (e) {
+    this.effects.push(e);
+  };
+
+  Game.prototype.addProjectile = function (p) {
+    p.hit = p.hit || {};
+    this.projectiles.push(p);
+  };
+
+  Game.prototype.hurt = function (attacker, victim, dmg, opts) {
+    opts = opts || {};
+    if (!victim || !victim.alive) return false;
+    if (victim.takeDamage(dmg, attacker, opts)) {
+      this.killUnit(victim, attacker);
+      return true;
+    }
+    if (victim.buffs.trueBody > 0 && !opts.trueDmg) return false;
+    if (opts.burn) victim.applyBuff('burn', opts.burn);
+    if (opts.seal) victim.applyBuff('sealed', opts.seal);
+    if (opts.defDown) victim.applyBuff('defDown', opts.defDown);
+    this.addParticles(victim.x, victim.y, '#ffe27a', 3);
+    Sfx.hit();
+    if (victim.wantReflect && attacker && attacker.alive) {
+      victim.wantReflect = false;
+      this.addEffect({ type: 'burst', x: victim.x, y: victim.y, life: 0.35, r: 48 });
+      this.aoe(victim, victim.x, victim.y, 55, victim.getAtk() * 0.45, { knock: 120 });
+    }
+    return false;
+  };
+
+  Game.prototype.hitConeUnits = function (caster, range, halfDot) {
+    var out = [];
+    var foes = this.enemiesOf(caster);
+    var minDot = 1 - halfDot;
+    for (var i = 0; i < foes.length; i++) {
+      var e = foes[i];
+      var d = U.dist(caster.x, caster.y, e.x, e.y);
+      if (d > range + e.radius) continue;
+      if (U.facingDot(caster, e.x, e.y) < minDot) continue;
+      out.push(e);
+    }
+    return out;
+  };
+
+  Game.prototype.hitCone = function (caster, range, halfDot, dmg, opts) {
+    var list = this.hitConeUnits(caster, range, halfDot);
+    for (var i = 0; i < list.length; i++) this.hurt(caster, list[i], dmg, opts);
+    return list.length;
+  };
+
+  Game.prototype.aoe = function (caster, x, y, r, dmg, opts) {
+    var foes = this.enemiesOf(caster);
+    var n = 0;
+    for (var i = 0; i < foes.length; i++) {
+      if (U.dist(x, y, foes[i].x, foes[i].y) <= r + foes[i].radius) {
+        this.hurt(caster, foes[i], dmg, opts);
+        n++;
+      }
+    }
+    return n;
+  };
+
+  Game.prototype.startDomain = function (caster, duration, radius) {
+    this.domain = {
+      ownerId: caster.id,
+      x: caster.x,
+      y: caster.y,
+      r: radius,
+      life: duration,
+      max: duration
+    };
+    this.addEffect({ type: 'domain', x: caster.x, y: caster.y, life: 1.2, r: radius });
+    this.addMessage('十万年·圣龙主迹领域！', 3);
+    if (this.r3d.shake != null) this.r3d.shake = 0.4;
+  };
+
+  Game.prototype.tryCast = function (skillId) {
+    if (this.state !== 'playing') {
+      if (this.state === 'ready') this.setState('playing');
+      else return false;
+    }
+    var caster = this.player;
+    if (!caster || !caster.alive || caster.buffs.stun > 0 || caster.castLock > 0) return false;
+    var skill = Skills.byId[skillId];
+    if (!skill) return false;
+    if ((caster.cooldowns[skill.id] || 0) > 0) return false;
+    var target = this.getTarget(caster, skill.id === 'judgment' || skill.id === 'sunbeam' || skill.id === 'skystrike' ? 420 : 240);
+    this.lockTarget = target;
+    if ((skill.id === 'judgment' || skill.id === 'sunbeam') && !target) {
+      this.addMessage('没有锁定目标', 1.2);
+      return false;
+    }
+    if (!Skills.pay(caster, skill)) {
+      this.addMessage('魂力不足', 1.2);
+      return false;
+    }
+    caster.cooldowns[skill.id] = skill.cd;
+    Skills.cast[skill.id]({ game: this, caster: caster, target: target });
+    Sfx.skill(skill.id);
+    var tag = skill.group === 'soul' ? '第' + skill.slot + '魂技' : skill.group === 'self' ? '自创魂技' : skill.group === 'bone' ? '魂骨技能' : '领域';
+    this.addMessage(tag + ' · ' + skill.name + '！', 2.1);
+    this.addParticles(caster.x, caster.y, skill.color, 10);
+    if (this.r3d.shake != null && (skill.id === 'truebody' || skill.id === 'skystrike' || skill.id === 'domain' || skill.id === 'roar')) {
+      this.r3d.shake = 0.35;
+    }
+    return true;
+  };
+
+  Game.prototype.killUnit = function (victim, killer) {
+    victim.alive = false;
+    this.addParticles(victim.x, victim.y, '#888888', 10);
+    if (killer) {
+      killer.kills += 1;
+      killer.soul = Math.min(killer.maxSoul, killer.soul + 80);
+      killer.hp = Math.min(killer.maxHp, killer.hp + 40);
+    }
+    if (victim.isPlayer) {
+      Sfx.die();
+      this.setState('over');
+      this.addMessage('你倒下了… 点按钮或按 B 重入魂殿', 4);
+    } else if (killer && killer.isPlayer) {
+      this.addMessage('击败 ' + victim.name + ' · ' + victim.rank, 1.8);
+      if (killer.kills > this.highKills) {
+        this.highKills = killer.kills;
+        this.saveHighKills();
+      }
+    }
+  };
+
   Game.prototype.tick = function (now) {
-    global.requestAnimationFrame(this.tick);
+    if (global.requestAnimationFrame) global.requestAnimationFrame(this.tick);
     if (!this.lastTime) this.lastTime = now;
     var dt = Math.min((now - this.lastTime) / 1000, 0.05);
     this.lastTime = now;
@@ -1617,13 +2626,11 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
 
   Game.prototype.update = function (dt) {
     if (this.state === 'paused') return;
-    if (this.evolveFlash > 0) this.evolveFlash -= dt;
 
     for (var m = this.messages.length - 1; m >= 0; m--) {
       this.messages[m].life -= dt;
       if (this.messages[m].life <= 0) this.messages.splice(m, 1);
     }
-
     for (var p = this.particles.length - 1; p >= 0; p--) {
       var part = this.particles[p];
       part.life -= dt;
@@ -1633,158 +2640,269 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
       part.vy *= 0.92;
       if (part.life <= 0) this.particles.splice(p, 1);
     }
-
-    this.r3d.updateCamera(this.player, dt);
-
-    if (this.state !== 'playing') {
-      if (this.state === 'ready') this.simulateAmbient(dt);
-      return;
+    for (var e = this.effects.length - 1; e >= 0; e--) {
+      this.effects[e].life -= dt;
+      if (this.effects[e].life <= 0) this.effects.splice(e, 1);
     }
+
+    this.r3d.updateCamera(this.player, dt, { yaw: this.lookYaw });
+    this.r3d.setDomainLook(this.domain, this.player);
+
+    if (this.state !== 'playing') return;
 
     this.playTime += dt;
-
-    if (this.player.alive && this.player.hp < this.player.maxHp) {
-      this.player.hp = Math.min(this.player.maxHp, this.player.hp + 10 * dt);
-    }
-
     this.updatePlayer(dt);
     this.updateNPCs(dt);
-    this.resolveCombat();
-    this.resolveEating();
+    this.updateProjectiles(dt);
+    this.updateDomain(dt);
+    this.updateWingsFeathers(dt);
+    this.resolveMelee();
     this.maintainPopulation();
-  };
 
-  Game.prototype.simulateAmbient = function (dt) {
-    var alive = this.aliveDinos();
-    var ctx = { playTime: 0, graceTime: GRACE_TIME, player: this.player };
-    for (var i = 0; i < this.dinos.length; i++) {
-      var d = this.dinos[i];
-      if (!d.alive || d.isPlayer) continue;
-      AI.update(d, alive, dt, ctx);
-      d.applyFriction(dt);
-      d.updateMotion(this.world, dt);
-    }
+    this.lockTarget = this.getTarget(this.player, 360);
   };
 
   Game.prototype.updatePlayer = function (dt) {
     var p = this.player;
     if (!p.alive) return;
+    p.tickBuffs(dt);
+    p.regen(dt);
 
-    var ax = 0, ay = 0;
-    if (this.input.left) ax -= 1;
-    if (this.input.right) ax += 1;
-    if (this.input.up) ay -= 1;
-    if (this.input.down) ay += 1;
-
+    var yaw = this.lookYaw;
+    var ax = 0;
+    var ay = 0;
+    if (this.input.up) {
+      ax += Math.cos(yaw);
+      ay += Math.sin(yaw);
+    }
+    if (this.input.down) {
+      ax -= Math.cos(yaw);
+      ay -= Math.sin(yaw);
+    }
+    if (this.input.left) {
+      ax += Math.cos(yaw - Math.PI / 2);
+      ay += Math.sin(yaw - Math.PI / 2);
+    }
+    if (this.input.right) {
+      ax += Math.cos(yaw + Math.PI / 2);
+      ay += Math.sin(yaw + Math.PI / 2);
+    }
     if (ax !== 0 || ay !== 0) {
       var len = Math.hypot(ax, ay);
-      ax /= len; ay /= len;
-      var spd = p.speed();
-      p.vx += ax * spd * dt * 4;
-      p.vy += ay * spd * dt * 4;
+      ax /= len;
+      ay /= len;
+      var spd = p.getSpd();
+      p.vx += ax * spd * dt * 4.2;
+      p.vy += ay * spd * dt * 4.2;
       p.angle = Math.atan2(ay, ax);
+    } else {
+      p.angle = yaw;
     }
 
-    if (this.input.bite && p.tryBite()) Sfx.bite();
+    if (this.input.jump) {
+      if (p.buffs.wings > 0 || p.buffs.trueBody > 0) {
+        p.vh = 70;
+        p.h = Math.min(p.h + 40 * dt, 80);
+      } else if (p.h <= 0.2) {
+        p.vh = 92;
+      }
+    }
+
+    if (this.input.attack && p.tryAttack()) {
+      Sfx.attack();
+      this.hitCone(p, p.attackReach(), 0.62, p.getAtk() * 0.7, { knock: 70 });
+    }
+
     p.applyFriction(dt);
     p.updateMotion(this.world, dt);
   };
 
   Game.prototype.updateNPCs = function (dt) {
-    var alive = this.aliveDinos();
+    var alive = this.aliveUnits();
     var ctx = { playTime: this.playTime, graceTime: GRACE_TIME, player: this.player };
-    for (var i = 0; i < this.dinos.length; i++) {
-      var d = this.dinos[i];
+    for (var i = 0; i < this.units.length; i++) {
+      var d = this.units[i];
       if (!d.alive || d.isPlayer) continue;
-      AI.update(d, alive, dt, ctx);
+      d.tickBuffs(dt);
+      d.regen(dt);
+      if (this.playTime < GRACE_TIME && !d.isAlly) {
+        d.wanderAngle += U.rand(-0.5, 0.5) * dt;
+        d.moveToward(d.x + Math.cos(d.wanderAngle) * 120, d.y + Math.sin(d.wanderAngle) * 120, 0.18, dt);
+      } else {
+        AI.update(d, alive, dt, ctx);
+      }
       d.applyFriction(dt);
       d.updateMotion(this.world, dt);
     }
   };
 
-  Game.prototype.resolveCombat = function () {
-    for (var i = 0; i < this.dinos.length; i++) {
-      var attacker = this.dinos[i];
-      if (!attacker.alive || attacker.biteAnim <= 0) continue;
-
-      for (var j = 0; j < this.dinos.length; j++) {
-        var victim = this.dinos[j];
-        if (!victim.alive || victim.id === attacker.id) continue;
-
-        var d = U.dist(attacker.x, attacker.y, victim.x, victim.y);
-        if (d > attacker.biteReach() + victim.radius * 0.6) continue;
-
-        var angleToVictim = U.angleTo(attacker.x, attacker.y, victim.x, victim.y);
-        if (Math.abs(U.wrapAngle(angleToVictim - attacker.angle)) > Math.PI * 0.55) continue;
-        if (attacker.canEat(victim)) continue;
-
-        var dmg = attacker.biteDamage();
-        if (victim.isPlayer) dmg *= 0.3;
-
-        if (victim.takeDamage(dmg, attacker)) {
-          this.killDino(victim, attacker);
-        }
-        this.addParticles(victim.x, victim.y, '#ff6060', 4);
-      }
-    }
+  Game.prototype.updateWingsFeathers = function (dt) {
+    var p = this.player;
+    if (!p || p.buffs.wings <= 0) return;
+    p._featherT = (p._featherT || 0) + dt;
+    if (p._featherT < 0.28) return;
+    p._featherT = 0;
+    var t = this.getTarget(p, 260);
+    if (!t) return;
+    var a = U.angleTo(p.x, p.y, t.x, t.y) + U.rand(-0.25, 0.25);
+    this.addProjectile({
+      type: 'feather',
+      x: p.x,
+      y: p.y,
+      h: 16 + p.h,
+      vx: Math.cos(a) * 380,
+      vy: Math.sin(a) * 380,
+      vh: 0,
+      life: 1.0,
+      owner: p.id,
+      damage: p.getAtk() * 0.22,
+      color: '#fff4c0',
+      radius: 3
+    });
   };
 
-  Game.prototype.resolveEating = function () {
-    for (var i = 0; i < this.dinos.length; i++) {
-      var eater = this.dinos[i];
-      if (!eater.alive) continue;
-
-      for (var j = 0; j < this.dinos.length; j++) {
-        var prey = this.dinos[j];
-        if (!prey.alive || prey.id === eater.id) continue;
-
-        var d = U.dist(eater.x, eater.y, prey.x, prey.y);
-        if (d > eater.radius + prey.radius * (eater.isPlayer ? 0.8 : 0.55)) continue;
-        if (!eater.canEat(prey)) continue;
-
-        var evolved = eater.absorb(prey);
-        prey.alive = false;
-        Sfx.eat();
-        this.addParticles(prey.x, prey.y, eater.colors().body, 12);
-        this.addMessage(eater.isPlayer ? '吞食 ' + prey.name + '！' : prey.name + ' 被吞食', 1.8);
-
-        if (evolved && eater.isPlayer) {
-          Sfx.evolve();
-          this.evolveFlash = 0.6;
-          this.addMessage('进化 → ' + U.stageName(eater.mass) + '！', 2.5);
+  Game.prototype.updateProjectiles = function (dt) {
+    for (var i = this.projectiles.length - 1; i >= 0; i--) {
+      var p = this.projectiles[i];
+      if (p.delay > 0) {
+        p.delay -= dt;
+        var owner = this.unitById(p.owner);
+        if (owner && p.orbit) {
+          var ang = Date.now() * 0.004 + i;
+          p.x = owner.x + Math.cos(ang) * 18;
+          p.y = owner.y + Math.sin(ang) * 18;
+          p.h = 18 + owner.h;
         }
-
-        if (eater.isPlayer) {
-          if (eater.kills > this.highKills) {
-            this.highKills = eater.kills;
-            this.saveHighKills();
+        continue;
+      }
+      if (p.homing && p.targetId) {
+        var tgt = this.unitById(p.targetId);
+        if (tgt && tgt.alive) {
+          var dx = tgt.x - p.x;
+          var dy = tgt.y - p.y;
+          var dh = 12 - p.h;
+          var len = Math.hypot(dx, dy) || 1;
+          var spd = Math.hypot(p.vx, p.vy) || 300;
+          var wantX = (dx / len) * spd;
+          var wantY = (dy / len) * spd;
+          var k = Math.min(1, (p.homing * dt) / spd);
+          p.vx += (wantX - p.vx) * k;
+          p.vy += (wantY - p.vy) * k;
+          p.vh += dh * dt * 8;
+        }
+      }
+      if (p.type === 'judgment') {
+        var jt = this.unitById(p.targetId);
+        if (jt) {
+          p.x = jt.x;
+          p.y = jt.y;
+        }
+      }
+      p.x += p.vx * dt;
+      p.y += p.vy * dt;
+      p.h += (p.vh || 0) * dt;
+      p.life -= dt;
+      var dead = p.life <= 0;
+      var caster = this.unitById(p.owner);
+      if (caster) {
+        var foes = this.enemiesOf(caster);
+        for (var f = 0; f < foes.length; f++) {
+          var e = foes[f];
+          if (p.hit[e.id]) continue;
+          var dist = U.dist(p.x, p.y, e.x, e.y);
+          if (dist < (p.radius || 4) + e.radius && Math.abs((p.h || 0) - e.h) < 28) {
+            this.hurt(caster, e, p.damage || 20, {
+              penetrate: p.penetrate,
+              burn: p.burn,
+              seal: p.seal,
+              defDown: p.defDown,
+              knock: 50
+            });
+            p.hit[e.id] = true;
+            if (!p.pierce) {
+              dead = true;
+              break;
+            }
+            p.pierce -= 1;
+            if (p.pierce <= 0) {
+              dead = true;
+              break;
+            }
           }
         }
       }
+      if (p.type === 'judgment' && p.h <= 4) {
+        var jtgt = this.unitById(p.targetId);
+        if (jtgt && jtgt.alive && caster) {
+          this.hurt(caster, jtgt, p.damage, { penetrate: true, burn: p.burn, knock: 40 });
+        }
+        this.addEffect({ type: 'burst', x: p.x, y: p.y, life: 0.45, r: 40 });
+        dead = true;
+      }
+      if (dead) this.projectiles.splice(i, 1);
     }
   };
 
-  Game.prototype.killDino = function (victim, killer) {
-    victim.alive = false;
-    this.addParticles(victim.x, victim.y, '#888888', 8);
-
-    if (killer) {
-      killer.kills += 1;
-      killer.mass += victim.mass * 0.25;
-      if (killer.syncStats() && killer.isPlayer) {
-        Sfx.evolve();
-        this.addMessage('进化 → ' + U.stageName(killer.mass) + '！', 2.5);
+  Game.prototype.updateDomain = function (dt) {
+    if (!this.domain) return;
+    this.domain.life -= dt;
+    if (this.domain.life <= 0) {
+      this.domain = null;
+      for (var i = 0; i < this.units.length; i++) {
+        this.units[i].buffs.blessing = 0;
+        this.units[i].buffs.domainCurse = 0;
+      }
+      return;
+    }
+    var d = this.domain;
+    var owner = this.unitById(d.ownerId);
+    if (owner && owner.alive) {
+      d.x = owner.x;
+      d.y = owner.y;
+    }
+    this._domainTick = (this._domainTick || 0) + dt;
+    var pulse = this._domainTick >= 1;
+    if (pulse) this._domainTick = 0;
+    for (var u = 0; u < this.units.length; u++) {
+      var unit = this.units[u];
+      if (!unit.alive) continue;
+      var inside = U.dist(unit.x, unit.y, d.x, d.y) <= d.r;
+      if (!inside) {
+        unit.buffs.blessing = 0;
+        unit.buffs.domainCurse = 0;
+        continue;
+      }
+      if (unit.hasBadge) {
+        unit.applyBuff('blessing', 1.2);
+      } else {
+        unit.applyBuff('domainCurse', 1.2);
+        if (pulse && unit.attr !== 'light') {
+          unit.hp -= unit.maxHp * 0.03 + 18;
+          if (unit.hp <= 0) this.killUnit(unit, owner);
+        }
       }
     }
+  };
 
-    if (victim.isPlayer) {
-      Sfx.die();
-      this.setState('over');
-      this.addMessage('你被击败了… 按 R 重新开始', 4);
+  Game.prototype.resolveMelee = function () {
+    for (var i = 0; i < this.units.length; i++) {
+      var attacker = this.units[i];
+      if (!attacker.alive || attacker.isPlayer || !attacker.pendingHit) continue;
+      attacker.pendingHit = false;
+      var foes = this.enemiesOf(attacker);
+      for (var j = 0; j < foes.length; j++) {
+        var victim = foes[j];
+        var d = U.dist(attacker.x, attacker.y, victim.x, victim.y);
+        if (d > attacker.attackReach() + victim.radius * 0.5) continue;
+        if (U.facingDot(attacker, victim.x, victim.y) < 0.15) continue;
+        var dmg = attacker.getAtk() * (victim.isPlayer ? 0.45 : 0.9);
+        this.hurt(attacker, victim, dmg, { knock: 60 });
+      }
     }
   };
 
   Game.prototype.resize = function () {
+    if (!this.canvas || !this.canvas.getBoundingClientRect) return;
     var rect = this.canvas.getBoundingClientRect();
     var dpr = Math.min(global.devicePixelRatio || 1, 2);
     var w = Math.max(1, Math.round(rect.width * dpr));
@@ -1794,10 +2912,10 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
 
   Game.prototype.draw = function () {
     var w = this.world;
-    for (var i = 0; i < this.dinos.length; i++) {
-      this.r3d.updateDinoMesh(this.dinos[i], w);
+    for (var i = 0; i < this.units.length; i++) {
+      this.r3d.updateUnitMesh(this.units[i], w);
     }
-    this.r3d.syncParticles(this.particles, w);
+    this.r3d.syncFx(this.projectiles, this.effects, this.particles, w);
     this.r3d.render();
     if (this.hooks.onHud) this.hooks.onHud(this);
   };
@@ -1810,6 +2928,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
 
   var doc = global.document;
   var canvas = doc.getElementById('game');
+  var Skills = global.Skills;
 
   var overlays = {
     ready: doc.getElementById('overlay-ready'),
@@ -1823,15 +2942,21 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
   var pauseButton = doc.getElementById('btn-pause');
   var touchControls = doc.getElementById('touch-controls');
   var toast = doc.getElementById('toast');
-
-  var hudStage = doc.getElementById('hud-stage');
-  var hudMass = doc.getElementById('hud-mass');
+  var skillBar = doc.getElementById('skill-bar');
+  var soulRings = doc.getElementById('soul-rings');
+  var hudBuffs = doc.getElementById('hud-buffs');
+  var hudHp = doc.getElementById('hud-hp');
+  var hudSoul = doc.getElementById('hud-soul');
+  var barHp = doc.getElementById('bar-hp');
+  var barSoul = doc.getElementById('bar-soul');
   var hudKills = doc.getElementById('hud-kills');
   var hudBest = doc.getElementById('hud-best');
+  var hudTarget = doc.getElementById('hud-target');
   var bootScreen = doc.getElementById('boot-screen');
   var bootMsg = doc.getElementById('boot-msg');
 
   var game = null;
+  var skillButtons = {};
 
   function hideBoot() {
     if (bootScreen) bootScreen.style.display = 'none';
@@ -1853,8 +2978,52 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
 
   function formatStats(g) {
     var p = g.player;
-    return '阶段 ' + global.Utils.stageName(p.mass) + ' · 击杀 ' + p.kills + ' · 体型 ' + Math.round(p.mass);
+    return (p.title || '魂帝') + ' · 击杀 ' + p.kills + ' · 魂力 ' + Math.round(p.soul);
   }
+
+  function buildRings() {
+    if (!soulRings) return;
+    soulRings.innerHTML = '';
+    for (var i = 0; i < 7; i++) {
+      var el = doc.createElement('i');
+      el.style.background = global.Utils.RING_COLORS[i];
+      soulRings.appendChild(el);
+    }
+  }
+
+  function buildSkills() {
+    if (!skillBar || !Skills) return;
+    skillBar.innerHTML = '';
+    Skills.list.forEach(function (sk) {
+      var btn = doc.createElement('button');
+      btn.type = 'button';
+      btn.className = 'sk';
+      btn.dataset.skill = sk.id;
+      btn.innerHTML = '<span class="sk-key">' + sk.hotkey + '</span><span class="sk-name">' + sk.name + '</span><small>' + sk.group + '</small>';
+      btn.title = sk.desc;
+      btn.addEventListener('click', function (ev) {
+        ev.preventDefault();
+        if (game) game.tryCast(sk.id);
+      });
+      skillBar.appendChild(btn);
+      skillButtons[sk.id] = btn;
+    });
+  }
+
+  var BUFF_LABELS = {
+    wings: '光翼',
+    golden: '金身',
+    trueBody: '真身',
+    shield: '光盾',
+    blessing: '圣龙祝福',
+    stun: '眩晕',
+    blind: '致盲',
+    defDown: '破防',
+    burn: '灼烧',
+    gravity: '重力',
+    sealed: '封穴',
+    domainCurse: '领域压制'
+  };
 
   function bindControls() {
     var MOVE_KEYS = {
@@ -1863,7 +3032,6 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
       ArrowLeft: 'left', KeyA: 'left',
       ArrowRight: 'right', KeyD: 'right'
     };
-    var BITE_KEYS = { Space: 1, KeyJ: 1 };
 
     doc.addEventListener('keydown', function (event) {
       if (!game || event.metaKey || event.ctrlKey || event.altKey) return;
@@ -1874,9 +3042,19 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
         if (!event.repeat) game.press(MOVE_KEYS[code]);
         return;
       }
-      if (BITE_KEYS[code]) {
+      if (code === 'Space') {
         event.preventDefault();
-        if (!event.repeat) game.press('bite');
+        if (!event.repeat) game.press('jump');
+        return;
+      }
+      if (code === 'KeyJ' || code === 'KeyK') {
+        event.preventDefault();
+        if (!event.repeat) game.press('attack');
+        return;
+      }
+      if (Skills.byKey[code]) {
+        event.preventDefault();
+        if (!event.repeat) game.tryCast(Skills.byKey[code].id);
         return;
       }
       if (code === 'KeyP' || code === 'Escape') {
@@ -1884,7 +3062,8 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
         game.togglePause();
       } else if (code === 'KeyM') {
         toggleSound();
-      } else if (code === 'KeyR') {
+      } else if (code === 'KeyB') {
+        event.preventDefault();
         if (game.state === 'over' || game.state === 'playing') game.restart();
       }
     });
@@ -1892,7 +3071,28 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     doc.addEventListener('keyup', function (event) {
       if (!game) return;
       if (MOVE_KEYS[event.code]) game.release(MOVE_KEYS[event.code]);
-      else if (BITE_KEYS[event.code]) game.release('bite');
+      else if (event.code === 'Space') game.release('jump');
+      else if (event.code === 'KeyJ' || event.code === 'KeyK') game.release('attack');
+    });
+
+    canvas.addEventListener('click', function () {
+      if (canvas.requestPointerLock) canvas.requestPointerLock();
+      if (game && game.state === 'ready') game.setState('playing');
+    });
+
+    doc.addEventListener('mousemove', function (event) {
+      if (!game || doc.pointerLockElement !== canvas) return;
+      game.lookYaw += event.movementX * 0.005;
+      game.player.angle = game.lookYaw;
+    });
+
+    canvas.addEventListener('mousedown', function (event) {
+      if (!game) return;
+      if (event.button === 0) game.press('attack');
+    });
+    canvas.addEventListener('mouseup', function (event) {
+      if (!game) return;
+      if (event.button === 0) game.release('attack');
     });
 
     Array.prototype.forEach.call(touchControls.querySelectorAll('[data-hold]'), function (button) {
@@ -1938,16 +3138,56 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     soundButton.setAttribute('aria-pressed', String(muted));
   }
 
+  function updateHud(g) {
+    var p = g.player;
+    if (!p) return;
+    hudHp.textContent = Math.max(0, Math.round(p.hp)) + ' / ' + Math.round(p.maxHp);
+    hudSoul.textContent = Math.max(0, Math.round(p.soul)) + ' / ' + Math.round(p.maxSoul);
+    barHp.style.transform = 'scaleX(' + (p.hp / p.maxHp) + ')';
+    barSoul.style.transform = 'scaleX(' + (p.soul / p.maxSoul) + ')';
+    hudKills.textContent = p.kills;
+    hudBest.textContent = g.highKills;
+    if (g.lockTarget && g.lockTarget.alive) {
+      hudTarget.textContent = '锁定：' + g.lockTarget.name + '（' + g.lockTarget.rank + '）';
+    } else {
+      hudTarget.textContent = '锁定：无';
+    }
+
+    var bits = [];
+    for (var k in BUFF_LABELS) {
+      if (p.buffs[k] > 0) bits.push('<b>' + BUFF_LABELS[k] + '</b>');
+    }
+    hudBuffs.innerHTML = bits.join('');
+
+    for (var id in skillButtons) {
+      var sk = Skills.byId[id];
+      var cd = p.cooldowns[id] || 0;
+      var btn = skillButtons[id];
+      btn.classList.toggle('is-cd', cd > 0);
+      var small = btn.querySelector('small');
+      if (small) small.textContent = cd > 0 ? cd.toFixed(1) + 's' : sk.hotkey + ' · ' + (sk.group === 'soul' ? '魂技' : sk.group === 'self' ? '自创' : sk.group === 'bone' ? '魂骨' : '领域');
+    }
+
+    if (g.messages.length > 0) {
+      toast.textContent = g.messages[0].text;
+      toast.style.opacity = '1';
+    } else {
+      toast.style.opacity = '0';
+    }
+  }
+
   function startGame() {
     if (typeof THREE === 'undefined') {
-      showBootError('3D 引擎加载失败<br><br>请重新下载 play.html（约700KB）<br>用 Chrome 浏览器双击打开<br><br>❌ 不要直接在 GitHub 网页里打开');
+      showBootError('3D 引擎加载失败<br><br>请重新下载 play.html<br>用 Chrome 浏览器双击打开');
       if (errorMsg) errorMsg.textContent = '3D 引擎没加载。请下载 play.html 用 Chrome 打开。';
       showOverlay('error');
       return;
     }
 
     try {
-      if (bootMsg) bootMsg.textContent = '正在创建 3D 世界…';
+      if (bootMsg) bootMsg.textContent = '武魂凝聚中…';
+      buildRings();
+      buildSkills();
       game = new global.Game(canvas, {
         onState: function (state, g) {
           if (state === 'over') {
@@ -1963,21 +3203,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
           pauseButton.textContent = state === 'paused' ? '继续' : '暂停';
           pauseButton.disabled = state === 'ready';
         },
-        onHud: function (g) {
-          var p = g.player;
-          if (!p) return;
-          hudStage.textContent = global.Utils.stageName(p.mass);
-          hudMass.textContent = Math.round(p.mass);
-          hudKills.textContent = p.kills;
-          hudBest.textContent = g.highKills;
-
-          if (g.messages.length > 0) {
-            toast.textContent = g.messages[0].text;
-            toast.style.opacity = '1';
-          } else {
-            toast.style.opacity = '0';
-          }
-        }
+        onHud: updateHud
       });
 
       showOverlay('ready');
@@ -1985,7 +3211,6 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
       hideBoot();
       global.requestAnimationFrame(function () {
         game.resize();
-        // 打开即玩，无需再点按钮
         game.setState('playing');
       });
     } catch (err) {

@@ -1,5 +1,5 @@
 /**
- * 打包单文件 play.html（含 Three.js，离线双击可玩）
+ * 打包单文件 play.html（含 Three.js，离线双击可玩），并同步 docs/index.html。
  */
 'use strict';
 
@@ -10,7 +10,7 @@ const root = path.join(__dirname, '..');
 const css = fs.readFileSync(path.join(root, 'css/style.css'), 'utf8');
 const three = fs.readFileSync(path.join(root, 'js/vendor/three.min.js'), 'utf8');
 const jsFiles = [
-  'utils.js', 'audio.js', 'dino.js', 'dinomodel.js', 'world.js',
+  'utils.js', 'audio.js', 'unit.js', 'skills.js', 'models.js', 'world.js',
   'ai.js', 'renderer3d.js', 'game.js', 'main.js'
 ];
 const js = jsFiles.map(function (f) {
@@ -28,4 +28,8 @@ const html = body
   });
 
 fs.writeFileSync(path.join(root, 'play.html'), html);
+const docsDir = path.join(root, 'docs');
+if (!fs.existsSync(docsDir)) fs.mkdirSync(docsDir);
+fs.writeFileSync(path.join(docsDir, 'index.html'), html);
 console.log('play.html', Math.round(html.length / 1024), 'KB');
+console.log('docs/index.html', Math.round(html.length / 1024), 'KB');
