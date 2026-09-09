@@ -3,96 +3,124 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <meta name="description" content="无限 3D 恐龙世界：自由探索、捕食、进化。" />
-    <meta name="theme-color" content="#1a3d28" />
-    <title>无限恐龙世界 3D</title>
-    <style>html,body{background:#0f2418!important;min-height:100vh;margin:0}</style>
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='14' font-size='14'>🦖</text></svg>" />
+    <meta name="description" content="网页国际象棋：人机对战或双人对弈，支持王车易位、吃过路兵、升变与残局判定。" />
+    <meta name="theme-color" content="#16110d" />
+    <title>国际象棋</title>
+    <style>html,body{background:#16110d!important;min-height:100vh;margin:0}</style>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='14' font-size='14'>♛</text></svg>" />
     <link rel="stylesheet" href="css/style.css" />
   </head>
   <body>
-    <div id="boot-screen" style="position:fixed;inset:0;background:#0f2418;z-index:99999;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#5cd65c;font-family:sans-serif;text-align:center;padding:20px">
-      <div style="font-size:56px;margin-bottom:12px">🦖</div>
-      <div style="font-size:24px;font-weight:bold">无限恐龙世界 3D</div>
-      <div id="boot-msg" style="font-size:15px;color:#9cb8a8;margin-top:14px">正在加载 3D 引擎，请稍候…</div>
-    </div>
     <main class="page">
       <header class="page__header">
-        <h1 class="page__title">无限恐龙世界 <span class="badge-3d">3D</span></h1>
+        <h1 class="page__title">国际象棋</h1>
         <div class="page__tools">
           <button id="btn-sound" class="tool" type="button" aria-pressed="false">音效：开</button>
-          <button id="btn-pause" class="tool" type="button">暂停</button>
+          <button id="btn-new" class="tool" type="button">新局</button>
         </div>
       </header>
 
-      <div class="stage" id="stage">
-        <canvas id="game" class="stage__canvas" role="img" aria-label="无限 3D 恐龙世界"></canvas>
-        <div class="crosshair" aria-hidden="true"></div>
-
-        <div class="hud" id="hud">
-          <div class="hud__panel">
-            <div>阶段: <strong id="hud-stage">幼龙</strong></div>
-            <div>体型: <strong id="hud-mass">45</strong></div>
-            <div>击杀: <strong id="hud-kills">0</strong></div>
+      <div class="layout">
+        <section class="board-card">
+          <div class="board-meta">
+            <div class="status">
+              <span id="turn-dot" class="turn-dot turn-dot--w" aria-hidden="true"></span>
+              <strong id="status-text">白方行棋</strong>
+              <span id="thinking" class="thinking">思考中</span>
+            </div>
           </div>
-          <div class="hud__remain">最高击杀 <strong id="hud-best">0</strong></div>
-        </div>
+          <div class="board" id="board" role="grid" aria-label="国际象棋棋盘"></div>
+        </section>
 
-        <div class="toast" id="toast"></div>
+        <aside class="panel">
+          <div class="side">
+            <div class="side__head">
+              <span class="side__name">黑方</span>
+              <span id="mat-black" class="side__mat"></span>
+            </div>
+            <div id="cap-black" class="caps" aria-label="黑方吃掉的棋子"></div>
+          </div>
 
-        <div class="overlay" id="overlay-ready">
-          <p class="overlay__title">无限 3D 恐龙世界 🌍</p>
-          <p class="overlay__hint">第一人称视角 · 无限大地图 · 自由探索</p>
-          <p class="overlay__hint">方向键移动 · 靠近小恐龙吞食 · 不断进化变大</p>
-          <button class="overlay__button" type="button" data-action="start">进入世界</button>
-        </div>
+          <div class="history-wrap">
+            <h2 class="panel__title">棋谱</h2>
+            <div id="history" class="history"></div>
+          </div>
 
-        <div class="overlay overlay--hidden" id="overlay-over">
-          <p class="overlay__title">你被击败了</p>
-          <p class="overlay__score" id="death-stats"></p>
-          <button class="overlay__button" type="button" data-action="restart">重新开始</button>
-        </div>
+          <div class="side">
+            <div class="side__head">
+              <span class="side__name">白方</span>
+              <span id="mat-white" class="side__mat"></span>
+            </div>
+            <div id="cap-white" class="caps" aria-label="白方吃掉的棋子"></div>
+          </div>
 
-        <div class="overlay overlay--hidden" id="overlay-paused">
-          <p class="overlay__title">已暂停</p>
-          <button class="overlay__button" type="button" data-action="resume">继续探索</button>
-        </div>
-
-        <div class="overlay overlay--hidden" id="overlay-error">
-          <p class="overlay__title">3D 加载失败</p>
-          <p class="overlay__hint" id="error-msg">请用 Chrome 浏览器打开 play.html</p>
-        </div>
-      </div>
-
-      <div class="touch" id="touch-controls" aria-hidden="true">
-        <div class="touch__dpad">
-          <button class="touch__btn touch__btn--up" type="button" data-hold="up">↑</button>
-          <button class="touch__btn touch__btn--left" type="button" data-hold="left">←</button>
-          <button class="touch__btn touch__btn--right" type="button" data-hold="right">→</button>
-          <button class="touch__btn touch__btn--down" type="button" data-hold="down">↓</button>
-        </div>
-        <button class="touch__bite" type="button" data-hold="bite">撕咬</button>
+          <div class="actions">
+            <button id="btn-undo" class="action" type="button">悔棋</button>
+            <button id="btn-hint" class="action" type="button">提示</button>
+            <button id="btn-flip" class="action" type="button">翻转</button>
+            <button id="btn-resign" class="action action--danger" type="button">认输</button>
+          </div>
+        </aside>
       </div>
 
       <section class="legend">
         <h2 class="legend__title">怎么玩</h2>
         <ul class="legend__list">
-          <li>方向键 / WASD 在无限世界中自由移动</li>
-          <li>靠近比自己小的恐龙即可吞食，体型会变大</li>
-          <li>进化：幼龙 → 猎手 → 霸主 → 传说</li>
-          <li>世界没有边界，一直探索一直变强</li>
+          <li>点自己的棋子，再点高亮格子走棋；兵到底线可升变。</li>
+          <li>支持王车易位、吃过路兵、将军 / 将死 / 逼和 / 三次重复 / 五十回合和棋。</li>
+          <li>人机可选择执白或执黑，难度分初级、中级、高级。</li>
+          <li>手机可直接点按；电脑可用 Ctrl+Z 悔棋，Esc 取消选择。</li>
         </ul>
       </section>
     </main>
 
-    <script src="js/vendor/three.min.js"></script>
-    <script src="js/utils.js"></script>
-    <script src="js/audio.js"></script>
-    <script src="js/dino.js"></script>
-    <script src="js/dinomodel.js"></script>
-    <script src="js/world.js"></script>
+    <div class="overlay" id="overlay-ready">
+      <div class="dialog">
+        <p class="dialog__kicker">Chess</p>
+        <h2 class="dialog__title">国际象棋</h2>
+        <p class="dialog__lead">选择对局方式，然后开始。</p>
+
+        <div class="choices">
+          <label class="choice"><input type="radio" name="mode" value="ai" checked /> 人机对战</label>
+          <label class="choice"><input type="radio" name="mode" value="local" /> 双人对弈</label>
+        </div>
+
+        <div id="ai-options" class="ai-options">
+          <p class="opt-label">我执</p>
+          <div class="choices">
+            <label class="choice"><input type="radio" name="color" value="w" checked /> 白棋先行</label>
+            <label class="choice"><input type="radio" name="color" value="b" /> 黑棋</label>
+          </div>
+          <p class="opt-label">难度</p>
+          <div class="choices">
+            <label class="choice"><input type="radio" name="level" value="easy" /> 初级</label>
+            <label class="choice"><input type="radio" name="level" value="medium" checked /> 中级</label>
+            <label class="choice"><input type="radio" name="level" value="hard" /> 高级</label>
+          </div>
+        </div>
+
+        <button class="dialog__button" id="btn-start" type="button">开始对局</button>
+      </div>
+    </div>
+
+    <div class="overlay overlay--hidden" id="overlay-over">
+      <div class="dialog">
+        <h2 class="dialog__title" id="over-title">白方胜</h2>
+        <p class="dialog__lead" id="over-hint">将死</p>
+        <button class="dialog__button" id="btn-again" type="button">再来一局</button>
+      </div>
+    </div>
+
+    <div class="overlay overlay--hidden overlay--ghost" id="overlay-promo">
+      <div class="dialog dialog--promo">
+        <p class="dialog__lead">选择升变</p>
+        <div class="promo-row" id="promo-choices"></div>
+      </div>
+    </div>
+
+    <script src="js/chess.js"></script>
     <script src="js/ai.js"></script>
-    <script src="js/renderer3d.js"></script>
+    <script src="js/audio.js"></script>
     <script src="js/game.js"></script>
     <script src="js/main.js"></script>
   </body>
