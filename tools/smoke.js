@@ -46,6 +46,7 @@ expectedIds.forEach(function (id) {
   assert.ok(SKILLS_DATA[id].cost > 0, 'skill ' + id + ' cost');
 });
 assert.ok(Object.keys(SKILLS_DATA).length >= 17);
+assert.ok(require('fs').readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8').indexOf('css/style.css') >= 0, 'index.html must link stylesheet');
 assert.strictEqual(win.Roster.PLAYER_TEAM.members.length, 7);
 assert.strictEqual(win.Roster.PLAYER_TEAM.members[0].name, '陈凯威');
 assert.strictEqual(win.Roster.PLAYER_TEAM.members[6].name, '白依依');

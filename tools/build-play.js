@@ -18,14 +18,21 @@ const js = jsFiles.map(function (f) {
 }).join('\n');
 
 const body = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
-const html = body
+let html = body
   .replace('<link rel="stylesheet" href="css/style.css" />', '<style>' + css + '</style>')
   .replace(/<script src="js\/[^"]+"><\/script>\s*/g, '')
   .replace('<script src="js/vendor/three.min.js"></script>', '')
-  .trim()
-  .replace('</body>', function () {
-    return '<script>' + three + '<\/script>\n<script>' + js + '<\/script>\n</body>';
-  });
+  .trim();
+if (html.indexOf(css.slice(0, 40)) < 0) {
+  html = html.replace('</head>', '<style>' + css + '</style>\n</head>');
+}
+html = html.replace('</body>', function () {
+  return '<script>' + three + '<\/script>\n<script>' + js + '<\/script>\n</body>';
+});
+
+if (html.indexOf('--page-bg') < 0 || html.indexOf('function beginPlay') < 0) {
+  throw new Error('play.html 打包不完整：缺少样式或开战逻辑');
+}
 
 fs.writeFileSync(path.join(root, 'play.html'), html);
 console.log('play.html', Math.round(html.length / 1024), 'KB');

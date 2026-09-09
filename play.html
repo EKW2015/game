@@ -7,6 +7,615 @@
     <meta name="theme-color" content="#0b1118" />
     <title>3D 斗罗大陆：圣龙神辉战队大赛</title>
     <style>html,body{background:#0b1118!important;min-height:100vh;margin:0}</style>
+    <style>:root {
+  --page-bg: #0b1118;
+  --card-bg: #141c24;
+  --ink: #f0f4f8;
+  --ink-soft: #9bb0c1;
+  --line: rgba(255, 215, 0, 0.22);
+  --accent: #ffd700;
+  --accent-gold: #ffb800;
+  --accent-ink: #110d02;
+  --win: #ffdd44;
+  --shadow: 0 18px 45px -20px rgba(0, 0, 0, 0.85);
+  --radius: 14px;
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px 16px calc(24px + env(safe-area-inset-bottom));
+  background: radial-gradient(circle at 50% 20%, #172433 0%, var(--page-bg) 100%);
+  color: var(--ink);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+    "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+.page {
+  width: min(1120px, 100%);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.page__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.page__title {
+  margin: 0;
+  font-size: clamp(20px, 3.8vw, 26px);
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: var(--accent);
+  text-shadow: 0 0 16px rgba(255, 215, 0, 0.4);
+}
+
+.page__tools {
+  display: flex;
+  gap: 8px;
+}
+
+.tool--play {
+  background: linear-gradient(135deg, #ffd700, #ffaa00);
+  color: #1a0f00;
+  font-weight: 800;
+  border: 0;
+}
+
+.tool {
+  font: inherit;
+  font-size: 13px;
+  padding: 7px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--card-bg);
+  color: var(--ink-soft);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.tool:hover {
+  color: #fff;
+  border-color: var(--accent);
+  box-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
+}
+
+.tool:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.stage {
+  position: relative;
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: var(--card-bg);
+  box-shadow: var(--shadow);
+  border: 1px solid var(--line);
+  touch-action: manipulation;
+  user-select: none;
+  min-height: 400px;
+}
+
+.stage__canvas {
+  display: block;
+  width: 100%;
+  min-height: 400px;
+  height: auto;
+  aspect-ratio: 16 / 9;
+  background: #38556b;
+}
+
+.crosshair {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 18px;
+  height: 18px;
+  margin: -9px 0 0 -9px;
+  pointer-events: none;
+  opacity: 0.65;
+}
+
+.crosshair::before,
+.crosshair::after {
+  content: "";
+  position: absolute;
+  background: #ffd700;
+  border-radius: 1px;
+  box-shadow: 0 0 6px rgba(255, 215, 0, 0.8);
+}
+
+.crosshair::before {
+  left: 50%;
+  top: 2px;
+  width: 2px;
+  height: 14px;
+  margin-left: -1px;
+}
+
+.crosshair::after {
+  top: 50%;
+  left: 2px;
+  width: 14px;
+  height: 2px;
+  margin-top: -1px;
+}
+
+.badge-3d {
+  display: inline-block;
+  font-size: 0.45em;
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: linear-gradient(135deg, #ffd700, #ff8c00);
+  color: #1a0f00;
+  font-weight: 900;
+  vertical-align: middle;
+  letter-spacing: 0.05em;
+}
+
+/* 斗罗大陆专属 HUD 界面 */
+.hud {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  padding: 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.hud__panel {
+  background: rgba(10, 16, 24, 0.78);
+  border: 1px solid rgba(255, 215, 0, 0.3);
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.6);
+  color: #f0f4f8;
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-size: 13px;
+  line-height: 1.8;
+  backdrop-filter: blur(4px);
+}
+
+.hud__bar-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 2px;
+}
+
+.hud__bar {
+  width: 110px;
+  height: 8px;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.hud__bar-inner-hp {
+  height: 100%;
+  background: linear-gradient(90deg, #ff4444, #ff8888);
+  width: 100%;
+  transition: width 0.15s ease;
+}
+
+.hud__bar-inner-mp {
+  height: 100%;
+  background: linear-gradient(90deg, #3399ff, #66ccff);
+  width: 100%;
+  transition: width 0.15s ease;
+}
+
+.hud__panel strong {
+  color: var(--accent);
+}
+
+.hud__remain {
+  background: rgba(10, 16, 24, 0.78);
+  border: 1px solid rgba(255, 215, 0, 0.3);
+  color: #ffcc66;
+  padding: 8px 14px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  backdrop-filter: blur(4px);
+  text-align: right;
+  line-height: 1.6;
+}
+
+.hud__buffs {
+  margin-top: 4px;
+  font-size: 12px;
+  color: #88ff88;
+}
+
+.toast {
+  position: absolute;
+  top: 18%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: linear-gradient(135deg, rgba(20, 26, 36, 0.92), rgba(35, 45, 60, 0.92));
+  border: 1px solid #ffd700;
+  box-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+  color: #fff;
+  padding: 10px 24px;
+  border-radius: 999px;
+  font-size: 15px;
+  font-weight: 700;
+  opacity: 0;
+  transition: opacity 0.25s ease, transform 0.25s ease;
+  pointer-events: none;
+  white-space: nowrap;
+  letter-spacing: 0.05em;
+  z-index: 20;
+}
+
+/* 技能快捷控制栏 */
+.skill-bar-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: var(--card-bg);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 12px;
+}
+
+.skill-category-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--accent);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 2px;
+}
+
+.skill-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 8px;
+}
+
+.skill-btn {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 215, 0, 0.25);
+  color: var(--ink);
+  padding: 8px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
+  font-size: 12px;
+  transition: all 0.15s ease;
+  text-align: left;
+}
+
+.skill-btn:hover {
+  background: rgba(255, 215, 0, 0.15);
+  border-color: var(--accent);
+  transform: translateY(-1px);
+}
+
+.skill-btn:active {
+  transform: translateY(1px);
+}
+
+.skill-btn.ring-yellow { border-left: 4px solid #f6d32d; }
+.skill-btn.ring-purple { border-left: 4px solid #b55fe6; }
+.skill-btn.ring-black  { border-left: 4px solid #555566; }
+.skill-btn.ring-red    { border-left: 4px solid #ff3344; background: rgba(255, 51, 68, 0.1); }
+.skill-btn.bone        { border-left: 4px solid #ffaa00; }
+.skill-btn.domain      { border-left: 4px solid #ffd700; background: rgba(255, 215, 0, 0.12); }
+
+.skill-btn .s-key {
+  font-size: 11px;
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.skill-btn .s-name {
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  width: 100%;
+}
+
+.skill-btn .s-cost {
+  font-size: 11px;
+  color: #66ccff;
+}
+
+.overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 16px 18px 20px;
+  text-align: center;
+  pointer-events: none;
+  background: rgba(10, 16, 24, 0.85);
+  backdrop-filter: blur(4px);
+  z-index: 30;
+  overflow-y: auto;
+}
+
+.overlay--hidden {
+  display: none;
+}
+
+#overlay-ready,
+#overlay-pick,
+#overlay-over,
+#overlay-paused,
+#overlay-error {
+  pointer-events: auto;
+}
+
+.overlay__title {
+  margin: 0;
+  font-size: clamp(22px, 4.5vw, 32px);
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  color: var(--accent);
+  text-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+}
+
+.overlay__hint,
+.overlay__score {
+  margin: 0;
+  font-size: 14px;
+  color: var(--ink-soft);
+  max-width: 520px;
+  line-height: 1.6;
+}
+
+.overlay__button {
+  pointer-events: auto;
+  flex-shrink: 0;
+  margin-top: 8px;
+  font: inherit;
+  font-size: 15px;
+  padding: 12px 36px;
+  border: 0;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #ffd700, #ffaa00);
+  color: #1a0f00;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 6px 20px rgba(255, 170, 0, 0.4);
+  transition: all 0.2s ease;
+}
+
+.overlay__button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(255, 170, 0, 0.6);
+}
+
+kbd {
+  display: inline-block;
+  min-width: 20px;
+  padding: 2px 6px;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  background: var(--card-bg);
+  font-size: 11px;
+  color: var(--accent);
+}
+
+.touch {
+  display: none;
+  align-items: center;
+  gap: 16px;
+}
+
+.touch__dpad {
+  display: grid;
+  grid-template-columns: repeat(3, 52px);
+  grid-template-rows: repeat(3, 52px);
+  gap: 4px;
+}
+
+.touch__btn {
+  font: inherit;
+  font-size: 18px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--card-bg);
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.touch__btn--up { grid-column: 2; grid-row: 1; }
+.touch__btn--left { grid-column: 1; grid-row: 2; }
+.touch__btn--right { grid-column: 3; grid-row: 2; }
+.touch__btn--down { grid-column: 2; grid-row: 3; }
+
+.touch__bite {
+  flex: 1;
+  font: inherit;
+  font-size: 16px;
+  font-weight: 700;
+  padding: 20px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: linear-gradient(135deg, #ffd700, #ff9900);
+  color: #1a0f00;
+  cursor: pointer;
+}
+
+body.is-playing .touch {
+  display: flex;
+}
+
+@media (pointer: coarse) {
+  .touch {
+    display: flex;
+  }
+}
+
+.stage-play {
+  position: absolute;
+  inset: 0;
+  z-index: 28;
+  pointer-events: none;
+  display: none;
+}
+
+.stage-play.is-on {
+  display: block;
+}
+
+.play-hint {
+  position: absolute;
+  left: 50%;
+  bottom: 12px;
+  transform: translateX(-50%);
+  margin: 0;
+  padding: 7px 14px;
+  border-radius: 999px;
+  background: rgba(10, 16, 24, 0.78);
+  border: 1px solid rgba(255, 215, 0, 0.35);
+  color: #ffd700;
+  font-size: 12px;
+  font-weight: 700;
+  max-width: 92%;
+  text-align: center;
+  line-height: 1.4;
+  pointer-events: none;
+}
+
+.stage-play__pads {
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  bottom: 48px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  pointer-events: none;
+}
+
+.stage-play__pads .touch__dpad,
+.stage-play__atk {
+  pointer-events: auto;
+}
+
+.stage-play__atk {
+  font: inherit;
+  font-size: 18px;
+  font-weight: 800;
+  width: 88px;
+  height: 88px;
+  border-radius: 50%;
+  border: 0;
+  background: linear-gradient(135deg, #ffd700, #ff9900);
+  color: #1a0f00;
+  cursor: pointer;
+  box-shadow: 0 8px 22px rgba(255, 150, 0, 0.45);
+}
+
+.legend {
+  padding: 16px 18px;
+  border-radius: var(--radius);
+  border: 1px solid var(--line);
+  background: var(--card-bg);
+}
+
+.legend__title {
+  margin: 0 0 10px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--accent);
+  letter-spacing: 0.1em;
+}
+
+.legend__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.legend__list li strong {
+  color: var(--accent);
+}
+
+.pick-grid {
+  pointer-events: auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 8px;
+  width: min(860px, 94%);
+  max-height: 52vh;
+  overflow: auto;
+  margin-top: 8px;
+}
+
+.pick-card {
+  text-align: left;
+  background: rgba(12, 18, 28, 0.92);
+  border: 1px solid rgba(255, 215, 0, 0.35);
+  color: #f0f4f8;
+  border-radius: 10px;
+  padding: 10px 12px;
+  cursor: pointer;
+  font: inherit;
+  min-height: 88px;
+  pointer-events: auto;
+  touch-action: manipulation;
+}
+
+.pick-card:hover {
+  border-color: #ffd700;
+  box-shadow: 0 0 14px rgba(255, 215, 0, 0.35);
+}
+
+.pick-card.is-out {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.pick-card .pc-name {
+  font-weight: 800;
+  color: #ffd700;
+}
+
+.pick-card .pc-meta {
+  font-size: 12px;
+  color: #9bb0c1;
+  margin-top: 4px;
+  line-height: 1.5;
+}
+</style>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='14' font-size='14'>🐉</text></svg>" />
     <script>
       window.onerror = function (msg) {
@@ -72,23 +681,37 @@
         <div class="toast" id="toast"></div>
 
         <!-- 游戏初始界面 -->
-        <div class="overlay" id="overlay-ready" data-action="start">
+        <div class="overlay" id="overlay-ready" data-action="fight">
           <p class="overlay__title">圣龙神辉战队</p>
           <p class="overlay__hint">「圣龙出世，震碎全场！凯威带队，势不可挡！」</p>
-          <button class="overlay__button" type="button" data-action="start">进入选人 · 开始比赛</button>
-          <p class="overlay__hint">用 Chrome 打开本页或 play.html · 不要用微信 · 平时是人，按 7 才化兽</p>
+          <button class="overlay__button" type="button" data-action="fight">立刻开战（陈凯威上场）</button>
+          <p class="overlay__hint">点金色按钮或按 WASD / 回车就开始打 · 点地面也能走路</p>
         </div>
 
         <div class="overlay overlay--hidden" id="overlay-pick">
           <p class="overlay__title" id="pick-title">选择出战队员</p>
           <p class="overlay__hint" id="pick-sub">1v1 单场对决 · 点选一名未退场的队员</p>
+          <button class="overlay__button" type="button" data-action="fight" id="pick-fight">陈凯威立刻出战</button>
           <div class="pick-grid" id="pick-grid"></div>
+        </div>
+
+        <div class="stage-play" id="stage-play">
+          <p class="play-hint">点地面走路 · WASD 移动 · 空格 / 右下角攻击 · 7 武魂真身</p>
+          <div class="stage-play__pads">
+            <div class="touch__dpad">
+              <button class="touch__btn touch__btn--up" type="button" data-hold="up">↑</button>
+              <button class="touch__btn touch__btn--left" type="button" data-hold="left">←</button>
+              <button class="touch__btn touch__btn--right" type="button" data-hold="right">→</button>
+              <button class="touch__btn touch__btn--down" type="button" data-hold="down">↓</button>
+            </div>
+            <button class="stage-play__atk" type="button" data-hold="bite">攻击</button>
+          </div>
         </div>
 
         <div class="overlay overlay--hidden" id="overlay-over">
           <p class="overlay__title">团队赛落败</p>
           <p class="overlay__score" id="death-stats"></p>
-          <button class="overlay__button" type="button" data-action="restart">重新组队再战</button>
+          <button class="overlay__button" type="button" data-action="restart">重新组队立刻再战</button>
         </div>
 
         <!-- 暂停界面 -->
@@ -251,7 +874,7 @@
           <li><strong>赛制：</strong>圣龙神辉战队 7 人 vs 对手 7 人，每局 1v1。败者退场，每局结束可换人。</li>
           <li><strong>队服：</strong>白金主宰风。男款白金长袍金龙纹与圣龙徽章（陈凯威、墨影、石破天）；女款白金战裙光明流光（冷凝霜、沈琉璃、白依依、焱凰）。</li>
           <li><strong>队员：</strong>陈凯威（光明圣龙）、墨影（刺客）、焱凰（凤凰）、冷凝霜（冰控）、石破天（猛犸坦克）、沈琉璃（充电宝）、白依依（治疗）。</li>
-          <li><strong>操作：</strong>WASD 移动，空格普攻。队员用 <kbd>1</kbd> <kbd>2</kbd> <kbd>T</kbd>、<kbd>7</kbd> 真身；队长另有全部魂技。<kbd>U</kbd> 光明影刃融合技，<kbd>I</kbd> 太阳神凰融合技。</li>
+          <li><strong>操作：</strong>打开就会开战。点地面走路，WASD 移动，空格或右下角「攻击」。队员用 <kbd>1</kbd> <kbd>2</kbd> <kbd>T</kbd>、<kbd>7</kbd> 真身；队长另有全部魂技。<kbd>U</kbd> 光明影刃融合技，<kbd>I</kbd> 太阳神凰融合技。</li>
           <li><strong>连战：</strong>打赢一支队伍后全员复活，立刻对阵下一支学院队。</li>
         </ul>
       </section>
@@ -3583,6 +4206,21 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     this.camera.updateProjectionMatrix();
   };
 
+  Renderer3D.prototype.pickGround = function (ndcX, ndcY) {
+    if (!this._raycaster) {
+      this._raycaster = new THREE.Raycaster();
+      this._groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+      this._ndc = new THREE.Vector2();
+      this._hit = new THREE.Vector3();
+    }
+    this._ndc.set(ndcX, ndcY);
+    this._raycaster.setFromCamera(this._ndc, this.camera);
+    if (this._raycaster.ray.intersectPlane(this._groundPlane, this._hit)) {
+      return { x: this._hit.x, y: this._hit.z };
+    }
+    return null;
+  };
+
   Renderer3D.prototype.render = function () {
     this.renderer.render(this.scene, this.camera);
   };
@@ -3661,6 +4299,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     this.enemyTeamIndex = 0;
     this.pendingRoundEnd = false;
     this.lastResult = '';
+    this.moveTarget = null;
 
     if (this.r3d) this.r3d.clearEntities();
     if (this.skills) {
@@ -3784,8 +4423,31 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     if (mine.id === 'chen' && this.playerTeam && this.playerTeam.slogan) {
       this.addMessage(this.playerTeam.slogan, 3.6);
     }
+    this.moveTarget = null;
     this.setState('playing');
     return true;
+  };
+
+  Game.prototype.preferredFighterId = function () {
+    var chen = this.findMember(this.playerTeam, 'chen');
+    if (chen && !chen.eliminated) return chen.id;
+    var alive = this.aliveMembers(this.playerTeam);
+    return alive.length ? alive[0].id : null;
+  };
+
+  Game.prototype.startDefaultRound = function () {
+    var id = this.preferredFighterId();
+    return id ? this.startRound(id) : false;
+  };
+
+  Game.prototype.setMoveTargetFromClient = function (clientX, clientY) {
+    if (!this.canvas || !this.r3d || !this.r3d.pickGround) return;
+    var rect = this.canvas.getBoundingClientRect();
+    if (!rect.width || !rect.height) return;
+    var ndcX = ((clientX - rect.left) / rect.width) * 2 - 1;
+    var ndcY = -((clientY - rect.top) / rect.height) * 2 + 1;
+    var hit = this.r3d.pickGround(ndcX, ndcY);
+    if (hit) this.moveTarget = hit;
   };
 
   Game.prototype.saveFighterHp = function (entity, team, memberId) {
@@ -3814,10 +4476,10 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     if (action === 'bite') this.input.bite = true;
     else if (action in this.input) this.input[action] = true;
 
-    if (this.state === 'ready') this.setState('pick');
+    if (this.state === 'ready' || this.state === 'pick') this.startDefaultRound();
     else if (this.state === 'over') {
       this.reset();
-      this.setState('pick');
+      this.startDefaultRound();
     }
   };
 
@@ -3828,7 +4490,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
 
   Game.prototype.restart = function () {
     this.reset();
-    this.setState('pick');
+    if (!this.startDefaultRound()) this.setState('pick');
   };
 
   Game.prototype.togglePause = function () {
@@ -3910,6 +4572,20 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     if (this.input.right) ax += 1;
     if (this.input.up) ay -= 1;
     if (this.input.down) ay += 1;
+
+    var usingKeys = ax !== 0 || ay !== 0;
+    if (usingKeys) this.moveTarget = null;
+    else if (this.moveTarget) {
+      var tdx = this.moveTarget.x - p.x;
+      var tdy = this.moveTarget.y - p.y;
+      var tdist = Math.hypot(tdx, tdy);
+      if (tdist > 8) {
+        ax = tdx / tdist;
+        ay = tdy / tdist;
+      } else {
+        this.moveTarget = null;
+      }
+    }
 
     if (ax !== 0 || ay !== 0) {
       var len = Math.hypot(ax, ay);
@@ -4110,10 +4786,12 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
   var pickGrid = doc.getElementById('pick-grid');
   var pickTitle = doc.getElementById('pick-title');
   var pickSub = doc.getElementById('pick-sub');
+  var pickFight = doc.getElementById('pick-fight');
   var bootScreen = doc.getElementById('boot-screen');
   var bootMsg = doc.getElementById('boot-msg');
   var bootEnter = doc.getElementById('boot-enter');
   var startMatchBtn = doc.getElementById('btn-start-match');
+  var stagePlay = doc.getElementById('stage-play');
 
   var game = null;
 
@@ -4137,6 +4815,32 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
       if (!overlays[key]) return;
       overlays[key].classList.toggle('overlay--hidden', key !== name);
     });
+  }
+
+  function syncPlayChrome(state) {
+    if (doc.body) doc.body.classList.toggle('is-playing', state === 'playing');
+    if (stagePlay) stagePlay.classList.toggle('is-on', state === 'playing');
+    if (pauseButton) {
+      pauseButton.textContent = state === 'paused' ? '继续' : '暂停';
+      pauseButton.disabled = state === 'ready' || state === 'pick' || state === 'over';
+    }
+    if (startMatchBtn) {
+      startMatchBtn.style.display = (state === 'playing' || state === 'paused') ? 'none' : '';
+      startMatchBtn.textContent = state === 'pick' ? '立刻开战' : '▶ 开始比赛';
+    }
+  }
+
+  function beginPlay(memberId) {
+    hideBoot();
+    if (!game) return false;
+    if (game.state === 'playing' || game.state === 'paused') return true;
+    if (game.state === 'over') game.reset();
+    var id = memberId || (game.preferredFighterId && game.preferredFighterId()) || 'chen';
+    if (game.startRound(id)) return true;
+    renderPick(game);
+    showOverlay('pick');
+    if (game.state !== 'pick') game.setState('pick');
+    return false;
   }
 
   function formatStats(g) {
@@ -4188,6 +4892,11 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     pickTitle.textContent = '第 ' + (g.roundIndex + 1) + ' 局 · 选择出战';
     pickSub.textContent = '对阵【' + g.enemyTeam.name + '】下一名：' + (enemy ? enemy.name + '（' + enemy.soul + '）' : '无') +
       '　我方剩余 ' + g.aliveMembers(g.playerTeam).length + ' / 敌方剩余 ' + g.aliveMembers(g.enemyTeam).length;
+    var nextId = g.preferredFighterId ? g.preferredFighterId() : 'chen';
+    var nextMem = nextId ? g.findMember(g.playerTeam, nextId) : null;
+    if (pickFight) {
+      pickFight.textContent = (nextMem ? nextMem.name : '陈凯威') + '立刻出战';
+    }
     pickGrid.innerHTML = '';
     g.playerTeam.members.forEach(function (m) {
       var btn = doc.createElement('button');
@@ -4198,6 +4907,13 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
       btn.innerHTML = '<div class="pc-name">' + m.name + (m.eliminated ? ' · 已退场' : '') + '</div>' +
         '<div class="pc-meta">' + m.title + '<br>武魂：' + m.soul + '<br>生命 ' + Math.round(m.hp) + '/' + m.maxHp +
         '<br>' + (m.role || '') + '</div>';
+      if (!m.eliminated) {
+        btn.addEventListener('pointerdown', function (event) {
+          event.preventDefault();
+          event.stopPropagation();
+          beginPlay(m.id);
+        });
+      }
       pickGrid.appendChild(btn);
     });
   }
@@ -4313,7 +5029,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
 
       if (code === 'Enter') {
         event.preventDefault();
-        if (game.state === 'ready') game.setState('pick');
+        beginPlay();
         return;
       }
       if (code === 'KeyP' || code === 'Escape') {
@@ -4332,8 +5048,8 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
       else if (BITE_KEYS[event.code]) game.release('bite');
     });
 
-    // 技能按钮点击释放
-    doc.addEventListener('click', function (event) {
+    // 技能按钮 / 选人 / 开战
+    doc.addEventListener('pointerdown', function (event) {
       if (event.target.closest('#boot-enter, #boot-screen')) {
         hideBoot();
       }
@@ -4344,14 +5060,18 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
       }
       if (!game) return;
       var pickBtn = event.target.closest('[data-pick]');
-      if (pickBtn && game.state === 'pick') {
-        game.startRound(pickBtn.getAttribute('data-pick'));
+      if (pickBtn && !pickBtn.disabled && (game.state === 'pick' || game.state === 'ready')) {
+        event.preventDefault();
+        beginPlay(pickBtn.getAttribute('data-pick'));
         return;
       }
       var skillBtn = event.target.closest('[data-skill]');
       if (skillBtn) {
         var skillId = skillBtn.getAttribute('data-skill');
-        if (game.state === 'ready') game.setState('pick');
+        if (game.state === 'ready' || game.state === 'pick' || game.state === 'over') {
+          beginPlay();
+          return;
+        }
         if (game.state === 'playing') game.skills.castSkill(skillId);
         return;
       }
@@ -4359,31 +5079,57 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
       var target = event.target.closest('[data-action]');
       if (!target) return;
       var action = target.getAttribute('data-action');
-      if (action === 'start') game.setState('pick');
-      else if (action === 'restart') game.restart();
-      else if (action === 'resume') game.togglePause();
+      if (action === 'start' || action === 'fight') {
+        event.preventDefault();
+        beginPlay();
+      } else if (action === 'restart') {
+        event.preventDefault();
+        game.restart();
+      } else if (action === 'resume') game.togglePause();
       else if (action === 'reload') global.location.reload();
     });
 
-    Array.prototype.forEach.call((touchControls && touchControls.querySelectorAll('[data-hold]')) || [], function (button) {
+    Array.prototype.forEach.call(doc.querySelectorAll('[data-hold]') || [], function (button) {
       var action = button.getAttribute('data-hold');
       button.addEventListener('pointerdown', function (event) {
         if (!game) return;
         event.preventDefault();
-        button.setPointerCapture(event.pointerId);
+        event.stopPropagation();
+        try { button.setPointerCapture(event.pointerId); } catch (e) {}
         game.press(action);
-        if (game.state === 'ready') game.setState('pick');
       });
       button.addEventListener('pointerup', function () { if (game) game.release(action); });
       button.addEventListener('pointercancel', function () { if (game) game.release(action); });
     });
 
+    if (canvas) {
+      canvas.style.touchAction = 'none';
+      canvas.addEventListener('pointerdown', function (event) {
+        if (!game) return;
+        if (game.state === 'ready' || game.state === 'pick' || game.state === 'over') {
+          beginPlay();
+        }
+        if (game.state === 'playing') {
+          event.preventDefault();
+          game.setMoveTargetFromClient(event.clientX, event.clientY);
+          canvas.setPointerCapture(event.pointerId);
+        }
+      });
+      canvas.addEventListener('pointermove', function (event) {
+        if (!game || game.state !== 'playing') return;
+        if ((event.buttons & 1) === 0 && event.pointerType !== 'touch') return;
+        game.setMoveTargetFromClient(event.clientX, event.clientY);
+      });
+    }
+
     if (soundButton) soundButton.addEventListener('click', toggleSound);
     if (pauseButton) pauseButton.addEventListener('click', function () { if (game) game.togglePause(); });
     if (startMatchBtn) {
-      startMatchBtn.addEventListener('click', function () {
+      startMatchBtn.addEventListener('pointerdown', function (event) {
+        event.preventDefault();
+        event.stopPropagation();
         hideBoot();
-        if (game && (game.state === 'ready' || game.state === 'over')) game.setState('pick');
+        beginPlay();
       });
     }
 
@@ -4506,23 +5252,19 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
             renderMemberSkills(g);
             showOverlay(null);
           }
-          if (pauseButton) {
-            pauseButton.textContent = state === 'paused' ? '继续' : '暂停';
-            pauseButton.disabled = state === 'ready' || state === 'pick';
-          }
-          if (startMatchBtn) {
-            startMatchBtn.style.display = (state === 'playing' || state === 'paused') ? 'none' : '';
-          }
+          syncPlayChrome(state);
         },
         onHud: function (g) {
           updateHUD(g);
         }
       });
 
-      showOverlay('pick');
-      renderPick(game);
-      game.setState('pick');
-      if (pauseButton) pauseButton.disabled = true;
+      if (!game.startRound('chen')) {
+        showOverlay('pick');
+        renderPick(game);
+        if (game.state !== 'pick') game.setState('pick');
+      }
+      syncPlayChrome(game.state);
       hideBoot();
       global.requestAnimationFrame(function () {
         game.resize();

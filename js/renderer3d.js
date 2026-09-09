@@ -450,6 +450,21 @@
     this.camera.updateProjectionMatrix();
   };
 
+  Renderer3D.prototype.pickGround = function (ndcX, ndcY) {
+    if (!this._raycaster) {
+      this._raycaster = new THREE.Raycaster();
+      this._groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+      this._ndc = new THREE.Vector2();
+      this._hit = new THREE.Vector3();
+    }
+    this._ndc.set(ndcX, ndcY);
+    this._raycaster.setFromCamera(this._ndc, this.camera);
+    if (this._raycaster.ray.intersectPlane(this._groundPlane, this._hit)) {
+      return { x: this._hit.x, y: this._hit.z };
+    }
+    return null;
+  };
+
   Renderer3D.prototype.render = function () {
     this.renderer.render(this.scene, this.camera);
   };

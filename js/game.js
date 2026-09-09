@@ -62,6 +62,7 @@
     this.enemyTeamIndex = 0;
     this.pendingRoundEnd = false;
     this.lastResult = '';
+    this.moveTarget = null;
 
     if (this.r3d) this.r3d.clearEntities();
     if (this.skills) {
@@ -185,8 +186,31 @@
     if (mine.id === 'chen' && this.playerTeam && this.playerTeam.slogan) {
       this.addMessage(this.playerTeam.slogan, 3.6);
     }
+    this.moveTarget = null;
     this.setState('playing');
     return true;
+  };
+
+  Game.prototype.preferredFighterId = function () {
+    var chen = this.findMember(this.playerTeam, 'chen');
+    if (chen && !chen.eliminated) return chen.id;
+    var alive = this.aliveMembers(this.playerTeam);
+    return alive.length ? alive[0].id : null;
+  };
+
+  Game.prototype.startDefaultRound = function () {
+    var id = this.preferredFighterId();
+    return id ? this.startRound(id) : false;
+  };
+
+  Game.prototype.setMoveTargetFromClient = function (clientX, clientY) {
+    if (!this.canvas || !this.r3d || !this.r3d.pickGround) return;
+    var rect = this.canvas.getBoundingClientRect();
+    if (!rect.width || !rect.height) return;
+    var ndcX = ((clientX - rect.left) / rect.width) * 2 - 1;
+    var ndcY = -((clientY - rect.top) / rect.height) * 2 + 1;
+    var hit = this.r3d.pickGround(ndcX, ndcY);
+    if (hit) this.moveTarget = hit;
   };
 
   Game.prototype.saveFighterHp = function (entity, team, memberId) {
@@ -215,10 +239,10 @@
     if (action === 'bite') this.input.bite = true;
     else if (action in this.input) this.input[action] = true;
 
-    if (this.state === 'ready') this.setState('pick');
+    if (this.state === 'ready' || this.state === 'pick') this.startDefaultRound();
     else if (this.state === 'over') {
       this.reset();
-      this.setState('pick');
+      this.startDefaultRound();
     }
   };
 
@@ -229,7 +253,7 @@
 
   Game.prototype.restart = function () {
     this.reset();
-    this.setState('pick');
+    if (!this.startDefaultRound()) this.setState('pick');
   };
 
   Game.prototype.togglePause = function () {
@@ -311,6 +335,20 @@
     if (this.input.right) ax += 1;
     if (this.input.up) ay -= 1;
     if (this.input.down) ay += 1;
+
+    var usingKeys = ax !== 0 || ay !== 0;
+    if (usingKeys) this.moveTarget = null;
+    else if (this.moveTarget) {
+      var tdx = this.moveTarget.x - p.x;
+      var tdy = this.moveTarget.y - p.y;
+      var tdist = Math.hypot(tdx, tdy);
+      if (tdist > 8) {
+        ax = tdx / tdist;
+        ay = tdy / tdist;
+      } else {
+        this.moveTarget = null;
+      }
+    }
 
     if (ax !== 0 || ay !== 0) {
       var len = Math.hypot(ax, ay);

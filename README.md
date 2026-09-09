@@ -2,9 +2,9 @@
 
 ## 直接玩（用 Chrome 打开下面这个链接）
 
-https://litter.catbox.moe/t174w6.html
+打开后会立刻开战（陈凯威上场）。点地面走路，WASD 移动，空格或右下角「攻击」键出手。
 
-不要用微信。不要点 GitHub 源码页。打开后会出现 7 张选人卡片，点「陈凯威」开打。
+不要用微信。不要点 GitHub 源码页。
 
 如果链接失效，再下载这个文件，用 Chrome 双击打开：  
 https://github.com/EKW2015/game/blob/cursor/douluo-3d-game-33ae/play.html  

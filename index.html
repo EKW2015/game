@@ -7,6 +7,7 @@
     <meta name="theme-color" content="#0b1118" />
     <title>3D 斗罗大陆：圣龙神辉战队大赛</title>
     <style>html,body{background:#0b1118!important;min-height:100vh;margin:0}</style>
+    <link rel="stylesheet" href="css/style.css" />
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='14' font-size='14'>🐉</text></svg>" />
     <script>
       window.onerror = function (msg) {
@@ -72,23 +73,37 @@
         <div class="toast" id="toast"></div>
 
         <!-- 游戏初始界面 -->
-        <div class="overlay" id="overlay-ready" data-action="start">
+        <div class="overlay" id="overlay-ready" data-action="fight">
           <p class="overlay__title">圣龙神辉战队</p>
           <p class="overlay__hint">「圣龙出世，震碎全场！凯威带队，势不可挡！」</p>
-          <button class="overlay__button" type="button" data-action="start">进入选人 · 开始比赛</button>
-          <p class="overlay__hint">用 Chrome 打开本页或 play.html · 不要用微信 · 平时是人，按 7 才化兽</p>
+          <button class="overlay__button" type="button" data-action="fight">立刻开战（陈凯威上场）</button>
+          <p class="overlay__hint">点金色按钮或按 WASD / 回车就开始打 · 点地面也能走路</p>
         </div>
 
         <div class="overlay overlay--hidden" id="overlay-pick">
           <p class="overlay__title" id="pick-title">选择出战队员</p>
           <p class="overlay__hint" id="pick-sub">1v1 单场对决 · 点选一名未退场的队员</p>
+          <button class="overlay__button" type="button" data-action="fight" id="pick-fight">陈凯威立刻出战</button>
           <div class="pick-grid" id="pick-grid"></div>
+        </div>
+
+        <div class="stage-play" id="stage-play">
+          <p class="play-hint">点地面走路 · WASD 移动 · 空格 / 右下角攻击 · 7 武魂真身</p>
+          <div class="stage-play__pads">
+            <div class="touch__dpad">
+              <button class="touch__btn touch__btn--up" type="button" data-hold="up">↑</button>
+              <button class="touch__btn touch__btn--left" type="button" data-hold="left">←</button>
+              <button class="touch__btn touch__btn--right" type="button" data-hold="right">→</button>
+              <button class="touch__btn touch__btn--down" type="button" data-hold="down">↓</button>
+            </div>
+            <button class="stage-play__atk" type="button" data-hold="bite">攻击</button>
+          </div>
         </div>
 
         <div class="overlay overlay--hidden" id="overlay-over">
           <p class="overlay__title">团队赛落败</p>
           <p class="overlay__score" id="death-stats"></p>
-          <button class="overlay__button" type="button" data-action="restart">重新组队再战</button>
+          <button class="overlay__button" type="button" data-action="restart">重新组队立刻再战</button>
         </div>
 
         <!-- 暂停界面 -->
@@ -251,7 +266,7 @@
           <li><strong>赛制：</strong>圣龙神辉战队 7 人 vs 对手 7 人，每局 1v1。败者退场，每局结束可换人。</li>
           <li><strong>队服：</strong>白金主宰风。男款白金长袍金龙纹与圣龙徽章（陈凯威、墨影、石破天）；女款白金战裙光明流光（冷凝霜、沈琉璃、白依依、焱凰）。</li>
           <li><strong>队员：</strong>陈凯威（光明圣龙）、墨影（刺客）、焱凰（凤凰）、冷凝霜（冰控）、石破天（猛犸坦克）、沈琉璃（充电宝）、白依依（治疗）。</li>
-          <li><strong>操作：</strong>WASD 移动，空格普攻。队员用 <kbd>1</kbd> <kbd>2</kbd> <kbd>T</kbd>、<kbd>7</kbd> 真身；队长另有全部魂技。<kbd>U</kbd> 光明影刃融合技，<kbd>I</kbd> 太阳神凰融合技。</li>
+          <li><strong>操作：</strong>打开就会开战。点地面走路，WASD 移动，空格或右下角「攻击」。队员用 <kbd>1</kbd> <kbd>2</kbd> <kbd>T</kbd>、<kbd>7</kbd> 真身；队长另有全部魂技。<kbd>U</kbd> 光明影刃融合技，<kbd>I</kbd> 太阳神凰融合技。</li>
           <li><strong>连战：</strong>打赢一支队伍后全员复活，立刻对阵下一支学院队。</li>
         </ul>
       </section>

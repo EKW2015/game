@@ -37,10 +37,12 @@
   var pickGrid = doc.getElementById('pick-grid');
   var pickTitle = doc.getElementById('pick-title');
   var pickSub = doc.getElementById('pick-sub');
+  var pickFight = doc.getElementById('pick-fight');
   var bootScreen = doc.getElementById('boot-screen');
   var bootMsg = doc.getElementById('boot-msg');
   var bootEnter = doc.getElementById('boot-enter');
   var startMatchBtn = doc.getElementById('btn-start-match');
+  var stagePlay = doc.getElementById('stage-play');
 
   var game = null;
 
@@ -64,6 +66,32 @@
       if (!overlays[key]) return;
       overlays[key].classList.toggle('overlay--hidden', key !== name);
     });
+  }
+
+  function syncPlayChrome(state) {
+    if (doc.body) doc.body.classList.toggle('is-playing', state === 'playing');
+    if (stagePlay) stagePlay.classList.toggle('is-on', state === 'playing');
+    if (pauseButton) {
+      pauseButton.textContent = state === 'paused' ? '继续' : '暂停';
+      pauseButton.disabled = state === 'ready' || state === 'pick' || state === 'over';
+    }
+    if (startMatchBtn) {
+      startMatchBtn.style.display = (state === 'playing' || state === 'paused') ? 'none' : '';
+      startMatchBtn.textContent = state === 'pick' ? '立刻开战' : '▶ 开始比赛';
+    }
+  }
+
+  function beginPlay(memberId) {
+    hideBoot();
+    if (!game) return false;
+    if (game.state === 'playing' || game.state === 'paused') return true;
+    if (game.state === 'over') game.reset();
+    var id = memberId || (game.preferredFighterId && game.preferredFighterId()) || 'chen';
+    if (game.startRound(id)) return true;
+    renderPick(game);
+    showOverlay('pick');
+    if (game.state !== 'pick') game.setState('pick');
+    return false;
   }
 
   function formatStats(g) {
@@ -115,6 +143,11 @@
     pickTitle.textContent = '第 ' + (g.roundIndex + 1) + ' 局 · 选择出战';
     pickSub.textContent = '对阵【' + g.enemyTeam.name + '】下一名：' + (enemy ? enemy.name + '（' + enemy.soul + '）' : '无') +
       '　我方剩余 ' + g.aliveMembers(g.playerTeam).length + ' / 敌方剩余 ' + g.aliveMembers(g.enemyTeam).length;
+    var nextId = g.preferredFighterId ? g.preferredFighterId() : 'chen';
+    var nextMem = nextId ? g.findMember(g.playerTeam, nextId) : null;
+    if (pickFight) {
+      pickFight.textContent = (nextMem ? nextMem.name : '陈凯威') + '立刻出战';
+    }
     pickGrid.innerHTML = '';
     g.playerTeam.members.forEach(function (m) {
       var btn = doc.createElement('button');
@@ -125,6 +158,13 @@
       btn.innerHTML = '<div class="pc-name">' + m.name + (m.eliminated ? ' · 已退场' : '') + '</div>' +
         '<div class="pc-meta">' + m.title + '<br>武魂：' + m.soul + '<br>生命 ' + Math.round(m.hp) + '/' + m.maxHp +
         '<br>' + (m.role || '') + '</div>';
+      if (!m.eliminated) {
+        btn.addEventListener('pointerdown', function (event) {
+          event.preventDefault();
+          event.stopPropagation();
+          beginPlay(m.id);
+        });
+      }
       pickGrid.appendChild(btn);
     });
   }
@@ -240,7 +280,7 @@
 
       if (code === 'Enter') {
         event.preventDefault();
-        if (game.state === 'ready') game.setState('pick');
+        beginPlay();
         return;
       }
       if (code === 'KeyP' || code === 'Escape') {
@@ -259,8 +299,8 @@
       else if (BITE_KEYS[event.code]) game.release('bite');
     });
 
-    // 技能按钮点击释放
-    doc.addEventListener('click', function (event) {
+    // 技能按钮 / 选人 / 开战
+    doc.addEventListener('pointerdown', function (event) {
       if (event.target.closest('#boot-enter, #boot-screen')) {
         hideBoot();
       }
@@ -271,14 +311,18 @@
       }
       if (!game) return;
       var pickBtn = event.target.closest('[data-pick]');
-      if (pickBtn && game.state === 'pick') {
-        game.startRound(pickBtn.getAttribute('data-pick'));
+      if (pickBtn && !pickBtn.disabled && (game.state === 'pick' || game.state === 'ready')) {
+        event.preventDefault();
+        beginPlay(pickBtn.getAttribute('data-pick'));
         return;
       }
       var skillBtn = event.target.closest('[data-skill]');
       if (skillBtn) {
         var skillId = skillBtn.getAttribute('data-skill');
-        if (game.state === 'ready') game.setState('pick');
+        if (game.state === 'ready' || game.state === 'pick' || game.state === 'over') {
+          beginPlay();
+          return;
+        }
         if (game.state === 'playing') game.skills.castSkill(skillId);
         return;
       }
@@ -286,31 +330,57 @@
       var target = event.target.closest('[data-action]');
       if (!target) return;
       var action = target.getAttribute('data-action');
-      if (action === 'start') game.setState('pick');
-      else if (action === 'restart') game.restart();
-      else if (action === 'resume') game.togglePause();
+      if (action === 'start' || action === 'fight') {
+        event.preventDefault();
+        beginPlay();
+      } else if (action === 'restart') {
+        event.preventDefault();
+        game.restart();
+      } else if (action === 'resume') game.togglePause();
       else if (action === 'reload') global.location.reload();
     });
 
-    Array.prototype.forEach.call((touchControls && touchControls.querySelectorAll('[data-hold]')) || [], function (button) {
+    Array.prototype.forEach.call(doc.querySelectorAll('[data-hold]') || [], function (button) {
       var action = button.getAttribute('data-hold');
       button.addEventListener('pointerdown', function (event) {
         if (!game) return;
         event.preventDefault();
-        button.setPointerCapture(event.pointerId);
+        event.stopPropagation();
+        try { button.setPointerCapture(event.pointerId); } catch (e) {}
         game.press(action);
-        if (game.state === 'ready') game.setState('pick');
       });
       button.addEventListener('pointerup', function () { if (game) game.release(action); });
       button.addEventListener('pointercancel', function () { if (game) game.release(action); });
     });
 
+    if (canvas) {
+      canvas.style.touchAction = 'none';
+      canvas.addEventListener('pointerdown', function (event) {
+        if (!game) return;
+        if (game.state === 'ready' || game.state === 'pick' || game.state === 'over') {
+          beginPlay();
+        }
+        if (game.state === 'playing') {
+          event.preventDefault();
+          game.setMoveTargetFromClient(event.clientX, event.clientY);
+          canvas.setPointerCapture(event.pointerId);
+        }
+      });
+      canvas.addEventListener('pointermove', function (event) {
+        if (!game || game.state !== 'playing') return;
+        if ((event.buttons & 1) === 0 && event.pointerType !== 'touch') return;
+        game.setMoveTargetFromClient(event.clientX, event.clientY);
+      });
+    }
+
     if (soundButton) soundButton.addEventListener('click', toggleSound);
     if (pauseButton) pauseButton.addEventListener('click', function () { if (game) game.togglePause(); });
     if (startMatchBtn) {
-      startMatchBtn.addEventListener('click', function () {
+      startMatchBtn.addEventListener('pointerdown', function (event) {
+        event.preventDefault();
+        event.stopPropagation();
         hideBoot();
-        if (game && (game.state === 'ready' || game.state === 'over')) game.setState('pick');
+        beginPlay();
       });
     }
 
@@ -433,23 +503,19 @@
             renderMemberSkills(g);
             showOverlay(null);
           }
-          if (pauseButton) {
-            pauseButton.textContent = state === 'paused' ? '继续' : '暂停';
-            pauseButton.disabled = state === 'ready' || state === 'pick';
-          }
-          if (startMatchBtn) {
-            startMatchBtn.style.display = (state === 'playing' || state === 'paused') ? 'none' : '';
-          }
+          syncPlayChrome(state);
         },
         onHud: function (g) {
           updateHUD(g);
         }
       });
 
-      showOverlay('pick');
-      renderPick(game);
-      game.setState('pick');
-      if (pauseButton) pauseButton.disabled = true;
+      if (!game.startRound('chen')) {
+        showOverlay('pick');
+        renderPick(game);
+        if (game.state !== 'pick') game.setState('pick');
+      }
+      syncPlayChrome(game.state);
       hideBoot();
       global.requestAnimationFrame(function () {
         game.resize();

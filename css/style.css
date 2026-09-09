@@ -459,10 +459,75 @@ kbd {
   cursor: pointer;
 }
 
+body.is-playing .touch {
+  display: flex;
+}
+
 @media (pointer: coarse) {
   .touch {
     display: flex;
   }
+}
+
+.stage-play {
+  position: absolute;
+  inset: 0;
+  z-index: 28;
+  pointer-events: none;
+  display: none;
+}
+
+.stage-play.is-on {
+  display: block;
+}
+
+.play-hint {
+  position: absolute;
+  left: 50%;
+  bottom: 12px;
+  transform: translateX(-50%);
+  margin: 0;
+  padding: 7px 14px;
+  border-radius: 999px;
+  background: rgba(10, 16, 24, 0.78);
+  border: 1px solid rgba(255, 215, 0, 0.35);
+  color: #ffd700;
+  font-size: 12px;
+  font-weight: 700;
+  max-width: 92%;
+  text-align: center;
+  line-height: 1.4;
+  pointer-events: none;
+}
+
+.stage-play__pads {
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  bottom: 48px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  pointer-events: none;
+}
+
+.stage-play__pads .touch__dpad,
+.stage-play__atk {
+  pointer-events: auto;
+}
+
+.stage-play__atk {
+  font: inherit;
+  font-size: 18px;
+  font-weight: 800;
+  width: 88px;
+  height: 88px;
+  border-radius: 50%;
+  border: 0;
+  background: linear-gradient(135deg, #ffd700, #ff9900);
+  color: #1a0f00;
+  cursor: pointer;
+  box-shadow: 0 8px 22px rgba(255, 150, 0, 0.45);
 }
 
 .legend {
@@ -515,6 +580,9 @@ kbd {
   padding: 10px 12px;
   cursor: pointer;
   font: inherit;
+  min-height: 88px;
+  pointer-events: auto;
+  touch-action: manipulation;
 }
 
 .pick-card:hover {
