@@ -594,7 +594,7 @@ kbd {
           <p class="overlay__title">全大陆魂师大赛 · 圣龙战队</p>
           <p class="overlay__hint">队长陈凯威（光明圣龙）带领七人小队，按斗罗大陆赛制 1v1 连战其他队伍。</p>
           <p class="overlay__hint">每局结束后可以换人。败者退场，先让对方全员倒下即赢下团队赛，然后继续打下一队。</p>
-          <p class="overlay__hint">WASD 移动 · 空格攻击 · 1/2/T 放魂技（陈凯威可使用全部魂技）</p>
+          <p class="overlay__hint">WASD 移动 · 空格攻击 · 1/2/T 放魂技 · 按 7 释放武魂真身才会化作魂兽（平时是魂师人形）</p>
           <button class="overlay__button" type="button" data-action="start">进入选人 · 开始比赛</button>
         </div>
 
@@ -662,7 +662,7 @@ kbd {
           </button>
           <button class="skill-btn ring-red" data-skill="ring7" title="化身百米圣龙，全属性暴增300%，免伤且前六魂技0消耗">
             <span class="s-key">[7] 第七魂技</span>
-            <span class="s-name">光明圣龙真身</span>
+            <span class="s-name">光明圣龙真身（人形→圣龙）</span>
             <span class="s-cost">魂力 150</span>
           </button>
         </div>
@@ -1514,6 +1514,24 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     group.add(beastRing);
     group.userData.beastRing = beastRing;
 
+    var beastShield = new THREE.Mesh(
+      new THREE.SphereGeometry(4.0, 16, 14),
+      new THREE.MeshStandardMaterial({
+        color: 0xffe066,
+        emissive: 0xffaa00,
+        emissiveIntensity: 0.8,
+        roughness: 0.1,
+        metalness: 0.9,
+        transparent: true,
+        opacity: 0.4,
+        wireframe: true
+      })
+    );
+    beastShield.position.y = 2.5;
+    beastShield.visible = false;
+    group.add(beastShield);
+    group.userData.goldenShield = beastShield;
+
     return group;
   }
 
@@ -1527,117 +1545,361 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     });
   }
 
-  function createHumanoidBase(bodyColor, accentColor) {
+  function addFootAura(group, color) {
+    var aura = new THREE.Mesh(
+      new THREE.RingGeometry(1.1, 1.45, 24),
+      new THREE.MeshBasicMaterial({
+        color: color || 0xffd700,
+        transparent: true,
+        opacity: 0.32,
+        side: THREE.DoubleSide
+      })
+    );
+    aura.rotation.x = -Math.PI / 2;
+    aura.position.y = 0.08;
+    group.add(aura);
+  }
+
+  function addGoldenShield(group, radius, y) {
+    var goldenShield = new THREE.Mesh(
+      new THREE.SphereGeometry(radius || 2.4, 16, 14),
+      new THREE.MeshStandardMaterial({
+        color: 0xffe066,
+        emissive: 0xffaa00,
+        emissiveIntensity: 0.8,
+        roughness: 0.1,
+        metalness: 0.9,
+        transparent: true,
+        opacity: 0.4,
+        wireframe: true
+      })
+    );
+    goldenShield.position.y = y != null ? y : 2.2;
+    goldenShield.visible = false;
+    group.add(goldenShield);
+    group.userData.goldenShield = goldenShield;
+  }
+
+  // 魂师人形：头、发、衣、双臂双腿。武魂只作为兵器/法器，不直接变成魂兽。
+  function createHumanoidBase(opts) {
+    opts = opts || {};
+    var cloth = opts.cloth != null ? opts.cloth : 0x3a4a5a;
+    var accent = opts.accent != null ? opts.accent : 0x8a7a4a;
+    var hairCol = opts.hair != null ? opts.hair : 0x1a120c;
+    var skinCol = opts.skin != null ? opts.skin : 0xe0b090;
     var group = new THREE.Group();
-    var body = new THREE.Mesh(new THREE.CylinderGeometry(0.7, 0.9, 2.4, 8), tintMat(bodyColor));
-    body.position.y = 2.2;
-    body.castShadow = true;
-    group.add(body);
-    var head = new THREE.Mesh(new THREE.SphereGeometry(0.55, 10, 10), tintMat(accentColor || bodyColor));
-    head.position.y = 3.7;
+    var skinM = tintMat(skinCol);
+    var clothM = tintMat(cloth, opts.emissive, opts.emissiveInt);
+    var accentM = tintMat(accent);
+    var hairM = tintMat(hairCol);
+    var bootM = tintMat(0x1c1c22);
+
+    var hips = new THREE.Mesh(new THREE.CylinderGeometry(0.46, 0.5, 0.38, 8), clothM);
+    hips.position.y = 1.52;
+    group.add(hips);
+
+    group.userData.legs = [];
+    [[-0.26, 0], [0.26, 0]].forEach(function (p) {
+      var upper = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.19, 0.82, 6), clothM);
+      upper.position.set(p[0], 1.04, 0);
+      upper.castShadow = true;
+      group.add(upper);
+      var boot = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.19, 0.68, 6), bootM);
+      boot.position.set(p[0], 0.36, 0.04);
+      group.add(boot);
+      group.userData.legs.push({ upper: upper });
+    });
+
+    var torso = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.52, 1.28, 8), clothM);
+    torso.position.y = 2.3;
+    torso.castShadow = true;
+    group.add(torso);
+
+    var chest = new THREE.Mesh(new THREE.BoxGeometry(0.82, 0.62, 0.42), accentM);
+    chest.position.set(0, 2.5, 0.16);
+    group.add(chest);
+
+    var armL = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.13, 1.12, 6), clothM);
+    armL.rotation.z = 0.2;
+    armL.position.set(-0.6, 2.18, 0);
+    group.add(armL);
+    var armR = armL.clone();
+    armR.rotation.z = -0.2;
+    armR.position.x = 0.6;
+    group.add(armR);
+    group.userData.armL = armL;
+    group.userData.armR = armR;
+
+    var handL = new THREE.Mesh(new THREE.SphereGeometry(0.13, 6, 6), skinM);
+    handL.position.set(-0.76, 1.62, 0.06);
+    group.add(handL);
+    var handR = handL.clone();
+    handR.position.x = 0.76;
+    group.add(handR);
+    group.userData.handL = handL;
+    group.userData.handR = handR;
+
+    var neck = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.13, 0.26, 6), skinM);
+    neck.position.y = 3.06;
+    group.add(neck);
+
+    var head = new THREE.Mesh(new THREE.SphereGeometry(0.36, 10, 10), skinM);
+    head.position.y = 3.44;
     head.castShadow = true;
     group.add(head);
-    group.userData.legs = [];
-    [[-0.4, 1.4], [0.4, 1.4]].forEach(function (p) {
-      var leg = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.26, 1.6, 6), tintMat(bodyColor));
-      leg.position.set(p[0], 0.8, 0);
-      group.add(leg);
-      group.userData.legs.push({ upper: leg });
-    });
+
+    var hairCap = new THREE.Mesh(new THREE.SphereGeometry(0.38, 10, 8), hairM);
+    hairCap.position.y = 3.56;
+    hairCap.scale.set(1.08, 0.58, 1.08);
+    group.add(hairCap);
+
+    if (opts.hairStyle === 'long') {
+      var hairBack = new THREE.Mesh(new THREE.ConeGeometry(0.26, 1.35, 6), hairM);
+      hairBack.position.set(0, 2.62, -0.22);
+      hairBack.rotation.x = 0.22;
+      group.add(hairBack);
+    } else if (opts.hairStyle === 'tail') {
+      var ponytail = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.11, 1.05, 6), hairM);
+      ponytail.rotation.x = 0.55;
+      ponytail.position.set(0, 3.12, -0.42);
+      group.add(ponytail);
+    }
+
+    var eyeM = tintMat(0x1a1a22);
+    var eyeL = new THREE.Mesh(new THREE.SphereGeometry(0.055, 6, 6), eyeM);
+    eyeL.position.set(-0.11, 3.44, 0.3);
+    group.add(eyeL);
+    var eyeR = eyeL.clone();
+    eyeR.position.x = 0.11;
+    group.add(eyeR);
+
+    addGoldenShield(group, 2.35, 2.15);
+    addFootAura(group, opts.aura || 0xffd700);
     return group;
   }
 
-  function createFighterMesh(kind) {
-    if (kind === 'dragon') return createSacredDragonMesh(false);
-
+  function createSoulMasterMesh(kind) {
     var group;
-    if (kind === 'assassin') {
-      group = createHumanoidBase(0x1a1028, 0x331144);
-      var blade = new THREE.Mesh(
-        new THREE.BoxGeometry(0.12, 0.12, 2.4),
-        tintMat(0x8866ff, 0x4422aa, 0.6)
-      );
-      blade.position.set(0.9, 2.4, 0.8);
-      group.add(blade);
-    } else if (kind === 'phoenix') {
-      group = createHumanoidBase(0xaa2200, 0xff6600);
-      var wingL = new THREE.Mesh(
-        new THREE.ConeGeometry(0.6, 2.8, 6),
-        tintMat(0xff4400, 0xff2200, 0.7)
-      );
-      wingL.rotation.z = 1.1;
-      wingL.position.set(-1.4, 2.8, -0.2);
-      group.add(wingL);
-      var wingR = wingL.clone();
-      wingR.rotation.z = -1.1;
-      wingR.position.x = 1.4;
-      group.add(wingR);
-      group.userData.wings = { userData: { leftWing: wingL, rightWing: wingR } };
-    } else if (kind === 'ice') {
-      group = createHumanoidBase(0x88ddff, 0xccffff);
-      var crystal = new THREE.Mesh(
-        new THREE.OctahedronGeometry(0.9, 0),
-        tintMat(0x66eeff, 0x2288ff, 0.8)
-      );
-      crystal.position.y = 5.0;
-      group.add(crystal);
-    } else if (kind === 'mammoth') {
-      group = new THREE.Group();
-      var torso = new THREE.Mesh(new THREE.BoxGeometry(2.8, 2.4, 3.6), tintMat(0xd4a017, 0xaa7700, 0.2));
-      torso.position.y = 2.4;
-      torso.castShadow = true;
-      group.add(torso);
-      var head = new THREE.Mesh(new THREE.BoxGeometry(1.8, 1.6, 1.8), tintMat(0xc9a227));
-      head.position.set(0, 3.4, 2.2);
-      group.add(head);
-      var tuskL = new THREE.Mesh(new THREE.ConeGeometry(0.16, 1.6, 6), tintMat(0xfff4d2));
-      tuskL.rotation.x = 2.4;
-      tuskL.position.set(-0.6, 2.4, 2.8);
-      group.add(tuskL);
-      var tuskR = tuskL.clone();
-      tuskR.position.x = 0.6;
-      group.add(tuskR);
-      group.userData.legs = [];
-      [[-0.9, 1.1], [0.9, 1.1], [-0.9, -1.1], [0.9, -1.1]].forEach(function (p) {
-        var leg = new THREE.Mesh(new THREE.CylinderGeometry(0.45, 0.5, 2.0, 8), tintMat(0xb8860b));
-        leg.position.set(p[0], 1.0, p[1]);
-        group.add(leg);
-        group.userData.legs.push({ upper: leg });
+    if (kind === 'dragon') {
+      group = createHumanoidBase({
+        cloth: 0xc9a227, accent: 0xffe066, hair: 0x3a2208, aura: 0xffd700
       });
+      var claw = new THREE.Mesh(new THREE.ConeGeometry(0.16, 1.15, 5), tintMat(0xfff2a0, 0xffaa00, 0.7));
+      claw.rotation.x = 1.15;
+      claw.position.set(0.92, 1.55, 0.55);
+      group.add(claw);
+      var claw2 = claw.clone();
+      claw2.position.x = 0.72;
+      claw2.rotation.y = 0.25;
+      group.add(claw2);
+    } else if (kind === 'assassin') {
+      group = createHumanoidBase({
+        cloth: 0x1a1028, accent: 0x442266, hair: 0x0a0610, hairStyle: 'tail', aura: 0x8866ff
+      });
+      var blade = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.1, 1.7), tintMat(0x8866ff, 0x4422aa, 0.65));
+      blade.position.set(0.86, 1.7, 0.7);
+      group.add(blade);
+      var blade2 = blade.clone();
+      blade2.position.set(-0.86, 1.7, 0.55);
+      group.add(blade2);
+    } else if (kind === 'phoenix') {
+      group = createHumanoidBase({
+        cloth: 0xaa2200, accent: 0xffaa33, hair: 0x4a0a00, hairStyle: 'long', aura: 0xff4400
+      });
+      var fan = new THREE.Mesh(new THREE.ConeGeometry(0.55, 0.12, 8), tintMat(0xff6622, 0xff2200, 0.7));
+      fan.rotation.x = 1.2;
+      fan.position.set(0.9, 1.72, 0.35);
+      group.add(fan);
+    } else if (kind === 'ice') {
+      group = createHumanoidBase({
+        cloth: 0x88ccee, accent: 0xccffff, hair: 0xddeeff, hairStyle: 'long', skin: 0xf0d8c8, aura: 0x66eeff
+      });
+      var staff = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.06, 2.2, 6), tintMat(0x88eeff, 0x2288ff, 0.5));
+      staff.position.set(0.82, 2.15, 0.2);
+      group.add(staff);
+      var bud = new THREE.Mesh(new THREE.OctahedronGeometry(0.28, 0), tintMat(0x66eeff, 0x2288ff, 0.85));
+      bud.position.set(0.82, 3.3, 0.2);
+      group.add(bud);
+    } else if (kind === 'mammoth') {
+      group = createHumanoidBase({
+        cloth: 0x8a6a22, accent: 0xd4a017, hair: 0x2a1a08, aura: 0xd4a017
+      });
+      var gaunt = new THREE.Mesh(new THREE.BoxGeometry(0.38, 0.38, 0.5), tintMat(0xc9a227, 0xaa7700, 0.25));
+      gaunt.position.set(0.86, 1.62, 0.18);
+      group.add(gaunt);
     } else if (kind === 'lamp') {
-      group = createHumanoidBase(0x6644aa, 0xffcc66);
-      var lamp = new THREE.Mesh(
-        new THREE.SphereGeometry(0.7, 12, 12),
-        tintMat(0xffaa33, 0xff6600, 0.9)
-      );
-      lamp.position.set(0, 5.1, 0);
+      group = createHumanoidBase({
+        cloth: 0x6644aa, accent: 0xffcc66, hair: 0x221133, hairStyle: 'long', aura: 0xffaa33
+      });
+      var lamp = new THREE.Mesh(new THREE.SphereGeometry(0.28, 10, 10), tintMat(0xffaa33, 0xff6600, 0.95));
+      lamp.position.set(-0.78, 1.85, 0.22);
       group.add(lamp);
     } else if (kind === 'bird') {
-      group = createHumanoidBase(0x228844, 0x66ff99);
-      var wingL = new THREE.Mesh(
-        new THREE.ConeGeometry(0.45, 2.2, 6),
-        tintMat(0x33cc66, 0x22aa44, 0.5)
-      );
-      wingL.rotation.z = 1.0;
-      wingL.position.set(-1.2, 3.0, -0.2);
-      group.add(wingL);
-      var wingR = wingL.clone();
-      wingR.rotation.z = -1.0;
-      wingR.position.x = 1.2;
-      group.add(wingR);
-      group.userData.wings = { userData: { leftWing: wingL, rightWing: wingR } };
+      group = createHumanoidBase({
+        cloth: 0x228844, accent: 0x88ffaa, hair: 0xf5e6c8, hairStyle: 'long', aura: 0x66ff99
+      });
+      var wand = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.06, 1.8, 6), tintMat(0x66ff99, 0x22aa44, 0.45));
+      wand.position.set(0.82, 2.05, 0.18);
+      group.add(wand);
+      var gem = new THREE.Mesh(new THREE.SphereGeometry(0.16, 8, 8), tintMat(0x88ffcc, 0x33ff88, 0.9));
+      gem.position.set(0.82, 3.0, 0.18);
+      group.add(gem);
     } else {
-      group = createSoulBeastMesh('tiger');
+      group = createHumanoidBase({ cloth: 0x4a4038, accent: 0x6a5a4a });
     }
-
-    var aura = new THREE.Mesh(
-      new THREE.RingGeometry(2.2, 2.7, 24),
-      new THREE.MeshBasicMaterial({ color: 0xffd700, transparent: true, opacity: 0.35, side: THREE.DoubleSide })
-    );
-    aura.rotation.x = -Math.PI / 2;
-    aura.position.y = 0.12;
-    group.add(aura);
     return group;
+  }
+
+  function createPhoenixBeast() {
+    var group = new THREE.Group();
+    var fireM = tintMat(0xff4400, 0xff2200, 0.75);
+    var goldM = tintMat(0xffcc44, 0xff8800, 0.55);
+    var body = new THREE.Mesh(new THREE.SphereGeometry(1.15, 12, 10), fireM);
+    body.scale.set(1.0, 0.85, 1.45);
+    body.position.y = 2.4;
+    body.castShadow = true;
+    group.add(body);
+    var head = new THREE.Mesh(new THREE.SphereGeometry(0.55, 10, 8), goldM);
+    head.position.set(0, 3.15, 1.55);
+    group.add(head);
+    var beak = new THREE.Mesh(new THREE.ConeGeometry(0.16, 0.7, 6), tintMat(0xffee88));
+    beak.rotation.x = 1.2;
+    beak.position.set(0, 3.0, 2.15);
+    group.add(beak);
+    var wingL = new THREE.Mesh(new THREE.ConeGeometry(0.7, 3.4, 6), fireM);
+    wingL.rotation.z = 1.15;
+    wingL.position.set(-1.7, 2.7, -0.2);
+    group.add(wingL);
+    var wingR = wingL.clone();
+    wingR.rotation.z = -1.15;
+    wingR.position.x = 1.7;
+    group.add(wingR);
+    group.userData.wings = { userData: { leftWing: wingL, rightWing: wingR } };
+    var tail = new THREE.Mesh(new THREE.ConeGeometry(0.35, 3.2, 6), goldM);
+    tail.rotation.x = 1.15;
+    tail.position.set(0, 1.6, -2.1);
+    group.add(tail);
+    group.userData.tail = [tail];
+    group.userData.legs = [];
+    [[-0.35, 0.7], [0.35, 0.7]].forEach(function (p) {
+      var leg = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.16, 1.3, 6), goldM);
+      leg.position.set(p[0], 0.7, 0.4);
+      group.add(leg);
+      group.userData.legs.push({ upper: leg });
+    });
+    addGoldenShield(group, 3.4, 2.4);
+    return group;
+  }
+
+  function createIceSerpent() {
+    var group = new THREE.Group();
+    var iceM = tintMat(0x88eeff, 0x2288ff, 0.7);
+    group.userData.tail = [];
+    for (var i = 0; i < 6; i++) {
+      var seg = new THREE.Mesh(new THREE.SphereGeometry(0.7 - i * 0.08, 8, 8), iceM);
+      seg.position.set(0, 1.4 + i * 0.15, 1.6 - i * 0.85);
+      group.add(seg);
+      group.userData.tail.push(seg);
+    }
+    var head = new THREE.Mesh(new THREE.ConeGeometry(0.55, 1.4, 6), iceM);
+    head.rotation.x = 1.2;
+    head.position.set(0, 2.2, 2.4);
+    group.add(head);
+    var crystal = new THREE.Mesh(new THREE.OctahedronGeometry(0.7, 0), tintMat(0xccffff, 0x66ddff, 0.9));
+    crystal.position.set(0, 3.6, 0.2);
+    group.add(crystal);
+    group.userData.legs = [];
+    addGoldenShield(group, 3.0, 2.0);
+    return group;
+  }
+
+  function createMammothBeast() {
+    var group = new THREE.Group();
+    var torso = new THREE.Mesh(new THREE.BoxGeometry(2.8, 2.4, 3.6), tintMat(0xd4a017, 0xaa7700, 0.2));
+    torso.position.y = 2.4;
+    torso.castShadow = true;
+    group.add(torso);
+    var head = new THREE.Mesh(new THREE.BoxGeometry(1.8, 1.6, 1.8), tintMat(0xc9a227));
+    head.position.set(0, 3.4, 2.2);
+    group.add(head);
+    var tuskL = new THREE.Mesh(new THREE.ConeGeometry(0.16, 1.6, 6), tintMat(0xfff4d2));
+    tuskL.rotation.x = 2.4;
+    tuskL.position.set(-0.6, 2.4, 2.8);
+    group.add(tuskL);
+    var tuskR = tuskL.clone();
+    tuskR.position.x = 0.6;
+    group.add(tuskR);
+    group.userData.legs = [];
+    [[-0.9, 1.1], [0.9, 1.1], [-0.9, -1.1], [0.9, -1.1]].forEach(function (p) {
+      var leg = new THREE.Mesh(new THREE.CylinderGeometry(0.45, 0.5, 2.0, 8), tintMat(0xb8860b));
+      leg.position.set(p[0], 1.0, p[1]);
+      group.add(leg);
+      group.userData.legs.push({ upper: leg });
+    });
+    addGoldenShield(group, 4.2, 2.6);
+    return group;
+  }
+
+  function createLampSpirit() {
+    var group = new THREE.Group();
+    var core = new THREE.Mesh(new THREE.SphereGeometry(1.1, 14, 12), tintMat(0xffaa33, 0xff6600, 1.0));
+    core.position.y = 2.4;
+    group.add(core);
+    var shade = new THREE.Mesh(new THREE.ConeGeometry(1.4, 1.6, 8), tintMat(0x6644aa, 0xaa66ff, 0.45));
+    shade.position.y = 3.5;
+    group.add(shade);
+    var base = new THREE.Mesh(new THREE.CylinderGeometry(0.7, 0.9, 0.5, 8), tintMat(0xffcc66));
+    base.position.y = 1.4;
+    group.add(base);
+    group.userData.legs = [];
+    addGoldenShield(group, 3.2, 2.4);
+    return group;
+  }
+
+  function createJadeBird() {
+    var group = new THREE.Group();
+    var feather = tintMat(0x33cc66, 0x22aa44, 0.55);
+    var body = new THREE.Mesh(new THREE.SphereGeometry(0.95, 12, 10), feather);
+    body.scale.set(1.0, 0.85, 1.35);
+    body.position.y = 2.2;
+    body.castShadow = true;
+    group.add(body);
+    var head = new THREE.Mesh(new THREE.SphereGeometry(0.45, 10, 8), tintMat(0x88ffaa, 0x44dd77, 0.4));
+    head.position.set(0, 2.85, 1.2);
+    group.add(head);
+    var wingL = new THREE.Mesh(new THREE.ConeGeometry(0.5, 2.6, 6), feather);
+    wingL.rotation.z = 1.05;
+    wingL.position.set(-1.4, 2.4, -0.15);
+    group.add(wingL);
+    var wingR = wingL.clone();
+    wingR.rotation.z = -1.05;
+    wingR.position.x = 1.4;
+    group.add(wingR);
+    group.userData.wings = { userData: { leftWing: wingL, rightWing: wingR } };
+    group.userData.legs = [];
+    [[-0.25, 0.55], [0.25, 0.55]].forEach(function (p) {
+      var leg = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.1, 1.0, 5), tintMat(0x226633));
+      leg.position.set(p[0], 0.6, 0.25);
+      group.add(leg);
+      group.userData.legs.push({ upper: leg });
+    });
+    addGoldenShield(group, 2.8, 2.2);
+    return group;
+  }
+
+  function createTrueFormMesh(kind) {
+    if (kind === 'dragon') return createSacredDragonMesh(true);
+    if (kind === 'assassin') return createSoulBeastMesh('tiger');
+    if (kind === 'phoenix') return createPhoenixBeast();
+    if (kind === 'ice') return createIceSerpent();
+    if (kind === 'mammoth') return createMammothBeast();
+    if (kind === 'lamp') return createLampSpirit();
+    if (kind === 'bird') return createJadeBird();
+    return createSoulBeastMesh('tiger');
+  }
+
+  function createFighterMesh(kind) {
+    return createSoulMasterMesh(kind);
   }
 
   global.DinoModel = {
@@ -1645,9 +1907,11 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     createSoulRingsGroup: createSoulRingsGroup,
     createHolyWings: createHolyWings,
     createSoulBeastMesh: createSoulBeastMesh,
+    createSoulMasterMesh: createSoulMasterMesh,
+    createTrueFormMesh: createTrueFormMesh,
     createFighterMesh: createFighterMesh,
     create: function () {
-      return createSacredDragonMesh(false);
+      return createSoulMasterMesh('dragon');
     }
   };
 })(window);
@@ -1691,7 +1955,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
         domain: '',
         role: '暗影刺客',
         hp: 2600, mp: 900, attack: 230, defense: 90, level: 76,
-        skills: ['shadowStrike', 'bladeStorm'],
+        skills: ['shadowStrike', 'bladeStorm', 'trueBody'],
         kit: 'member'
       },
       {
@@ -1705,7 +1969,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
         domain: '',
         role: '远程大范围爆发',
         hp: 2400, mp: 1100, attack: 220, defense: 85, level: 75,
-        skills: ['phoenixMeteor', 'fireCage'],
+        skills: ['phoenixMeteor', 'fireCage', 'trueBody'],
         kit: 'member'
       },
       {
@@ -1719,7 +1983,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
         domain: '玄冰领域',
         role: '掌控全局节奏',
         hp: 2300, mp: 1200, attack: 150, defense: 95, level: 75,
-        skills: ['absoluteZero', 'iceVines', 'iceDomain'],
+        skills: ['absoluteZero', 'iceVines', 'iceDomain', 'trueBody'],
         kit: 'member'
       },
       {
@@ -1733,7 +1997,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
         domain: '',
         role: '前排大肉盾',
         hp: 5200, mp: 800, attack: 160, defense: 260, level: 77,
-        skills: ['mammothStomp', 'goldShield'],
+        skills: ['mammothStomp', 'goldShield', 'trueBody'],
         kit: 'member'
       },
       {
@@ -1747,7 +2011,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
         domain: '',
         role: '全队充电宝',
         hp: 2100, mp: 1400, attack: 90, defense: 80, level: 74,
-        skills: ['speedAmp', 'mpSurge'],
+        skills: ['speedAmp', 'mpSurge', 'trueBody'],
         kit: 'member'
       },
       {
@@ -1761,7 +2025,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
         domain: '生命礼赞领域',
         role: '超级医疗兵',
         hp: 2800, mp: 1300, attack: 80, defense: 100, level: 75,
-        skills: ['emeraldWave', 'purify', 'lifeDomain'],
+        skills: ['emeraldWave', 'purify', 'lifeDomain', 'trueBody'],
         kit: 'member'
       }
     ]
@@ -1772,13 +2036,13 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
       id: 'wuhun',
       name: '武魂殿黑衣队',
       members: [
-        { id: 'e1', name: '黑衣执事', title: '强攻系魂圣', soul: '暗影魔龙', model: 'dragon', hp: 3200, mp: 1000, attack: 210, defense: 140, level: 76, skills: ['ring1', 'ring3'] },
-        { id: 'e2', name: '夜杀', title: '敏攻系魂圣', soul: '幽冥刺', model: 'assassin', hp: 2400, mp: 800, attack: 200, defense: 80, level: 74, skills: ['shadowStrike'] },
-        { id: 'e3', name: '炎狱', title: '远攻系魂圣', soul: '狱火鸦', model: 'phoenix', hp: 2200, mp: 900, attack: 190, defense: 75, level: 74, skills: ['phoenixMeteor'] },
-        { id: 'e4', name: '寒魄', title: '控制系魂圣', soul: '玄冰蝎', model: 'ice', hp: 2100, mp: 1000, attack: 130, defense: 90, level: 73, skills: ['iceVines'] },
-        { id: 'e5', name: '铁壁', title: '防御系魂圣', soul: '玄甲犀', model: 'mammoth', hp: 4800, mp: 700, attack: 140, defense: 240, level: 75, skills: ['mammothStomp'] },
-        { id: 'e6', name: '烛阴', title: '辅助系魂圣', soul: '幽光灯', model: 'lamp', hp: 1900, mp: 1200, attack: 80, defense: 70, level: 72, skills: ['speedAmp'] },
-        { id: 'e7', name: '血藤', title: '治疗系魂圣', soul: '吸血藤', model: 'bird', hp: 2500, mp: 1100, attack: 70, defense: 90, level: 73, skills: ['emeraldWave'] }
+        { id: 'e1', name: '黑衣执事', title: '强攻系魂圣', soul: '暗影魔龙', model: 'dragon', hp: 3200, mp: 1000, attack: 210, defense: 140, level: 76, skills: ['ring1', 'ring3', 'trueBody'] },
+        { id: 'e2', name: '夜杀', title: '敏攻系魂圣', soul: '幽冥刺', model: 'assassin', hp: 2400, mp: 800, attack: 200, defense: 80, level: 74, skills: ['shadowStrike', 'trueBody'] },
+        { id: 'e3', name: '炎狱', title: '远攻系魂圣', soul: '狱火鸦', model: 'phoenix', hp: 2200, mp: 900, attack: 190, defense: 75, level: 74, skills: ['phoenixMeteor', 'trueBody'] },
+        { id: 'e4', name: '寒魄', title: '控制系魂圣', soul: '玄冰蝎', model: 'ice', hp: 2100, mp: 1000, attack: 130, defense: 90, level: 73, skills: ['iceVines', 'trueBody'] },
+        { id: 'e5', name: '铁壁', title: '防御系魂圣', soul: '玄甲犀', model: 'mammoth', hp: 4800, mp: 700, attack: 140, defense: 240, level: 75, skills: ['mammothStomp', 'trueBody'] },
+        { id: 'e6', name: '烛阴', title: '辅助系魂圣', soul: '幽光灯', model: 'lamp', hp: 1900, mp: 1200, attack: 80, defense: 70, level: 72, skills: ['speedAmp', 'trueBody'] },
+        { id: 'e7', name: '血藤', title: '治疗系魂圣', soul: '吸血藤', model: 'bird', hp: 2500, mp: 1100, attack: 70, defense: 90, level: 73, skills: ['emeraldWave', 'trueBody'] }
       ]
     },
     {
@@ -1827,7 +2091,11 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
       attack: m.attack,
       defense: m.defense,
       level: m.level,
-      skills: (m.skills || []).slice(),
+      skills: (function () {
+        var s = (m.skills || []).slice();
+        if (s.indexOf('trueBody') < 0 && s.indexOf('ring7') < 0) s.push('trueBody');
+        return s;
+      })(),
       kit: m.kit || 'member',
       eliminated: false
     };
@@ -1924,7 +2192,16 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
       colorName: '红',
       cd: 35.0,
       cost: 150,
-      desc: '化身百米圣龙，全属性暴增300%，免伤且前六魂技无消耗释放'
+      desc: '释放武魂真身，化身百米圣龙。平时是魂师人形，只有真身才变成魂兽'
+    },
+    trueBody: {
+      id: 'trueBody',
+      name: '第七魂技·武魂真身',
+      type: 'ring',
+      colorName: '红',
+      cd: 35.0,
+      cost: 150,
+      desc: '魂师释放武魂真身，短暂化作武魂本体。平时保持人形'
     },
 
     // === 2. 七大自创魂技 ===
@@ -2054,7 +2331,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
 
     // 魂力消耗判断（真身状态下前六魂技 0 消耗！）
     var cost = skill.cost;
-    if (player.avatarMode && skill.type === 'ring' && skillId !== 'ring7') {
+    if (player.avatarMode && skill.type === 'ring' && skillId !== 'ring7' && skillId !== 'trueBody') {
       cost = 0;
     }
 
@@ -2180,12 +2457,13 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
         });
         break;
 
-      // 7. 第七魂技：光明圣龙真身 (化身百米圣龙，全属性暴增300%，免伤+0消耗)
+      // 7. 第七魂技：武魂真身（人形魂师化作武魂本体）
       case 'ring7':
+      case 'trueBody':
         Sfx.avatar();
         p.avatarMode = true;
-        p.avatarTime = 16.0; // 维持16秒真身
-        p.hp = p.maxHp; // 真身降临瞬间恢复全满生命
+        p.avatarTime = 16.0;
+        p.hp = p.maxHp;
         this.game.addParticles(p.x, p.y, '#ffffaa', 60);
         break;
 
@@ -2692,7 +2970,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     this.flightTime = 0;
     this.goldBodyActive = false;   // 圣龙金身 (免伤 + 反弹)
     this.goldBodyTime = 0;
-    this.avatarMode = false;       // 光明圣龙真身 (全属性+300%, 技能0消耗, 免伤)
+    this.avatarMode = false;       // 武魂真身：人形魂师化作武魂本体
     this.avatarTime = 0;
     this.shieldActive = false;     // 光盾守护
     this.shieldHp = 0;
@@ -3170,7 +3448,12 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
       if (ctx.skills && dino.characterId && Math.random() < 0.012) {
         var mem = ctx.enemyMember;
         if (mem && mem.skills && mem.skills.length) {
-          ctx.skills.castSkill(mem.skills[0], dino);
+          var sid = mem.skills[0];
+          var canTrue = mem.skills.indexOf('trueBody') >= 0 || mem.skills.indexOf('ring7') >= 0;
+          if (!dino.avatarMode && canTrue && dino.hp < dino.maxHp * 0.5 && Math.random() < 0.45) {
+            sid = mem.skills.indexOf('ring7') >= 0 ? 'ring7' : 'trueBody';
+          }
+          ctx.skills.castSkill(sid, dino);
         }
       }
       return { action: 'chase', target: player };
@@ -3245,15 +3528,45 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     this.sun = sun;
   };
 
+  Renderer3D.prototype.bindFormAnim = function (group, form) {
+    if (!form) {
+      group.userData.legs = null;
+      group.userData.wings = null;
+      group.userData.tail = null;
+      group.userData.jaw = null;
+      group.userData.goldenShield = null;
+      return;
+    }
+    group.userData.legs = form.userData.legs;
+    group.userData.wings = form.userData.wings;
+    group.userData.tail = form.userData.tail;
+    group.userData.jaw = form.userData.jaw;
+    group.userData.goldenShield = form.userData.goldenShield;
+  };
+
   Renderer3D.prototype.createEntityMesh = function (entity) {
     var kind = entity.fighterKind || (entity.isPlayer ? 'dragon' : 'tiger');
-    var group;
+    var group = new THREE.Group();
     if (kind === 'tiger' || kind === 'bear' || kind === 'ape') {
-      group = DinoModel.createSoulBeastMesh(kind);
+      var wild = DinoModel.createSoulBeastMesh(kind);
+      group.add(wild);
+      group.userData.humanForm = null;
+      group.userData.trueForm = wild;
+      this.bindFormAnim(group, wild);
     } else {
-      group = DinoModel.createFighterMesh(kind);
+      var human = DinoModel.createSoulMasterMesh(kind);
+      var beast = DinoModel.createTrueFormMesh(kind);
+      human.name = 'humanForm';
+      beast.name = 'trueForm';
+      beast.visible = false;
+      group.add(human);
+      group.add(beast);
+      group.userData.humanForm = human;
+      group.userData.trueForm = beast;
+      this.bindFormAnim(group, human);
     }
     var rings = DinoModel.createSoulRingsGroup();
+    rings.scale.setScalar(0.48);
     group.add(rings);
     group.userData.rings = rings;
     this.scene.add(group);
@@ -3269,11 +3582,19 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     }
     group.visible = true;
 
-    // 缩放处理：如果是第七魂技【光明圣龙真身】，体型暴增为百米级圣龙！
-    var baseScale = 1.2;
-    if (entity.isPlayer) baseScale = entity.avatarMode ? 3.2 : 1.35;
-    else if (entity.fighterKind === 'mammoth') baseScale = 1.45;
-    else if (entity.fighterKind === 'dragon') baseScale = 1.25;
+    // 默认魂师人形；只有武魂真身才切换魂兽模型并放大
+    if (group.userData.humanForm && group.userData.trueForm) {
+      var av = !!entity.avatarMode;
+      group.userData.humanForm.visible = !av;
+      group.userData.trueForm.visible = av;
+      this.bindFormAnim(group, av ? group.userData.trueForm : group.userData.humanForm);
+      if (group.userData.rings) {
+        group.userData.rings.scale.setScalar(av ? 1.05 : 0.48);
+      }
+    }
+
+    var baseScale = 1.35;
+    if (entity.avatarMode) baseScale = entity.isPlayer ? 3.2 : 2.35;
     group.scale.setScalar(baseScale);
 
     var gy = world.heightAt(entity.x, entity.y);
@@ -3308,12 +3629,12 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     }
 
     // 龙翼振动动画
-    if (group.userData.wings) {
+    if (group.userData.wings && group.userData.wings.userData && group.userData.wings.userData.leftWing) {
       var wings = group.userData.wings.userData;
       var wingFreq = entity.isFlying ? 12 : 3;
       var wingSwing = Math.sin(Date.now() * 0.001 * wingFreq) * (entity.isFlying ? 0.45 : 0.15);
       wings.leftWing.rotation.y = wingSwing;
-      wings.rightWing.rotation.y = -wingSwing;
+      if (wings.rightWing) wings.rightWing.rotation.y = -wingSwing;
     }
 
     // 龙尾优雅摆动
@@ -4087,14 +4408,20 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     var p = g.player;
     if (!p || p.kit === 'full' || p.characterId === 'chen') return full;
     var mem = g.findMember(g.playerTeam, p.characterId);
-    var map = {};
+    var map = { Digit7: 'trueBody' };
     if (!mem) return map;
-    if (mem.skills[0]) map.Digit1 = mem.skills[0];
-    if (mem.skills[1]) map.Digit2 = mem.skills[1];
-    if (mem.skills[2]) {
-      map.Digit3 = mem.skills[2];
-      map.KeyT = mem.skills[2];
-    }
+    var numKeys = ['Digit1', 'Digit2', 'Digit3'];
+    var ni = 0;
+    (mem.skills || []).forEach(function (sid) {
+      if (sid === 'trueBody' || sid === 'ring7') return;
+      if (sid === 'iceDomain' || sid === 'lifeDomain' || sid === 'domain') {
+        map.KeyT = sid;
+      }
+      if (numKeys[ni]) {
+        map[numKeys[ni]] = sid;
+        ni += 1;
+      }
+    });
     return map;
   }
 
@@ -4125,18 +4452,32 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     if (!p || p.kit === 'full' || p.characterId === 'chen') return;
     var mem = g.findMember(g.playerTeam, p.characterId);
     if (!mem) return;
-    var keys = ['1', '2', 'T'];
-    mem.skills.forEach(function (sid, i) {
+    var combat = [];
+    (mem.skills || []).forEach(function (sid) {
+      if (sid !== 'trueBody' && sid !== 'ring7') combat.push(sid);
+    });
+    var keys = ['1', '2', '3'];
+    combat.forEach(function (sid, i) {
       var data = global.SKILLS_DATA[sid] || { name: sid, cost: 0 };
+      var isDomain = sid === 'iceDomain' || sid === 'lifeDomain' || sid === 'domain';
       var btn = doc.createElement('button');
       btn.type = 'button';
       btn.className = 'skill-btn';
       btn.setAttribute('data-skill', sid);
-      btn.innerHTML = '<span class="s-key">[' + keys[i] + '] ' + (i === 2 ? '领域' : '魂技') + '</span>' +
+      btn.innerHTML = '<span class="s-key">[' + (isDomain ? 'T' : keys[i]) + '] ' + (isDomain ? '领域' : '魂技') + '</span>' +
         '<span class="s-name">' + data.name + '</span>' +
         '<span class="s-cost">魂力 ' + data.cost + '</span>';
       memberSkillGrid.appendChild(btn);
     });
+    var trueData = global.SKILLS_DATA.trueBody || { name: '武魂真身', cost: 150 };
+    var trueBtn = doc.createElement('button');
+    trueBtn.type = 'button';
+    trueBtn.className = 'skill-btn ring-red';
+    trueBtn.setAttribute('data-skill', 'trueBody');
+    trueBtn.innerHTML = '<span class="s-key">[7] 武魂真身</span>' +
+      '<span class="s-name">' + trueData.name + '</span>' +
+      '<span class="s-cost">魂力 ' + trueData.cost + '</span>';
+    memberSkillGrid.appendChild(trueBtn);
   }
 
   function bindControls() {
@@ -4326,7 +4667,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
         } else {
           var sData = global.SKILLS_DATA[sId];
           var cost = sData ? sData.cost : 0;
-          if (p.avatarMode && sData && sData.type === 'ring' && sId !== 'ring7') cost = 0;
+          if (p.avatarMode && sData && sData.type === 'ring' && sId !== 'ring7' && sId !== 'trueBody') cost = 0;
           costEl.textContent = '魂力 ' + cost;
           costEl.style.color = '#66ccff';
         }

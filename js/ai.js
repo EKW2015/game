@@ -27,7 +27,12 @@
       if (ctx.skills && dino.characterId && Math.random() < 0.012) {
         var mem = ctx.enemyMember;
         if (mem && mem.skills && mem.skills.length) {
-          ctx.skills.castSkill(mem.skills[0], dino);
+          var sid = mem.skills[0];
+          var canTrue = mem.skills.indexOf('trueBody') >= 0 || mem.skills.indexOf('ring7') >= 0;
+          if (!dino.avatarMode && canTrue && dino.hp < dino.maxHp * 0.5 && Math.random() < 0.45) {
+            sid = mem.skills.indexOf('ring7') >= 0 ? 'ring7' : 'trueBody';
+          }
+          ctx.skills.castSkill(sid, dino);
         }
       }
       return { action: 'chase', target: player };

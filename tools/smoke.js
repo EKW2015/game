@@ -36,7 +36,7 @@ assert.strictEqual(U.getTitleByLevel(91), '封号斗罗【圣龙斗罗】');
 assert.strictEqual(U.SOUL_RING_COLORS.length, 7);
 
 var expectedIds = [
-  'ring1', 'ring2', 'ring3', 'ring4', 'ring5', 'ring6', 'ring7',
+  'ring1', 'ring2', 'ring3', 'ring4', 'ring5', 'ring6', 'ring7', 'trueBody',
   'custom1', 'custom2', 'custom3', 'custom4', 'custom5', 'custom6', 'custom7',
   'boneL', 'boneR', 'domain'
 ];
@@ -106,6 +106,23 @@ assert.strictEqual(player.domainBlessing, true);
 
 skills.update(0.2);
 assert.strictEqual(dummy.domainDebuff, true, 'enemies without badge get domain debuff');
+
+player.avatarMode = false;
+player.avatarTime = 0;
+player.mp = 1200;
+player.cooldowns = {};
+assert.strictEqual(skills.castSkill('trueBody'), true);
+assert.strictEqual(player.avatarMode, true, 'trueBody transforms soul master into martial soul');
+
+win.Roster.PLAYER_TEAM.members.forEach(function (m) {
+  if (m.id === 'chen') {
+    assert.ok(m.skills.indexOf('ring7') >= 0, 'chen has 光明圣龙真身');
+  } else {
+    assert.ok(m.skills.indexOf('trueBody') >= 0, m.name + ' has 武魂真身');
+  }
+});
+var clonedEnemy = win.Roster.cloneTeam(win.Roster.ENEMY_TEAMS[0]);
+assert.ok(clonedEnemy.members[0].skills.indexOf('trueBody') >= 0, 'enemy saints also get 武魂真身');
 
 console.log('smoke ok');
 console.log('skills', Object.keys(SKILLS_DATA).length);

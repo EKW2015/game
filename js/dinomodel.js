@@ -471,6 +471,24 @@
     group.add(beastRing);
     group.userData.beastRing = beastRing;
 
+    var beastShield = new THREE.Mesh(
+      new THREE.SphereGeometry(4.0, 16, 14),
+      new THREE.MeshStandardMaterial({
+        color: 0xffe066,
+        emissive: 0xffaa00,
+        emissiveIntensity: 0.8,
+        roughness: 0.1,
+        metalness: 0.9,
+        transparent: true,
+        opacity: 0.4,
+        wireframe: true
+      })
+    );
+    beastShield.position.y = 2.5;
+    beastShield.visible = false;
+    group.add(beastShield);
+    group.userData.goldenShield = beastShield;
+
     return group;
   }
 
@@ -484,117 +502,361 @@
     });
   }
 
-  function createHumanoidBase(bodyColor, accentColor) {
+  function addFootAura(group, color) {
+    var aura = new THREE.Mesh(
+      new THREE.RingGeometry(1.1, 1.45, 24),
+      new THREE.MeshBasicMaterial({
+        color: color || 0xffd700,
+        transparent: true,
+        opacity: 0.32,
+        side: THREE.DoubleSide
+      })
+    );
+    aura.rotation.x = -Math.PI / 2;
+    aura.position.y = 0.08;
+    group.add(aura);
+  }
+
+  function addGoldenShield(group, radius, y) {
+    var goldenShield = new THREE.Mesh(
+      new THREE.SphereGeometry(radius || 2.4, 16, 14),
+      new THREE.MeshStandardMaterial({
+        color: 0xffe066,
+        emissive: 0xffaa00,
+        emissiveIntensity: 0.8,
+        roughness: 0.1,
+        metalness: 0.9,
+        transparent: true,
+        opacity: 0.4,
+        wireframe: true
+      })
+    );
+    goldenShield.position.y = y != null ? y : 2.2;
+    goldenShield.visible = false;
+    group.add(goldenShield);
+    group.userData.goldenShield = goldenShield;
+  }
+
+  // 魂师人形：头、发、衣、双臂双腿。武魂只作为兵器/法器，不直接变成魂兽。
+  function createHumanoidBase(opts) {
+    opts = opts || {};
+    var cloth = opts.cloth != null ? opts.cloth : 0x3a4a5a;
+    var accent = opts.accent != null ? opts.accent : 0x8a7a4a;
+    var hairCol = opts.hair != null ? opts.hair : 0x1a120c;
+    var skinCol = opts.skin != null ? opts.skin : 0xe0b090;
     var group = new THREE.Group();
-    var body = new THREE.Mesh(new THREE.CylinderGeometry(0.7, 0.9, 2.4, 8), tintMat(bodyColor));
-    body.position.y = 2.2;
-    body.castShadow = true;
-    group.add(body);
-    var head = new THREE.Mesh(new THREE.SphereGeometry(0.55, 10, 10), tintMat(accentColor || bodyColor));
-    head.position.y = 3.7;
+    var skinM = tintMat(skinCol);
+    var clothM = tintMat(cloth, opts.emissive, opts.emissiveInt);
+    var accentM = tintMat(accent);
+    var hairM = tintMat(hairCol);
+    var bootM = tintMat(0x1c1c22);
+
+    var hips = new THREE.Mesh(new THREE.CylinderGeometry(0.46, 0.5, 0.38, 8), clothM);
+    hips.position.y = 1.52;
+    group.add(hips);
+
+    group.userData.legs = [];
+    [[-0.26, 0], [0.26, 0]].forEach(function (p) {
+      var upper = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.19, 0.82, 6), clothM);
+      upper.position.set(p[0], 1.04, 0);
+      upper.castShadow = true;
+      group.add(upper);
+      var boot = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.19, 0.68, 6), bootM);
+      boot.position.set(p[0], 0.36, 0.04);
+      group.add(boot);
+      group.userData.legs.push({ upper: upper });
+    });
+
+    var torso = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.52, 1.28, 8), clothM);
+    torso.position.y = 2.3;
+    torso.castShadow = true;
+    group.add(torso);
+
+    var chest = new THREE.Mesh(new THREE.BoxGeometry(0.82, 0.62, 0.42), accentM);
+    chest.position.set(0, 2.5, 0.16);
+    group.add(chest);
+
+    var armL = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.13, 1.12, 6), clothM);
+    armL.rotation.z = 0.2;
+    armL.position.set(-0.6, 2.18, 0);
+    group.add(armL);
+    var armR = armL.clone();
+    armR.rotation.z = -0.2;
+    armR.position.x = 0.6;
+    group.add(armR);
+    group.userData.armL = armL;
+    group.userData.armR = armR;
+
+    var handL = new THREE.Mesh(new THREE.SphereGeometry(0.13, 6, 6), skinM);
+    handL.position.set(-0.76, 1.62, 0.06);
+    group.add(handL);
+    var handR = handL.clone();
+    handR.position.x = 0.76;
+    group.add(handR);
+    group.userData.handL = handL;
+    group.userData.handR = handR;
+
+    var neck = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.13, 0.26, 6), skinM);
+    neck.position.y = 3.06;
+    group.add(neck);
+
+    var head = new THREE.Mesh(new THREE.SphereGeometry(0.36, 10, 10), skinM);
+    head.position.y = 3.44;
     head.castShadow = true;
     group.add(head);
-    group.userData.legs = [];
-    [[-0.4, 1.4], [0.4, 1.4]].forEach(function (p) {
-      var leg = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.26, 1.6, 6), tintMat(bodyColor));
-      leg.position.set(p[0], 0.8, 0);
-      group.add(leg);
-      group.userData.legs.push({ upper: leg });
-    });
+
+    var hairCap = new THREE.Mesh(new THREE.SphereGeometry(0.38, 10, 8), hairM);
+    hairCap.position.y = 3.56;
+    hairCap.scale.set(1.08, 0.58, 1.08);
+    group.add(hairCap);
+
+    if (opts.hairStyle === 'long') {
+      var hairBack = new THREE.Mesh(new THREE.ConeGeometry(0.26, 1.35, 6), hairM);
+      hairBack.position.set(0, 2.62, -0.22);
+      hairBack.rotation.x = 0.22;
+      group.add(hairBack);
+    } else if (opts.hairStyle === 'tail') {
+      var ponytail = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.11, 1.05, 6), hairM);
+      ponytail.rotation.x = 0.55;
+      ponytail.position.set(0, 3.12, -0.42);
+      group.add(ponytail);
+    }
+
+    var eyeM = tintMat(0x1a1a22);
+    var eyeL = new THREE.Mesh(new THREE.SphereGeometry(0.055, 6, 6), eyeM);
+    eyeL.position.set(-0.11, 3.44, 0.3);
+    group.add(eyeL);
+    var eyeR = eyeL.clone();
+    eyeR.position.x = 0.11;
+    group.add(eyeR);
+
+    addGoldenShield(group, 2.35, 2.15);
+    addFootAura(group, opts.aura || 0xffd700);
     return group;
   }
 
-  function createFighterMesh(kind) {
-    if (kind === 'dragon') return createSacredDragonMesh(false);
-
+  function createSoulMasterMesh(kind) {
     var group;
-    if (kind === 'assassin') {
-      group = createHumanoidBase(0x1a1028, 0x331144);
-      var blade = new THREE.Mesh(
-        new THREE.BoxGeometry(0.12, 0.12, 2.4),
-        tintMat(0x8866ff, 0x4422aa, 0.6)
-      );
-      blade.position.set(0.9, 2.4, 0.8);
-      group.add(blade);
-    } else if (kind === 'phoenix') {
-      group = createHumanoidBase(0xaa2200, 0xff6600);
-      var wingL = new THREE.Mesh(
-        new THREE.ConeGeometry(0.6, 2.8, 6),
-        tintMat(0xff4400, 0xff2200, 0.7)
-      );
-      wingL.rotation.z = 1.1;
-      wingL.position.set(-1.4, 2.8, -0.2);
-      group.add(wingL);
-      var wingR = wingL.clone();
-      wingR.rotation.z = -1.1;
-      wingR.position.x = 1.4;
-      group.add(wingR);
-      group.userData.wings = { userData: { leftWing: wingL, rightWing: wingR } };
-    } else if (kind === 'ice') {
-      group = createHumanoidBase(0x88ddff, 0xccffff);
-      var crystal = new THREE.Mesh(
-        new THREE.OctahedronGeometry(0.9, 0),
-        tintMat(0x66eeff, 0x2288ff, 0.8)
-      );
-      crystal.position.y = 5.0;
-      group.add(crystal);
-    } else if (kind === 'mammoth') {
-      group = new THREE.Group();
-      var torso = new THREE.Mesh(new THREE.BoxGeometry(2.8, 2.4, 3.6), tintMat(0xd4a017, 0xaa7700, 0.2));
-      torso.position.y = 2.4;
-      torso.castShadow = true;
-      group.add(torso);
-      var head = new THREE.Mesh(new THREE.BoxGeometry(1.8, 1.6, 1.8), tintMat(0xc9a227));
-      head.position.set(0, 3.4, 2.2);
-      group.add(head);
-      var tuskL = new THREE.Mesh(new THREE.ConeGeometry(0.16, 1.6, 6), tintMat(0xfff4d2));
-      tuskL.rotation.x = 2.4;
-      tuskL.position.set(-0.6, 2.4, 2.8);
-      group.add(tuskL);
-      var tuskR = tuskL.clone();
-      tuskR.position.x = 0.6;
-      group.add(tuskR);
-      group.userData.legs = [];
-      [[-0.9, 1.1], [0.9, 1.1], [-0.9, -1.1], [0.9, -1.1]].forEach(function (p) {
-        var leg = new THREE.Mesh(new THREE.CylinderGeometry(0.45, 0.5, 2.0, 8), tintMat(0xb8860b));
-        leg.position.set(p[0], 1.0, p[1]);
-        group.add(leg);
-        group.userData.legs.push({ upper: leg });
+    if (kind === 'dragon') {
+      group = createHumanoidBase({
+        cloth: 0xc9a227, accent: 0xffe066, hair: 0x3a2208, aura: 0xffd700
       });
+      var claw = new THREE.Mesh(new THREE.ConeGeometry(0.16, 1.15, 5), tintMat(0xfff2a0, 0xffaa00, 0.7));
+      claw.rotation.x = 1.15;
+      claw.position.set(0.92, 1.55, 0.55);
+      group.add(claw);
+      var claw2 = claw.clone();
+      claw2.position.x = 0.72;
+      claw2.rotation.y = 0.25;
+      group.add(claw2);
+    } else if (kind === 'assassin') {
+      group = createHumanoidBase({
+        cloth: 0x1a1028, accent: 0x442266, hair: 0x0a0610, hairStyle: 'tail', aura: 0x8866ff
+      });
+      var blade = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.1, 1.7), tintMat(0x8866ff, 0x4422aa, 0.65));
+      blade.position.set(0.86, 1.7, 0.7);
+      group.add(blade);
+      var blade2 = blade.clone();
+      blade2.position.set(-0.86, 1.7, 0.55);
+      group.add(blade2);
+    } else if (kind === 'phoenix') {
+      group = createHumanoidBase({
+        cloth: 0xaa2200, accent: 0xffaa33, hair: 0x4a0a00, hairStyle: 'long', aura: 0xff4400
+      });
+      var fan = new THREE.Mesh(new THREE.ConeGeometry(0.55, 0.12, 8), tintMat(0xff6622, 0xff2200, 0.7));
+      fan.rotation.x = 1.2;
+      fan.position.set(0.9, 1.72, 0.35);
+      group.add(fan);
+    } else if (kind === 'ice') {
+      group = createHumanoidBase({
+        cloth: 0x88ccee, accent: 0xccffff, hair: 0xddeeff, hairStyle: 'long', skin: 0xf0d8c8, aura: 0x66eeff
+      });
+      var staff = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.06, 2.2, 6), tintMat(0x88eeff, 0x2288ff, 0.5));
+      staff.position.set(0.82, 2.15, 0.2);
+      group.add(staff);
+      var bud = new THREE.Mesh(new THREE.OctahedronGeometry(0.28, 0), tintMat(0x66eeff, 0x2288ff, 0.85));
+      bud.position.set(0.82, 3.3, 0.2);
+      group.add(bud);
+    } else if (kind === 'mammoth') {
+      group = createHumanoidBase({
+        cloth: 0x8a6a22, accent: 0xd4a017, hair: 0x2a1a08, aura: 0xd4a017
+      });
+      var gaunt = new THREE.Mesh(new THREE.BoxGeometry(0.38, 0.38, 0.5), tintMat(0xc9a227, 0xaa7700, 0.25));
+      gaunt.position.set(0.86, 1.62, 0.18);
+      group.add(gaunt);
     } else if (kind === 'lamp') {
-      group = createHumanoidBase(0x6644aa, 0xffcc66);
-      var lamp = new THREE.Mesh(
-        new THREE.SphereGeometry(0.7, 12, 12),
-        tintMat(0xffaa33, 0xff6600, 0.9)
-      );
-      lamp.position.set(0, 5.1, 0);
+      group = createHumanoidBase({
+        cloth: 0x6644aa, accent: 0xffcc66, hair: 0x221133, hairStyle: 'long', aura: 0xffaa33
+      });
+      var lamp = new THREE.Mesh(new THREE.SphereGeometry(0.28, 10, 10), tintMat(0xffaa33, 0xff6600, 0.95));
+      lamp.position.set(-0.78, 1.85, 0.22);
       group.add(lamp);
     } else if (kind === 'bird') {
-      group = createHumanoidBase(0x228844, 0x66ff99);
-      var wingL = new THREE.Mesh(
-        new THREE.ConeGeometry(0.45, 2.2, 6),
-        tintMat(0x33cc66, 0x22aa44, 0.5)
-      );
-      wingL.rotation.z = 1.0;
-      wingL.position.set(-1.2, 3.0, -0.2);
-      group.add(wingL);
-      var wingR = wingL.clone();
-      wingR.rotation.z = -1.0;
-      wingR.position.x = 1.2;
-      group.add(wingR);
-      group.userData.wings = { userData: { leftWing: wingL, rightWing: wingR } };
+      group = createHumanoidBase({
+        cloth: 0x228844, accent: 0x88ffaa, hair: 0xf5e6c8, hairStyle: 'long', aura: 0x66ff99
+      });
+      var wand = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.06, 1.8, 6), tintMat(0x66ff99, 0x22aa44, 0.45));
+      wand.position.set(0.82, 2.05, 0.18);
+      group.add(wand);
+      var gem = new THREE.Mesh(new THREE.SphereGeometry(0.16, 8, 8), tintMat(0x88ffcc, 0x33ff88, 0.9));
+      gem.position.set(0.82, 3.0, 0.18);
+      group.add(gem);
     } else {
-      group = createSoulBeastMesh('tiger');
+      group = createHumanoidBase({ cloth: 0x4a4038, accent: 0x6a5a4a });
     }
-
-    var aura = new THREE.Mesh(
-      new THREE.RingGeometry(2.2, 2.7, 24),
-      new THREE.MeshBasicMaterial({ color: 0xffd700, transparent: true, opacity: 0.35, side: THREE.DoubleSide })
-    );
-    aura.rotation.x = -Math.PI / 2;
-    aura.position.y = 0.12;
-    group.add(aura);
     return group;
+  }
+
+  function createPhoenixBeast() {
+    var group = new THREE.Group();
+    var fireM = tintMat(0xff4400, 0xff2200, 0.75);
+    var goldM = tintMat(0xffcc44, 0xff8800, 0.55);
+    var body = new THREE.Mesh(new THREE.SphereGeometry(1.15, 12, 10), fireM);
+    body.scale.set(1.0, 0.85, 1.45);
+    body.position.y = 2.4;
+    body.castShadow = true;
+    group.add(body);
+    var head = new THREE.Mesh(new THREE.SphereGeometry(0.55, 10, 8), goldM);
+    head.position.set(0, 3.15, 1.55);
+    group.add(head);
+    var beak = new THREE.Mesh(new THREE.ConeGeometry(0.16, 0.7, 6), tintMat(0xffee88));
+    beak.rotation.x = 1.2;
+    beak.position.set(0, 3.0, 2.15);
+    group.add(beak);
+    var wingL = new THREE.Mesh(new THREE.ConeGeometry(0.7, 3.4, 6), fireM);
+    wingL.rotation.z = 1.15;
+    wingL.position.set(-1.7, 2.7, -0.2);
+    group.add(wingL);
+    var wingR = wingL.clone();
+    wingR.rotation.z = -1.15;
+    wingR.position.x = 1.7;
+    group.add(wingR);
+    group.userData.wings = { userData: { leftWing: wingL, rightWing: wingR } };
+    var tail = new THREE.Mesh(new THREE.ConeGeometry(0.35, 3.2, 6), goldM);
+    tail.rotation.x = 1.15;
+    tail.position.set(0, 1.6, -2.1);
+    group.add(tail);
+    group.userData.tail = [tail];
+    group.userData.legs = [];
+    [[-0.35, 0.7], [0.35, 0.7]].forEach(function (p) {
+      var leg = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.16, 1.3, 6), goldM);
+      leg.position.set(p[0], 0.7, 0.4);
+      group.add(leg);
+      group.userData.legs.push({ upper: leg });
+    });
+    addGoldenShield(group, 3.4, 2.4);
+    return group;
+  }
+
+  function createIceSerpent() {
+    var group = new THREE.Group();
+    var iceM = tintMat(0x88eeff, 0x2288ff, 0.7);
+    group.userData.tail = [];
+    for (var i = 0; i < 6; i++) {
+      var seg = new THREE.Mesh(new THREE.SphereGeometry(0.7 - i * 0.08, 8, 8), iceM);
+      seg.position.set(0, 1.4 + i * 0.15, 1.6 - i * 0.85);
+      group.add(seg);
+      group.userData.tail.push(seg);
+    }
+    var head = new THREE.Mesh(new THREE.ConeGeometry(0.55, 1.4, 6), iceM);
+    head.rotation.x = 1.2;
+    head.position.set(0, 2.2, 2.4);
+    group.add(head);
+    var crystal = new THREE.Mesh(new THREE.OctahedronGeometry(0.7, 0), tintMat(0xccffff, 0x66ddff, 0.9));
+    crystal.position.set(0, 3.6, 0.2);
+    group.add(crystal);
+    group.userData.legs = [];
+    addGoldenShield(group, 3.0, 2.0);
+    return group;
+  }
+
+  function createMammothBeast() {
+    var group = new THREE.Group();
+    var torso = new THREE.Mesh(new THREE.BoxGeometry(2.8, 2.4, 3.6), tintMat(0xd4a017, 0xaa7700, 0.2));
+    torso.position.y = 2.4;
+    torso.castShadow = true;
+    group.add(torso);
+    var head = new THREE.Mesh(new THREE.BoxGeometry(1.8, 1.6, 1.8), tintMat(0xc9a227));
+    head.position.set(0, 3.4, 2.2);
+    group.add(head);
+    var tuskL = new THREE.Mesh(new THREE.ConeGeometry(0.16, 1.6, 6), tintMat(0xfff4d2));
+    tuskL.rotation.x = 2.4;
+    tuskL.position.set(-0.6, 2.4, 2.8);
+    group.add(tuskL);
+    var tuskR = tuskL.clone();
+    tuskR.position.x = 0.6;
+    group.add(tuskR);
+    group.userData.legs = [];
+    [[-0.9, 1.1], [0.9, 1.1], [-0.9, -1.1], [0.9, -1.1]].forEach(function (p) {
+      var leg = new THREE.Mesh(new THREE.CylinderGeometry(0.45, 0.5, 2.0, 8), tintMat(0xb8860b));
+      leg.position.set(p[0], 1.0, p[1]);
+      group.add(leg);
+      group.userData.legs.push({ upper: leg });
+    });
+    addGoldenShield(group, 4.2, 2.6);
+    return group;
+  }
+
+  function createLampSpirit() {
+    var group = new THREE.Group();
+    var core = new THREE.Mesh(new THREE.SphereGeometry(1.1, 14, 12), tintMat(0xffaa33, 0xff6600, 1.0));
+    core.position.y = 2.4;
+    group.add(core);
+    var shade = new THREE.Mesh(new THREE.ConeGeometry(1.4, 1.6, 8), tintMat(0x6644aa, 0xaa66ff, 0.45));
+    shade.position.y = 3.5;
+    group.add(shade);
+    var base = new THREE.Mesh(new THREE.CylinderGeometry(0.7, 0.9, 0.5, 8), tintMat(0xffcc66));
+    base.position.y = 1.4;
+    group.add(base);
+    group.userData.legs = [];
+    addGoldenShield(group, 3.2, 2.4);
+    return group;
+  }
+
+  function createJadeBird() {
+    var group = new THREE.Group();
+    var feather = tintMat(0x33cc66, 0x22aa44, 0.55);
+    var body = new THREE.Mesh(new THREE.SphereGeometry(0.95, 12, 10), feather);
+    body.scale.set(1.0, 0.85, 1.35);
+    body.position.y = 2.2;
+    body.castShadow = true;
+    group.add(body);
+    var head = new THREE.Mesh(new THREE.SphereGeometry(0.45, 10, 8), tintMat(0x88ffaa, 0x44dd77, 0.4));
+    head.position.set(0, 2.85, 1.2);
+    group.add(head);
+    var wingL = new THREE.Mesh(new THREE.ConeGeometry(0.5, 2.6, 6), feather);
+    wingL.rotation.z = 1.05;
+    wingL.position.set(-1.4, 2.4, -0.15);
+    group.add(wingL);
+    var wingR = wingL.clone();
+    wingR.rotation.z = -1.05;
+    wingR.position.x = 1.4;
+    group.add(wingR);
+    group.userData.wings = { userData: { leftWing: wingL, rightWing: wingR } };
+    group.userData.legs = [];
+    [[-0.25, 0.55], [0.25, 0.55]].forEach(function (p) {
+      var leg = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.1, 1.0, 5), tintMat(0x226633));
+      leg.position.set(p[0], 0.6, 0.25);
+      group.add(leg);
+      group.userData.legs.push({ upper: leg });
+    });
+    addGoldenShield(group, 2.8, 2.2);
+    return group;
+  }
+
+  function createTrueFormMesh(kind) {
+    if (kind === 'dragon') return createSacredDragonMesh(true);
+    if (kind === 'assassin') return createSoulBeastMesh('tiger');
+    if (kind === 'phoenix') return createPhoenixBeast();
+    if (kind === 'ice') return createIceSerpent();
+    if (kind === 'mammoth') return createMammothBeast();
+    if (kind === 'lamp') return createLampSpirit();
+    if (kind === 'bird') return createJadeBird();
+    return createSoulBeastMesh('tiger');
+  }
+
+  function createFighterMesh(kind) {
+    return createSoulMasterMesh(kind);
   }
 
   global.DinoModel = {
@@ -602,9 +864,11 @@
     createSoulRingsGroup: createSoulRingsGroup,
     createHolyWings: createHolyWings,
     createSoulBeastMesh: createSoulBeastMesh,
+    createSoulMasterMesh: createSoulMasterMesh,
+    createTrueFormMesh: createTrueFormMesh,
     createFighterMesh: createFighterMesh,
     create: function () {
-      return createSacredDragonMesh(false);
+      return createSoulMasterMesh('dragon');
     }
   };
 })(window);

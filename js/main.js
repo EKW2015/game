@@ -77,14 +77,20 @@
     var p = g.player;
     if (!p || p.kit === 'full' || p.characterId === 'chen') return full;
     var mem = g.findMember(g.playerTeam, p.characterId);
-    var map = {};
+    var map = { Digit7: 'trueBody' };
     if (!mem) return map;
-    if (mem.skills[0]) map.Digit1 = mem.skills[0];
-    if (mem.skills[1]) map.Digit2 = mem.skills[1];
-    if (mem.skills[2]) {
-      map.Digit3 = mem.skills[2];
-      map.KeyT = mem.skills[2];
-    }
+    var numKeys = ['Digit1', 'Digit2', 'Digit3'];
+    var ni = 0;
+    (mem.skills || []).forEach(function (sid) {
+      if (sid === 'trueBody' || sid === 'ring7') return;
+      if (sid === 'iceDomain' || sid === 'lifeDomain' || sid === 'domain') {
+        map.KeyT = sid;
+      }
+      if (numKeys[ni]) {
+        map[numKeys[ni]] = sid;
+        ni += 1;
+      }
+    });
     return map;
   }
 
@@ -115,18 +121,32 @@
     if (!p || p.kit === 'full' || p.characterId === 'chen') return;
     var mem = g.findMember(g.playerTeam, p.characterId);
     if (!mem) return;
-    var keys = ['1', '2', 'T'];
-    mem.skills.forEach(function (sid, i) {
+    var combat = [];
+    (mem.skills || []).forEach(function (sid) {
+      if (sid !== 'trueBody' && sid !== 'ring7') combat.push(sid);
+    });
+    var keys = ['1', '2', '3'];
+    combat.forEach(function (sid, i) {
       var data = global.SKILLS_DATA[sid] || { name: sid, cost: 0 };
+      var isDomain = sid === 'iceDomain' || sid === 'lifeDomain' || sid === 'domain';
       var btn = doc.createElement('button');
       btn.type = 'button';
       btn.className = 'skill-btn';
       btn.setAttribute('data-skill', sid);
-      btn.innerHTML = '<span class="s-key">[' + keys[i] + '] ' + (i === 2 ? '领域' : '魂技') + '</span>' +
+      btn.innerHTML = '<span class="s-key">[' + (isDomain ? 'T' : keys[i]) + '] ' + (isDomain ? '领域' : '魂技') + '</span>' +
         '<span class="s-name">' + data.name + '</span>' +
         '<span class="s-cost">魂力 ' + data.cost + '</span>';
       memberSkillGrid.appendChild(btn);
     });
+    var trueData = global.SKILLS_DATA.trueBody || { name: '武魂真身', cost: 150 };
+    var trueBtn = doc.createElement('button');
+    trueBtn.type = 'button';
+    trueBtn.className = 'skill-btn ring-red';
+    trueBtn.setAttribute('data-skill', 'trueBody');
+    trueBtn.innerHTML = '<span class="s-key">[7] 武魂真身</span>' +
+      '<span class="s-name">' + trueData.name + '</span>' +
+      '<span class="s-cost">魂力 ' + trueData.cost + '</span>';
+    memberSkillGrid.appendChild(trueBtn);
   }
 
   function bindControls() {
@@ -316,7 +336,7 @@
         } else {
           var sData = global.SKILLS_DATA[sId];
           var cost = sData ? sData.cost : 0;
-          if (p.avatarMode && sData && sData.type === 'ring' && sId !== 'ring7') cost = 0;
+          if (p.avatarMode && sData && sData.type === 'ring' && sId !== 'ring7' && sId !== 'trueBody') cost = 0;
           costEl.textContent = '魂力 ' + cost;
           costEl.style.color = '#66ccff';
         }

@@ -37,7 +37,7 @@
         domain: '',
         role: '暗影刺客',
         hp: 2600, mp: 900, attack: 230, defense: 90, level: 76,
-        skills: ['shadowStrike', 'bladeStorm'],
+        skills: ['shadowStrike', 'bladeStorm', 'trueBody'],
         kit: 'member'
       },
       {
@@ -51,7 +51,7 @@
         domain: '',
         role: '远程大范围爆发',
         hp: 2400, mp: 1100, attack: 220, defense: 85, level: 75,
-        skills: ['phoenixMeteor', 'fireCage'],
+        skills: ['phoenixMeteor', 'fireCage', 'trueBody'],
         kit: 'member'
       },
       {
@@ -65,7 +65,7 @@
         domain: '玄冰领域',
         role: '掌控全局节奏',
         hp: 2300, mp: 1200, attack: 150, defense: 95, level: 75,
-        skills: ['absoluteZero', 'iceVines', 'iceDomain'],
+        skills: ['absoluteZero', 'iceVines', 'iceDomain', 'trueBody'],
         kit: 'member'
       },
       {
@@ -79,7 +79,7 @@
         domain: '',
         role: '前排大肉盾',
         hp: 5200, mp: 800, attack: 160, defense: 260, level: 77,
-        skills: ['mammothStomp', 'goldShield'],
+        skills: ['mammothStomp', 'goldShield', 'trueBody'],
         kit: 'member'
       },
       {
@@ -93,7 +93,7 @@
         domain: '',
         role: '全队充电宝',
         hp: 2100, mp: 1400, attack: 90, defense: 80, level: 74,
-        skills: ['speedAmp', 'mpSurge'],
+        skills: ['speedAmp', 'mpSurge', 'trueBody'],
         kit: 'member'
       },
       {
@@ -107,7 +107,7 @@
         domain: '生命礼赞领域',
         role: '超级医疗兵',
         hp: 2800, mp: 1300, attack: 80, defense: 100, level: 75,
-        skills: ['emeraldWave', 'purify', 'lifeDomain'],
+        skills: ['emeraldWave', 'purify', 'lifeDomain', 'trueBody'],
         kit: 'member'
       }
     ]
@@ -118,13 +118,13 @@
       id: 'wuhun',
       name: '武魂殿黑衣队',
       members: [
-        { id: 'e1', name: '黑衣执事', title: '强攻系魂圣', soul: '暗影魔龙', model: 'dragon', hp: 3200, mp: 1000, attack: 210, defense: 140, level: 76, skills: ['ring1', 'ring3'] },
-        { id: 'e2', name: '夜杀', title: '敏攻系魂圣', soul: '幽冥刺', model: 'assassin', hp: 2400, mp: 800, attack: 200, defense: 80, level: 74, skills: ['shadowStrike'] },
-        { id: 'e3', name: '炎狱', title: '远攻系魂圣', soul: '狱火鸦', model: 'phoenix', hp: 2200, mp: 900, attack: 190, defense: 75, level: 74, skills: ['phoenixMeteor'] },
-        { id: 'e4', name: '寒魄', title: '控制系魂圣', soul: '玄冰蝎', model: 'ice', hp: 2100, mp: 1000, attack: 130, defense: 90, level: 73, skills: ['iceVines'] },
-        { id: 'e5', name: '铁壁', title: '防御系魂圣', soul: '玄甲犀', model: 'mammoth', hp: 4800, mp: 700, attack: 140, defense: 240, level: 75, skills: ['mammothStomp'] },
-        { id: 'e6', name: '烛阴', title: '辅助系魂圣', soul: '幽光灯', model: 'lamp', hp: 1900, mp: 1200, attack: 80, defense: 70, level: 72, skills: ['speedAmp'] },
-        { id: 'e7', name: '血藤', title: '治疗系魂圣', soul: '吸血藤', model: 'bird', hp: 2500, mp: 1100, attack: 70, defense: 90, level: 73, skills: ['emeraldWave'] }
+        { id: 'e1', name: '黑衣执事', title: '强攻系魂圣', soul: '暗影魔龙', model: 'dragon', hp: 3200, mp: 1000, attack: 210, defense: 140, level: 76, skills: ['ring1', 'ring3', 'trueBody'] },
+        { id: 'e2', name: '夜杀', title: '敏攻系魂圣', soul: '幽冥刺', model: 'assassin', hp: 2400, mp: 800, attack: 200, defense: 80, level: 74, skills: ['shadowStrike', 'trueBody'] },
+        { id: 'e3', name: '炎狱', title: '远攻系魂圣', soul: '狱火鸦', model: 'phoenix', hp: 2200, mp: 900, attack: 190, defense: 75, level: 74, skills: ['phoenixMeteor', 'trueBody'] },
+        { id: 'e4', name: '寒魄', title: '控制系魂圣', soul: '玄冰蝎', model: 'ice', hp: 2100, mp: 1000, attack: 130, defense: 90, level: 73, skills: ['iceVines', 'trueBody'] },
+        { id: 'e5', name: '铁壁', title: '防御系魂圣', soul: '玄甲犀', model: 'mammoth', hp: 4800, mp: 700, attack: 140, defense: 240, level: 75, skills: ['mammothStomp', 'trueBody'] },
+        { id: 'e6', name: '烛阴', title: '辅助系魂圣', soul: '幽光灯', model: 'lamp', hp: 1900, mp: 1200, attack: 80, defense: 70, level: 72, skills: ['speedAmp', 'trueBody'] },
+        { id: 'e7', name: '血藤', title: '治疗系魂圣', soul: '吸血藤', model: 'bird', hp: 2500, mp: 1100, attack: 70, defense: 90, level: 73, skills: ['emeraldWave', 'trueBody'] }
       ]
     },
     {
@@ -173,7 +173,11 @@
       attack: m.attack,
       defense: m.defense,
       level: m.level,
-      skills: (m.skills || []).slice(),
+      skills: (function () {
+        var s = (m.skills || []).slice();
+        if (s.indexOf('trueBody') < 0 && s.indexOf('ring7') < 0) s.push('trueBody');
+        return s;
+      })(),
       kit: m.kit || 'member',
       eliminated: false
     };

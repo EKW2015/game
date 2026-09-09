@@ -72,7 +72,16 @@
       colorName: '红',
       cd: 35.0,
       cost: 150,
-      desc: '化身百米圣龙，全属性暴增300%，免伤且前六魂技无消耗释放'
+      desc: '释放武魂真身，化身百米圣龙。平时是魂师人形，只有真身才变成魂兽'
+    },
+    trueBody: {
+      id: 'trueBody',
+      name: '第七魂技·武魂真身',
+      type: 'ring',
+      colorName: '红',
+      cd: 35.0,
+      cost: 150,
+      desc: '魂师释放武魂真身，短暂化作武魂本体。平时保持人形'
     },
 
     // === 2. 七大自创魂技 ===
@@ -202,7 +211,7 @@
 
     // 魂力消耗判断（真身状态下前六魂技 0 消耗！）
     var cost = skill.cost;
-    if (player.avatarMode && skill.type === 'ring' && skillId !== 'ring7') {
+    if (player.avatarMode && skill.type === 'ring' && skillId !== 'ring7' && skillId !== 'trueBody') {
       cost = 0;
     }
 
@@ -328,12 +337,13 @@
         });
         break;
 
-      // 7. 第七魂技：光明圣龙真身 (化身百米圣龙，全属性暴增300%，免伤+0消耗)
+      // 7. 第七魂技：武魂真身（人形魂师化作武魂本体）
       case 'ring7':
+      case 'trueBody':
         Sfx.avatar();
         p.avatarMode = true;
-        p.avatarTime = 16.0; // 维持16秒真身
-        p.hp = p.maxHp; // 真身降临瞬间恢复全满生命
+        p.avatarTime = 16.0;
+        p.hp = p.maxHp;
         this.game.addParticles(p.x, p.y, '#ffffaa', 60);
         break;
 

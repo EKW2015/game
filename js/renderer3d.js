@@ -61,15 +61,45 @@
     this.sun = sun;
   };
 
+  Renderer3D.prototype.bindFormAnim = function (group, form) {
+    if (!form) {
+      group.userData.legs = null;
+      group.userData.wings = null;
+      group.userData.tail = null;
+      group.userData.jaw = null;
+      group.userData.goldenShield = null;
+      return;
+    }
+    group.userData.legs = form.userData.legs;
+    group.userData.wings = form.userData.wings;
+    group.userData.tail = form.userData.tail;
+    group.userData.jaw = form.userData.jaw;
+    group.userData.goldenShield = form.userData.goldenShield;
+  };
+
   Renderer3D.prototype.createEntityMesh = function (entity) {
     var kind = entity.fighterKind || (entity.isPlayer ? 'dragon' : 'tiger');
-    var group;
+    var group = new THREE.Group();
     if (kind === 'tiger' || kind === 'bear' || kind === 'ape') {
-      group = DinoModel.createSoulBeastMesh(kind);
+      var wild = DinoModel.createSoulBeastMesh(kind);
+      group.add(wild);
+      group.userData.humanForm = null;
+      group.userData.trueForm = wild;
+      this.bindFormAnim(group, wild);
     } else {
-      group = DinoModel.createFighterMesh(kind);
+      var human = DinoModel.createSoulMasterMesh(kind);
+      var beast = DinoModel.createTrueFormMesh(kind);
+      human.name = 'humanForm';
+      beast.name = 'trueForm';
+      beast.visible = false;
+      group.add(human);
+      group.add(beast);
+      group.userData.humanForm = human;
+      group.userData.trueForm = beast;
+      this.bindFormAnim(group, human);
     }
     var rings = DinoModel.createSoulRingsGroup();
+    rings.scale.setScalar(0.48);
     group.add(rings);
     group.userData.rings = rings;
     this.scene.add(group);
@@ -85,11 +115,19 @@
     }
     group.visible = true;
 
-    // 缩放处理：如果是第七魂技【光明圣龙真身】，体型暴增为百米级圣龙！
-    var baseScale = 1.2;
-    if (entity.isPlayer) baseScale = entity.avatarMode ? 3.2 : 1.35;
-    else if (entity.fighterKind === 'mammoth') baseScale = 1.45;
-    else if (entity.fighterKind === 'dragon') baseScale = 1.25;
+    // 默认魂师人形；只有武魂真身才切换魂兽模型并放大
+    if (group.userData.humanForm && group.userData.trueForm) {
+      var av = !!entity.avatarMode;
+      group.userData.humanForm.visible = !av;
+      group.userData.trueForm.visible = av;
+      this.bindFormAnim(group, av ? group.userData.trueForm : group.userData.humanForm);
+      if (group.userData.rings) {
+        group.userData.rings.scale.setScalar(av ? 1.05 : 0.48);
+      }
+    }
+
+    var baseScale = 1.35;
+    if (entity.avatarMode) baseScale = entity.isPlayer ? 3.2 : 2.35;
     group.scale.setScalar(baseScale);
 
     var gy = world.heightAt(entity.x, entity.y);
@@ -124,12 +162,12 @@
     }
 
     // 龙翼振动动画
-    if (group.userData.wings) {
+    if (group.userData.wings && group.userData.wings.userData && group.userData.wings.userData.leftWing) {
       var wings = group.userData.wings.userData;
       var wingFreq = entity.isFlying ? 12 : 3;
       var wingSwing = Math.sin(Date.now() * 0.001 * wingFreq) * (entity.isFlying ? 0.45 : 0.15);
       wings.leftWing.rotation.y = wingSwing;
-      wings.rightWing.rotation.y = -wingSwing;
+      if (wings.rightWing) wings.rightWing.rotation.y = -wingSwing;
     }
 
     // 龙尾优雅摆动

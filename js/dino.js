@@ -44,7 +44,7 @@
     this.flightTime = 0;
     this.goldBodyActive = false;   // 圣龙金身 (免伤 + 反弹)
     this.goldBodyTime = 0;
-    this.avatarMode = false;       // 光明圣龙真身 (全属性+300%, 技能0消耗, 免伤)
+    this.avatarMode = false;       // 武魂真身：人形魂师化作武魂本体
     this.avatarTime = 0;
     this.shieldActive = false;     // 光盾守护
     this.shieldHp = 0;
