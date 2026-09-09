@@ -124,9 +124,9 @@
     truebody: function (ctx) {
       var c = ctx.caster;
       c.applyBuff('trueBody', 10);
-      c.h = Math.max(c.h, 18);
+      c.h = Math.max(c.h, 4);
       ctx.game.addEffect({ type: 'truebody', x: c.x, y: c.y, owner: c.id, life: 1.6 });
-      ctx.game.addParticles(c.x, c.y, '#ff6b6b', 40);
+      ctx.game.addParticles(c.x, c.y, '#ff6b6b', 8);
     },
     punch: function (ctx) {
       var c = ctx.caster;

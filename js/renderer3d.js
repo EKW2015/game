@@ -225,10 +225,15 @@
 
     var gy = world.heightAt(unit.x, unit.y);
     var trueBody = unit.buffs.trueBody > 0;
-    var scale = (unit.radius / 14) * (trueBody ? 3.6 : 1);
+    var scale = unit.radius / 14;
     group.scale.setScalar(scale);
     group.position.set(unit.x, gy + unit.h, unit.y);
     group.rotation.y = -unit.angle + Math.PI;
+
+    if (group.userData.dragon) {
+      group.userData.dragon.scale.setScalar(trueBody ? 2.15 : 1.15);
+      group.userData.dragon.position.y = trueBody ? 1.2 : 0;
+    }
 
     if (group.userData.human) group.userData.human.visible = !trueBody;
     if (group.userData.dragon) group.userData.dragon.visible = trueBody;
@@ -282,18 +287,20 @@
       if (group.userData.arms[0]) group.userData.arms[0].rotation.x = attack * 0.3;
     }
 
-    if (group.userData.wingL) {
+    if (!trueBody && group.userData.wingL) {
       var flap = Math.sin(t * 7) * 0.32;
       group.userData.wingL.rotation.y = flap;
       if (group.userData.wingR) group.userData.wingR.rotation.y = -flap;
     }
 
-    if (trueBody && group.userData.dragon && group.userData.dragon.userData.body) {
-      var segs = group.userData.dragon.userData.body;
-      for (var s = 0; s < segs.length; s++) {
-        segs[s].position.x = Math.sin(t * 3.4 + s * 0.55) * 0.5;
-        segs[s].position.y = 2.6 + Math.sin(t * 2.2 + s * 0.4) * 0.18;
-      }
+    if (trueBody && group.userData.dragon) {
+      var d = group.userData.dragon;
+      var dflap = Math.sin(t * 5.5) * 0.28;
+      if (d.userData.wingL) d.userData.wingL.rotation.z = dflap;
+      if (d.userData.wingR) d.userData.wingR.rotation.z = -dflap;
+      if (d.userData.jaw) d.userData.jaw.rotation.x = 0.12 + Math.sin(t * 3) * 0.08;
+      var segs = d.userData.tail || [];
+      if (segs[0]) segs[0].rotation.z = Math.sin(t * 2.2) * 0.12;
     }
 
     if (unit.hitFlash > 0) {
@@ -364,9 +371,8 @@
         this.placeFx({ kind: 'column', x: e.x, y: gy + 18, z: e.y, sx: 6, sy: 36, sz: 6, color: '#ffe27a', opacity: 0.4 });
         this.placeFx({ kind: 'ring', x: e.x, y: gy + 6, z: e.y, s: 8, rotX: Math.PI / 2, color: '#ffd36a', opacity: 0.75 });
       } else if (e.type === 'truebody') {
-        this.placeFx({ kind: 'column', x: e.x, y: gy + 40, z: e.y, sx: 12, sy: 90, sz: 12, color: '#ff4d4d', opacity: 0.35 });
-        this.placeFx({ kind: 'ring', x: e.x, y: gy + 8, z: e.y, s: 18 * grow, rotX: Math.PI / 2, color: '#ffe27a', opacity: 0.8 });
-        this.placeFx({ kind: 'sphere', x: e.x, y: gy + 16, z: e.y, s: 14, color: '#fff4c0', opacity: 0.45 });
+        this.placeFx({ kind: 'ring', x: e.x, y: gy + 2, z: e.y, s: 11, rotX: Math.PI / 2, color: '#ffe27a', opacity: 0.55 });
+        this.placeFx({ kind: 'column', x: e.x, y: gy + 26, z: e.y, sx: 3.2, sy: 48, sz: 3.2, color: '#ffd36a', opacity: 0.16 });
       } else if (e.type === 'tail') {
         this.placeFx({ kind: 'slash', x: e.x, y: gy + 8, z: e.y, s: 18, color: '#e8c35a', opacity: 0.85, rotX: Math.PI / 2 });
         this.placeFx({ kind: 'ring', x: e.x, y: gy + 3, z: e.y, s: 10, rotX: Math.PI / 2, color: '#ffe27a', opacity: 0.55 });
@@ -440,7 +446,7 @@
       for (j = 0; j < this.sparkles.length; j++) {
         var sp = this.sparkles[j];
         sp.a += 0.016 * sp.spd;
-        var show = player.alive;
+          var show = player.alive && !(player.buffs && player.buffs.trueBody > 0);
         sp.mesh.visible = show;
         if (show) {
           sp.mesh.position.set(
@@ -451,9 +457,10 @@
         }
       }
       for (j = 0; j < this.godrays.length; j++) {
-        this.godrays[j].position.x = player.x + Math.cos(t * 0.15 + j) * 26;
-        this.godrays[j].position.z = player.y + Math.sin(t * 0.15 + j) * 26;
-        this.godrays[j].material.opacity = on ? 0.16 : 0.07;
+      this.godrays[j].visible = !(player.buffs && player.buffs.trueBody > 0);
+      this.godrays[j].position.x = player.x + Math.cos(t * 0.15 + j) * 26;
+      this.godrays[j].position.z = player.y + Math.sin(t * 0.15 + j) * 26;
+      this.godrays[j].material.opacity = on ? 0.16 : 0.07;
       }
     }
   };
@@ -466,11 +473,12 @@
 
     var ground = this.world.heightAt(player.x, player.y);
     var trueBody = player.buffs.trueBody > 0;
-    var dist = trueBody ? 130 : 42;
-    var height = trueBody ? 58 : 18;
+    var dist = trueBody ? 78 : 42;
+    var height = trueBody ? 28 : 18;
     var yaw = this.camYaw;
-    var idealX = player.x - Math.cos(yaw) * dist;
-    var idealZ = player.y - Math.sin(yaw) * dist;
+    var side = trueBody ? 16 : 0;
+    var idealX = player.x - Math.cos(yaw) * dist + Math.cos(yaw + Math.PI / 2) * side;
+    var idealZ = player.y - Math.sin(yaw) * dist + Math.sin(yaw + Math.PI / 2) * side;
     var idealY = ground + player.h + height;
 
     if (this.shake > 0) {
@@ -485,7 +493,7 @@
     this.camera.position.y += (idealY - this.camera.position.y) * lerp;
     this.camera.position.z += (idealZ - this.camera.position.z) * lerp;
 
-    this.camera.lookAt(player.x, ground + player.h + (trueBody ? 24 : 14), player.y);
+    this.camera.lookAt(player.x, ground + player.h + (trueBody ? 14 : 14), player.y);
     this.world.update(player.x, player.y);
   };
 
