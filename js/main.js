@@ -2,193 +2,171 @@
   'use strict';
 
   var doc = global.document;
-  var canvas = doc.getElementById('game');
+  var boardEl = doc.getElementById('board');
+  var statusEl = doc.getElementById('status-text');
+  var turnDot = doc.getElementById('turn-dot');
+  var historyEl = doc.getElementById('history');
+  var capWhite = doc.getElementById('cap-white');
+  var capBlack = doc.getElementById('cap-black');
+  var matWhite = doc.getElementById('mat-white');
+  var matBlack = doc.getElementById('mat-black');
+  var soundBtn = doc.getElementById('btn-sound');
+  var overlayReady = doc.getElementById('overlay-ready');
+  var overlayOver = doc.getElementById('overlay-over');
+  var overlayPromo = doc.getElementById('overlay-promo');
+  var overTitle = doc.getElementById('over-title');
+  var overHint = doc.getElementById('over-hint');
+  var promoChoices = doc.getElementById('promo-choices');
+  var thinkingEl = doc.getElementById('thinking');
 
-  var overlays = {
-    ready: doc.getElementById('overlay-ready'),
-    over: doc.getElementById('overlay-over'),
-    paused: doc.getElementById('overlay-paused'),
-    error: doc.getElementById('overlay-error')
-  };
-  var deathStats = doc.getElementById('death-stats');
-  var errorMsg = doc.getElementById('error-msg');
-  var soundButton = doc.getElementById('btn-sound');
-  var pauseButton = doc.getElementById('btn-pause');
-  var touchControls = doc.getElementById('touch-controls');
-  var toast = doc.getElementById('toast');
+  var game = new global.Game({
+    boardEl: boardEl,
+    onChange: onChange
+  });
 
-  var hudStage = doc.getElementById('hud-stage');
-  var hudMass = doc.getElementById('hud-mass');
-  var hudKills = doc.getElementById('hud-kills');
-  var hudBest = doc.getElementById('hud-best');
-  var bootScreen = doc.getElementById('boot-screen');
-  var bootMsg = doc.getElementById('boot-msg');
-
-  var game = null;
-
-  function hideBoot() {
-    if (bootScreen) bootScreen.style.display = 'none';
+  function hideOverlays() {
+    overlayReady.classList.add('overlay--hidden');
+    overlayOver.classList.add('overlay--hidden');
+    overlayPromo.classList.add('overlay--hidden');
   }
 
-  function showBootError(msg) {
-    if (bootMsg) {
-      bootMsg.style.color = '#ff8888';
-      bootMsg.innerHTML = msg;
+  function showReady() {
+    overlayOver.classList.add('overlay--hidden');
+    overlayPromo.classList.add('overlay--hidden');
+    overlayReady.classList.remove('overlay--hidden');
+  }
+
+  function pieceStrip(list, owner) {
+    if (!list.length) return '<span class="cap-empty">无</span>';
+    return list.map(function (t) {
+      return '<span class="cap-piece">' + game.pieceSvg(t, owner === 'w' ? 'b' : 'w') + '</span>';
+    }).join('');
+  }
+
+  function renderHistory(history) {
+    if (!history.length) {
+      historyEl.innerHTML = '<p class="history-empty">对局开始后棋谱会显示在这里</p>';
+      return;
     }
+    var rows = [];
+    for (var i = 0; i < history.length; i += 2) {
+      var n = (i / 2) + 1;
+      var w = history[i] ? history[i].san : '';
+      var b = history[i + 1] ? history[i + 1].san : '';
+      rows.push(
+        '<div class="hist-row">' +
+          '<span class="hist-n">' + n + '</span>' +
+          '<span class="hist-san">' + w + '</span>' +
+          '<span class="hist-san">' + b + '</span>' +
+        '</div>'
+      );
+    }
+    historyEl.innerHTML = rows.join('');
+    historyEl.scrollTop = historyEl.scrollHeight;
   }
 
-  function showOverlay(name) {
-    Object.keys(overlays).forEach(function (key) {
-      if (!overlays[key]) return;
-      overlays[key].classList.toggle('overlay--hidden', key !== name);
-    });
+  function matText(diff, side) {
+    var v = side === 'w' ? diff : -diff;
+    if (v <= 0) return '';
+    return '+' + v;
   }
 
-  function formatStats(g) {
-    var p = g.player;
-    return '阶段 ' + global.Utils.stageName(p.mass) + ' · 击杀 ' + p.kills + ' · 体型 ' + Math.round(p.mass);
-  }
+  function onChange(snap) {
+    var st = snap.status;
+    thinkingEl.classList.toggle('is-on', !!snap.thinking);
 
-  function bindControls() {
-    var MOVE_KEYS = {
-      ArrowUp: 'up', KeyW: 'up',
-      ArrowDown: 'down', KeyS: 'down',
-      ArrowLeft: 'left', KeyA: 'left',
-      ArrowRight: 'right', KeyD: 'right'
-    };
-    var BITE_KEYS = { Space: 1, KeyJ: 1 };
+    if (snap.pendingPromo) {
+      overlayReady.classList.add('overlay--hidden');
+      overlayOver.classList.add('overlay--hidden');
+      overlayPromo.classList.remove('overlay--hidden');
+      var color = snap.pos.turn;
+      var types = ['q', 'r', 'b', 'n'];
+      promoChoices.innerHTML = types.map(function (t) {
+        return '<button type="button" class="promo-btn" data-promo="' + t + '">' +
+          game.pieceSvg(t, color) + '</button>';
+      }).join('');
+    } else {
+      overlayPromo.classList.add('overlay--hidden');
+    }
 
-    doc.addEventListener('keydown', function (event) {
-      if (!game || event.metaKey || event.ctrlKey || event.altKey) return;
-      var code = event.code;
-
-      if (MOVE_KEYS[code]) {
-        event.preventDefault();
-        if (!event.repeat) game.press(MOVE_KEYS[code]);
-        return;
+    if (st.state !== 'playing') {
+      hideOverlays();
+      overlayOver.classList.remove('overlay--hidden');
+      if (st.state === 'checkmate' || st.state === 'resign') {
+        overTitle.textContent = st.winner === 'w' ? '白方胜' : '黑方胜';
+        overHint.textContent = st.state === 'resign' ? '对方认输' : '将死';
+      } else {
+        overTitle.textContent = '和棋';
+        overHint.textContent = st.text.replace('和棋 · ', '');
       }
-      if (BITE_KEYS[code]) {
-        event.preventDefault();
-        if (!event.repeat) game.press('bite');
-        return;
-      }
-      if (code === 'KeyP' || code === 'Escape') {
-        event.preventDefault();
-        game.togglePause();
-      } else if (code === 'KeyM') {
-        toggleSound();
-      } else if (code === 'KeyR') {
-        if (game.state === 'over' || game.state === 'playing') game.restart();
-      }
-    });
+      statusEl.textContent = st.text;
+    } else if (!snap.pendingPromo && overlayReady.classList.contains('overlay--hidden')) {
+      overlayOver.classList.add('overlay--hidden');
+      statusEl.textContent = snap.thinking ? '电脑思考中…' : st.text;
+    }
 
-    doc.addEventListener('keyup', function (event) {
-      if (!game) return;
-      if (MOVE_KEYS[event.code]) game.release(MOVE_KEYS[event.code]);
-      else if (BITE_KEYS[event.code]) game.release('bite');
-    });
-
-    Array.prototype.forEach.call(touchControls.querySelectorAll('[data-hold]'), function (button) {
-      var action = button.getAttribute('data-hold');
-      button.addEventListener('pointerdown', function (event) {
-        if (!game) return;
-        event.preventDefault();
-        button.setPointerCapture(event.pointerId);
-        game.press(action);
-        if (game.state === 'ready') game.setState('playing');
-      });
-      button.addEventListener('pointerup', function () { if (game) game.release(action); });
-      button.addEventListener('pointercancel', function () { if (game) game.release(action); });
-    });
-
-    doc.addEventListener('click', function (event) {
-      if (!game) return;
-      var target = event.target.closest('[data-action]');
-      if (!target) return;
-      var action = target.getAttribute('data-action');
-      if (action === 'start') game.setState('playing');
-      else if (action === 'restart') game.restart();
-      else if (action === 'resume') game.togglePause();
-    });
-
-    soundButton.addEventListener('click', toggleSound);
-    pauseButton.addEventListener('click', function () { if (game) game.togglePause(); });
-
-    var resizeTimer = 0;
-    global.addEventListener('resize', function () {
-      global.clearTimeout(resizeTimer);
-      resizeTimer = global.setTimeout(function () { if (game) game.resize(); }, 80);
-    });
-
-    doc.addEventListener('visibilitychange', function () {
-      if (doc.hidden && game && game.state === 'playing') game.togglePause();
-    });
+    turnDot.className = 'turn-dot turn-dot--' + snap.pos.turn + (st.check ? ' is-check' : '');
+    capWhite.innerHTML = pieceStrip(snap.captured.w, 'w');
+    capBlack.innerHTML = pieceStrip(snap.captured.b, 'b');
+    matWhite.textContent = matText(snap.material.diff, 'w');
+    matBlack.textContent = matText(snap.material.diff, 'b');
+    renderHistory(snap.history);
   }
 
-  function toggleSound() {
-    var muted = global.Sfx.toggle();
-    soundButton.textContent = muted ? '音效：关' : '音效：开';
-    soundButton.setAttribute('aria-pressed', String(muted));
+  function readStartOptions() {
+    var mode = (doc.querySelector('input[name="mode"]:checked') || {}).value || 'ai';
+    var human = (doc.querySelector('input[name="color"]:checked') || {}).value || 'w';
+    var level = (doc.querySelector('input[name="level"]:checked') || {}).value || 'medium';
+    return { mode: mode, human: human, level: level };
+  }
+
+  function markChoices() {
+    doc.querySelectorAll('.choice').forEach(function (label) {
+      var input = label.querySelector('input');
+      label.classList.toggle('is-on', !!(input && input.checked));
+    });
   }
 
   function startGame() {
-    if (typeof THREE === 'undefined') {
-      showBootError('3D 引擎加载失败<br><br>请重新下载 play.html（约700KB）<br>用 Chrome 浏览器双击打开<br><br>❌ 不要直接在 GitHub 网页里打开');
-      if (errorMsg) errorMsg.textContent = '3D 引擎没加载。请下载 play.html 用 Chrome 打开。';
-      showOverlay('error');
-      return;
-    }
-
-    try {
-      if (bootMsg) bootMsg.textContent = '正在创建 3D 世界…';
-      game = new global.Game(canvas, {
-        onState: function (state, g) {
-          if (state === 'over') {
-            deathStats.textContent = formatStats(g);
-            showOverlay('over');
-          } else if (state === 'paused') {
-            showOverlay('paused');
-          } else if (state === 'ready') {
-            showOverlay('ready');
-          } else {
-            showOverlay(null);
-          }
-          pauseButton.textContent = state === 'paused' ? '继续' : '暂停';
-          pauseButton.disabled = state === 'ready';
-        },
-        onHud: function (g) {
-          var p = g.player;
-          if (!p) return;
-          hudStage.textContent = global.Utils.stageName(p.mass);
-          hudMass.textContent = Math.round(p.mass);
-          hudKills.textContent = p.kills;
-          hudBest.textContent = g.highKills;
-
-          if (g.messages.length > 0) {
-            toast.textContent = g.messages[0].text;
-            toast.style.opacity = '1';
-          } else {
-            toast.style.opacity = '0';
-          }
-        }
-      });
-
-      showOverlay('ready');
-      pauseButton.disabled = true;
-      hideBoot();
-      global.requestAnimationFrame(function () {
-        game.resize();
-        // 打开即玩，无需再点按钮
-        game.setState('playing');
-      });
-    } catch (err) {
-      console.error(err);
-      showBootError('3D 启动失败：' + (err.message || 'WebGL 不可用') + '<br><br>请换 <b>Chrome 浏览器</b> 打开');
-      if (errorMsg) errorMsg.textContent = err.message || 'WebGL 不可用，请用 Chrome 浏览器';
-      showOverlay('error');
-    }
+    hideOverlays();
+    game.newGame(readStartOptions());
   }
 
-  bindControls();
-  startGame();
+  doc.getElementById('btn-start').addEventListener('click', startGame);
+  doc.getElementById('btn-again').addEventListener('click', function () {
+    showReady();
+  });
+  doc.getElementById('btn-new').addEventListener('click', function () {
+    showReady();
+  });
+  doc.getElementById('btn-undo').addEventListener('click', function () { game.undo(); });
+  doc.getElementById('btn-resign').addEventListener('click', function () { game.resign(); });
+  doc.getElementById('btn-flip').addEventListener('click', function () { game.flip(); });
+  doc.getElementById('btn-hint').addEventListener('click', function () { game.hint(); });
+
+  soundBtn.addEventListener('click', function () {
+    var muted = global.Sfx.toggle();
+    soundBtn.textContent = muted ? '音效：关' : '音效：开';
+    soundBtn.setAttribute('aria-pressed', muted ? 'true' : 'false');
+  });
+
+  promoChoices.addEventListener('click', function (e) {
+    var btn = e.target.closest('[data-promo]');
+    if (!btn) return;
+    game.choosePromotion(btn.getAttribute('data-promo'));
+  });
+
+  function syncAiOptions() {
+    var mode = (doc.querySelector('input[name="mode"]:checked') || {}).value;
+    doc.getElementById('ai-options').classList.toggle('is-disabled', mode !== 'ai');
+    markChoices();
+  }
+  doc.querySelectorAll('input[name="mode"], input[name="color"], input[name="level"]').forEach(function (el) {
+    el.addEventListener('change', syncAiOptions);
+  });
+  syncAiOptions();
+
+  game.render();
+  onChange(game.snapshot());
+  showReady();
 })(window);
