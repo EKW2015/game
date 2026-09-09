@@ -280,13 +280,14 @@
   };
 
   Game.prototype.addParticles = function (x, y, color, count) {
+    if (this.particles.length > 180) return;
     for (var i = 0; i < count; i++) {
       var a = U.rand(0, Math.PI * 2);
-      var spd = U.rand(40, 180);
+      var spd = U.rand(50, 220);
       this.particles.push({
         x: x, y: y,
         vx: Math.cos(a) * spd, vy: Math.sin(a) * spd,
-        life: U.rand(0.3, 0.7), color: color, size: U.rand(2, 6)
+        life: U.rand(0.35, 0.85), color: color || '#ffe27a', size: U.rand(2, 7)
       });
     }
   };
@@ -311,7 +312,7 @@
     if (opts.burn) victim.applyBuff('burn', opts.burn);
     if (opts.seal) victim.applyBuff('sealed', opts.seal);
     if (opts.defDown) victim.applyBuff('defDown', opts.defDown);
-    this.addParticles(victim.x, victim.y, '#ffe27a', 3);
+    this.addParticles(victim.x, victim.y, '#ffe27a', 10);
     Sfx.hit();
     if (victim.wantReflect && attacker && attacker.alive) {
       victim.wantReflect = false;
@@ -362,7 +363,7 @@
       life: duration,
       max: duration
     };
-    this.addEffect({ type: 'domain', x: caster.x, y: caster.y, life: 1.2, r: radius });
+    this.addEffect({ type: 'domain', x: caster.x, y: caster.y, life: 1.8, r: radius });
     this.addMessage('十万年·圣龙主迹领域！', 3);
     if (this.r3d.shake != null) this.r3d.shake = 0.4;
   };
@@ -392,9 +393,10 @@
     Sfx.skill(skill.id);
     var tag = skill.group === 'soul' ? '第' + skill.slot + '魂技' : skill.group === 'self' ? '自创魂技' : skill.group === 'bone' ? '魂骨技能' : '领域';
     this.addMessage(tag + ' · ' + skill.name + '！', 2.1);
-    this.addParticles(caster.x, caster.y, skill.color, 10);
-    if (this.r3d.shake != null && (skill.id === 'truebody' || skill.id === 'skystrike' || skill.id === 'domain' || skill.id === 'roar')) {
-      this.r3d.shake = 0.35;
+    this.addParticles(caster.x, caster.y, skill.color, 28);
+    if (this.r3d.flash != null) this.r3d.flash = skill.id === 'truebody' || skill.id === 'domain' ? 0.45 : 0.18;
+    if (this.r3d.shake != null && (skill.id === 'truebody' || skill.id === 'skystrike' || skill.id === 'domain' || skill.id === 'roar' || skill.id === 'judgment')) {
+      this.r3d.shake = skill.id === 'truebody' || skill.id === 'domain' ? 0.55 : 0.32;
     }
     return true;
   };
@@ -500,6 +502,11 @@
       p.vx += ax * spd * dt * 4.2;
       p.vy += ay * spd * dt * 4.2;
       p.angle = Math.atan2(ay, ax);
+      this._trailT = (this._trailT || 0) + dt;
+      if (this._trailT > 0.06) {
+        this._trailT = 0;
+        this.addParticles(p.x, p.y, p.buffs.trueBody > 0 ? '#ff6b6b' : '#ffe27a', 4);
+      }
     } else {
       p.angle = yaw;
     }

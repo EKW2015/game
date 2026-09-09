@@ -27,7 +27,8 @@
       transparent: true,
       opacity: opacity == null ? 0.55 : opacity,
       side: THREE.DoubleSide,
-      depthWrite: false
+      depthWrite: false,
+      blending: THREE.AdditiveBlending
     });
   }
 
@@ -39,8 +40,8 @@
     for (var i = 0; i < n; i++) {
       var col = global.Utils.RING_GLOW[Math.min(i, 6)];
       var torus = new THREE.Mesh(
-        new THREE.TorusGeometry(4.4 + i * 0.55, 0.28, 8, 32),
-        glowMat(col, 0.88)
+        new THREE.TorusGeometry(4.6 + i * 0.62, 0.34, 8, 36),
+        glowMat(col, 0.95)
       );
       torus.rotation.x = Math.PI / 2;
       torus.rotation.z = i * 0.15;
@@ -167,14 +168,22 @@
 
     var wings = new THREE.Group();
     wings.visible = false;
-    var wingM = glowMat('#ffe9a0', 0.5);
-    var wL = new THREE.Mesh(new THREE.ConeGeometry(1.1, 6.5, 4), wingM);
-    wL.rotation.z = 1.15;
-    wL.rotation.x = 0.2;
-    wL.position.set(-2.8, 8.2, -0.6);
-    var wR = wL.clone();
-    wR.rotation.z = -1.15;
-    wR.position.x = 2.8;
+    var wingM = new THREE.MeshBasicMaterial({
+      color: 0xffe9a0,
+      transparent: true,
+      opacity: 0.55,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+      side: THREE.DoubleSide
+    });
+    var wL = new THREE.Mesh(new THREE.PlaneGeometry(7.5, 3.6), wingM);
+    wL.position.set(-4.2, 8.4, -0.4);
+    wL.rotation.y = 0.45;
+    wL.rotation.z = 0.25;
+    var wR = new THREE.Mesh(new THREE.PlaneGeometry(7.5, 3.6), wingM.clone());
+    wR.position.set(4.2, 8.4, -0.4);
+    wR.rotation.y = -0.45;
+    wR.rotation.z = -0.25;
     wings.add(wL);
     wings.add(wR);
     g.add(wings);
@@ -182,20 +191,34 @@
     g.userData.wingL = wL;
     g.userData.wingR = wR;
 
-    var shield = new THREE.Mesh(new THREE.CircleGeometry(3.4, 24), glowMat('#ffe27a', 0.45));
-    shield.position.set(0, 7.2, 2.6);
+    var shield = new THREE.Mesh(new THREE.CircleGeometry(3.8, 28), glowMat('#ffe27a', 0.55));
+    shield.position.set(0, 7.2, 2.8);
     shield.visible = false;
     g.add(shield);
     g.userData.shieldMesh = shield;
 
     var goldAura = new THREE.Mesh(
-      new THREE.SphereGeometry(3.6, 12, 10),
-      new THREE.MeshBasicMaterial({ color: 0xffe27a, transparent: true, opacity: 0.16, wireframe: true })
+      new THREE.SphereGeometry(4.1, 16, 12),
+      new THREE.MeshBasicMaterial({
+        color: 0xffe27a,
+        transparent: true,
+        opacity: 0.12,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false,
+        wireframe: true
+      })
     );
     goldAura.position.y = 7;
     goldAura.visible = false;
     g.add(goldAura);
     g.userData.goldAura = goldAura;
+
+    var halo = new THREE.Mesh(new THREE.TorusGeometry(1.15, 0.08, 8, 24), glowMat('#fff4c0', 0.85));
+    halo.position.y = 12.1;
+    halo.rotation.x = Math.PI / 2;
+    halo.visible = !!holy;
+    g.add(halo);
+    g.userData.halo = halo;
 
     if (opts.rings) addSoulRings(g, opts.rings);
 
@@ -254,17 +277,31 @@
       g.userData.body.push(seg);
     }
 
-    var wM = glowMat('#ffe9a0', 0.55);
-    var wingL = new THREE.Mesh(new THREE.ConeGeometry(2.4, 8, 4), wM);
-    wingL.rotation.z = 1.2;
-    wingL.position.set(-3.5, 4.2, 1.2);
+    var wM = new THREE.MeshBasicMaterial({
+      color: 0xffe9a0,
+      transparent: true,
+      opacity: 0.62,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+      side: THREE.DoubleSide
+    });
+    var wingL = new THREE.Mesh(new THREE.PlaneGeometry(10, 5), wM);
+    wingL.position.set(-5.2, 4.4, 1.0);
+    wingL.rotation.y = 0.5;
     g.add(wingL);
-    var wingR = wingL.clone();
-    wingR.rotation.z = -1.2;
-    wingR.position.x = 3.5;
+    var wingR = new THREE.Mesh(new THREE.PlaneGeometry(10, 5), wM.clone());
+    wingR.position.set(5.2, 4.4, 1.0);
+    wingR.rotation.y = -0.5;
     g.add(wingR);
     g.userData.wingL = wingL;
     g.userData.wingR = wingR;
+
+    var glow = new THREE.Mesh(
+      new THREE.SphereGeometry(2.2, 10, 8),
+      new THREE.MeshBasicMaterial({ color: 0xfff4c0, transparent: true, opacity: 0.22, blending: THREE.AdditiveBlending, depthWrite: false })
+    );
+    glow.position.set(0, 3.2, 2);
+    g.add(glow);
 
     return g;
   }

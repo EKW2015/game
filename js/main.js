@@ -246,6 +246,11 @@
       if (small) small.textContent = cd > 0 ? cd.toFixed(1) + 's' : sk.hotkey + ' · ' + (sk.group === 'soul' ? '魂技' : sk.group === 'self' ? '自创' : sk.group === 'bone' ? '魂骨' : '领域');
     }
 
+    var vignette = doc.getElementById('fx-vignette');
+    var flashEl = doc.getElementById('fx-flash');
+    if (vignette) vignette.classList.toggle('is-on', !!(g.domain && g.domain.life > 0));
+    if (flashEl) flashEl.classList.toggle('is-on', !!(g.r3d && g.r3d.flash > 0.12));
+
     if (g.messages.length > 0) {
       toast.textContent = g.messages[g.messages.length - 1].text;
       toast.style.opacity = '1';
@@ -300,5 +305,11 @@
   }
 
   bindControls();
+  if (bootEnter) {
+    bootEnter.addEventListener('click', function () {
+      hideBoot();
+      if (game && game.state === 'ready') game.setState('playing');
+    });
+  }
   startGame();
 })(window);

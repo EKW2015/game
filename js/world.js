@@ -24,21 +24,23 @@
     this.scene = scene;
     this.chunks = new Map();
     this.groundMat = new THREE.MeshStandardMaterial({
-      color: 0x6b8a4a,
+      color: 0x2f3d28,
       roughness: 0.95,
-      metalness: 0.02
+      metalness: 0.04
     });
     this.goldGrass = new THREE.MeshStandardMaterial({
-      color: 0xc2b46a,
-      roughness: 0.92
+      color: 0x8a7040,
+      roughness: 0.88,
+      emissive: 0x3a2808,
+      emissiveIntensity: 0.12
     });
-    this.trunkMat = new THREE.MeshStandardMaterial({ color: 0xe8dcc0, roughness: 0.7, metalness: 0.08 });
+    this.trunkMat = new THREE.MeshStandardMaterial({ color: 0xc8b89a, roughness: 0.7, metalness: 0.08 });
     this.leafMat = new THREE.MeshStandardMaterial({
       color: 0xe8c35a,
-      roughness: 0.45,
-      metalness: 0.25,
-      emissive: 0x6a5010,
-      emissiveIntensity: 0.15
+      roughness: 0.4,
+      metalness: 0.28,
+      emissive: 0x8a6010,
+      emissiveIntensity: 0.32
     });
     this.rockMat = new THREE.MeshStandardMaterial({ color: 0xd8d0c4, roughness: 0.88 });
     this.marble = new THREE.MeshStandardMaterial({ color: 0xf2ead8, roughness: 0.4, metalness: 0.12 });
@@ -102,6 +104,19 @@
     var altar = new THREE.Mesh(new THREE.CylinderGeometry(8, 10, 4, 12), this.goldMat);
     altar.position.y = 3.2;
     group.add(altar);
+
+    var flame = new THREE.Mesh(
+      new THREE.SphereGeometry(4.5, 12, 10),
+      new THREE.MeshBasicMaterial({
+        color: 0xffe27a,
+        transparent: true,
+        opacity: 0.45,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false
+      })
+    );
+    flame.position.y = 9;
+    group.add(flame);
   };
 
   World.prototype.buildChunk = function (cx, cz) {

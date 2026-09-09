@@ -45,7 +45,8 @@
     claw: function (ctx) {
       var c = ctx.caster;
       c.attackAnim = 0.28;
-      ctx.game.addEffect({ type: 'claw', x: c.x, y: c.y, angle: c.angle, owner: c.id, life: 0.32 });
+      ctx.game.addEffect({ type: 'claw', x: c.x, y: c.y, angle: c.angle, owner: c.id, life: 0.55 });
+      ctx.game.addParticles(c.x, c.y, '#ffe27a', 22);
       ctx.game.hitCone(c, 58, 0.72, c.getAtk() * 1.35, {
         vsDark: true,
         knock: 140,
@@ -55,11 +56,13 @@
     wings: function (ctx) {
       var c = ctx.caster;
       c.applyBuff('wings', 9);
-      ctx.game.addEffect({ type: 'wingsBurst', x: c.x, y: c.y, owner: c.id, life: 0.6 });
+      ctx.game.addEffect({ type: 'wingsBurst', x: c.x, y: c.y, owner: c.id, life: 1.1 });
+      ctx.game.addParticles(c.x, c.y, '#d9a0ff', 26);
     },
     roar: function (ctx) {
       var c = ctx.caster;
-      ctx.game.addEffect({ type: 'roar', x: c.x, y: c.y, owner: c.id, life: 0.7, r: 110 });
+      ctx.game.addEffect({ type: 'roar', x: c.x, y: c.y, owner: c.id, life: 1.05, r: 110 });
+      ctx.game.addParticles(c.x, c.y, '#fff4c0', 30);
       var foes = ctx.game.enemiesOf(c);
       for (var i = 0; i < foes.length; i++) {
         var e = foes[i];
@@ -72,7 +75,8 @@
     },
     golden: function (ctx) {
       ctx.caster.applyBuff('golden', 6);
-      ctx.game.addEffect({ type: 'golden', x: ctx.caster.x, y: ctx.caster.y, owner: ctx.caster.id, life: 0.8 });
+      ctx.game.addEffect({ type: 'golden', x: ctx.caster.x, y: ctx.caster.y, owner: ctx.caster.id, life: 1.2 });
+      ctx.game.addParticles(ctx.caster.x, ctx.caster.y, '#ffd36a', 28);
     },
     judgment: function (ctx) {
       var t = ctx.target;
@@ -121,7 +125,8 @@
       var c = ctx.caster;
       c.applyBuff('trueBody', 10);
       c.h = Math.max(c.h, 18);
-      ctx.game.addEffect({ type: 'truebody', x: c.x, y: c.y, owner: c.id, life: 1.1 });
+      ctx.game.addEffect({ type: 'truebody', x: c.x, y: c.y, owner: c.id, life: 1.6 });
+      ctx.game.addParticles(c.x, c.y, '#ff6b6b', 40);
     },
     punch: function (ctx) {
       var c = ctx.caster;
