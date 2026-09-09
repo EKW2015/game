@@ -159,19 +159,36 @@
       cd: 30.0,
       cost: 140,
       desc: '领域展开方圆千米化为金色世界！敌人全属性削弱一半且受光明灼烧；持徽章者免伤获圣龙祝福，魂力持续恢复，全属性提升30%'
-    }
+    },
+
+    shadowStrike: { id: 'shadowStrike', name: '影袭', type: 'member', cd: 4.0, cost: 35, desc: '瞬移到目标背后斩击' },
+    bladeStorm: { id: 'bladeStorm', name: '千刃风暴', type: 'member', cd: 7.0, cost: 55, desc: '大范围切割斩击' },
+    phoenixMeteor: { id: 'phoenixMeteor', name: '凤凰流星雨', type: 'member', cd: 8.0, cost: 70, desc: '火球从天而降' },
+    fireCage: { id: 'fireCage', name: '火线禁锢', type: 'member', cd: 9.0, cost: 50, desc: '火焰牢笼定身' },
+    absoluteZero: { id: 'absoluteZero', name: '绝对零度', type: 'member', cd: 12.0, cost: 80, desc: '瞬间冻结全场' },
+    iceVines: { id: 'iceVines', name: '冰蔓缠绕', type: 'member', cd: 6.0, cost: 40, desc: '冰蔓从地底缠住敌人' },
+    iceDomain: { id: 'iceDomain', name: '玄冰领域', type: 'domain', cd: 22.0, cost: 100, desc: '降低气温，减速并抑制魂力恢复' },
+    mammothStomp: { id: 'mammothStomp', name: '猛犸践踏', type: 'member', cd: 6.0, cost: 45, desc: '震晕周围' },
+    goldShield: { id: 'goldShield', name: '黄金御盾', type: 'member', cd: 10.0, cost: 50, desc: '巨大光盾挡在前方' },
+    speedAmp: { id: 'speedAmp', name: '光速增幅', type: 'member', cd: 8.0, cost: 40, desc: '大幅提升自身移速' },
+    mpSurge: { id: 'mpSurge', name: '魂力回涌', type: 'member', cd: 10.0, cost: 20, desc: '瞬间回复大量魂力' },
+    emeraldWave: { id: 'emeraldWave', name: '翡翠光波', type: 'member', cd: 6.0, cost: 45, desc: '瞬间治疗' },
+    purify: { id: 'purify', name: '净化之光', type: 'member', cd: 8.0, cost: 35, desc: '驱散负面状态' },
+    lifeDomain: { id: 'lifeDomain', name: '生命礼赞领域', type: 'domain', cd: 20.0, cost: 90, desc: '领域内伤势极速自动愈合' }
   };
 
   function SkillManager(game) {
     this.game = game;
-    this.projectiles = []; // 飞行物与特效弹道
+    this.projectiles = [];
     this.domainActive = false;
     this.domainTimer = 0;
+    this.iceDomainTimer = 0;
+    this.lifeDomainTimer = 0;
   }
 
   // 释放技能入口
-  SkillManager.prototype.castSkill = function (skillId) {
-    var player = this.game.player;
+  SkillManager.prototype.castSkill = function (skillId, caster) {
+    var player = caster || this.game.player;
     if (!player || !player.alive) return false;
 
     var skill = SKILLS_DATA[skillId];
@@ -205,7 +222,7 @@
   };
 
   SkillManager.prototype.executeSkillEffect = function (skillId, p) {
-    var enemies = this.game.dinos.filter(function (d) { return d.alive && !d.isPlayer; });
+    var enemies = this.game.dinos.filter(function (d) { return d.alive && d.id !== p.id; });
     var target = this.getNearestEnemy(p, enemies, 500);
 
     switch (skillId) {
@@ -494,6 +511,138 @@
         p.domainBlessing = true; // 拥有圣龙徽章，全属性提升30%并回蓝
         this.game.addMessage('【十万年·圣龙主迹领域】展开！方圆千米化为金色世界！', 3.0);
         break;
+
+      case 'shadowStrike':
+        Sfx.blink();
+        if (target) {
+          var behind = target.angle + Math.PI;
+          p.x = target.x + Math.cos(behind) * (target.radius + 18);
+          p.y = target.y + Math.sin(behind) * (target.radius + 18);
+          p.angle = U.angleTo(p.x, p.y, target.x, target.y);
+          target.takeDamage(p.getEffectiveAttack() * 3.2, p);
+          this.game.addParticles(target.x, target.y, '#8866ff', 22);
+        }
+        break;
+
+      case 'bladeStorm':
+        Sfx.claw();
+        this.game.addParticles(p.x, p.y, '#aa88ff', 40);
+        for (var bs = 0; bs < enemies.length; bs++) {
+          if (U.dist(p.x, p.y, enemies[bs].x, enemies[bs].y) < 160) {
+            enemies[bs].takeDamage(p.getEffectiveAttack() * 2.8, p);
+          }
+        }
+        break;
+
+      case 'phoenixMeteor':
+        Sfx.judgment();
+        for (var m = 0; m < 5; m++) {
+          var mx = (target ? target.x : p.x + Math.cos(p.angle) * 120) + U.rand(-40, 40);
+          var my = (target ? target.y : p.y + Math.sin(p.angle) * 120) + U.rand(-40, 40);
+          this.projectiles.push({
+            type: 'judgment',
+            x: mx, y: 90 + m * 18, z: my,
+            vyGround: -220,
+            life: 0.9,
+            damage: p.getEffectiveAttack() * 1.8,
+            owner: p
+          });
+        }
+        break;
+
+      case 'fireCage':
+        Sfx.goldBody();
+        if (target) {
+          target.stunned = 3.2;
+          target.takeDamage(p.getEffectiveAttack() * 1.4, p);
+          this.game.addParticles(target.x, target.y, '#ff4400', 28);
+        }
+        break;
+
+      case 'absoluteZero':
+        Sfx.roar();
+        this.game.addParticles(p.x, p.y, '#88eeff', 50);
+        for (var az = 0; az < enemies.length; az++) {
+          enemies[az].stunned = 3.8;
+          enemies[az].heavyDebuff = 5.0;
+          enemies[az].takeDamage(p.getEffectiveAttack() * 1.6, p);
+        }
+        break;
+
+      case 'iceVines':
+        Sfx.claw();
+        if (target) {
+          target.stunned = 2.4;
+          target.heavyDebuff = 4.0;
+          target.takeDamage(p.getEffectiveAttack() * 1.8, p);
+          this.game.addParticles(target.x, target.y, '#66ccff', 20);
+        }
+        break;
+
+      case 'iceDomain':
+        Sfx.domain();
+        this.iceDomainTimer = 16;
+        this.game.addMessage('【玄冰领域】展开！气温骤降，敌人移动与回蓝被压制！', 2.8);
+        break;
+
+      case 'mammothStomp':
+        Sfx.gravityPunch();
+        this.game.addParticles(p.x, p.y, '#d4a017', 35);
+        for (var st = 0; st < enemies.length; st++) {
+          if (U.dist(p.x, p.y, enemies[st].x, enemies[st].y) < 150) {
+            enemies[st].stunned = 2.2;
+            enemies[st].takeDamage(p.getEffectiveAttack() * 2.4, p);
+          }
+        }
+        break;
+
+      case 'goldShield':
+        Sfx.goldBody();
+        p.shieldActive = true;
+        p.shieldHp = 1800;
+        this.projectiles.push({
+          type: 'lightShield',
+          x: p.x, y: 12, z: p.y,
+          angle: p.angle,
+          life: 9.0,
+          owner: p
+        });
+        break;
+
+      case 'speedAmp':
+        Sfx.wing();
+        p.isFlying = true;
+        p.flightTime = 8.0;
+        this.game.addParticles(p.x, p.y, '#ffcc66', 18);
+        break;
+
+      case 'mpSurge':
+        Sfx.absorb();
+        p.mp = Math.min(p.maxMp, p.mp + 420);
+        this.game.addMessage('魂力回涌！魂力瞬间恢复', 1.6);
+        break;
+
+      case 'emeraldWave':
+        Sfx.absorb();
+        p.hp = Math.min(p.maxHp, p.hp + 900);
+        this.game.addParticles(p.x, p.y, '#66ff99', 30);
+        this.game.addMessage('翡翠光波！伤势愈合', 1.6);
+        break;
+
+      case 'purify':
+        Sfx.goldBody();
+        p.stunned = 0;
+        p.blinded = 0;
+        p.heavyDebuff = 0;
+        p.domainDebuff = false;
+        this.game.addMessage('净化之光！负面状态驱散', 1.6);
+        break;
+
+      case 'lifeDomain':
+        Sfx.domain();
+        this.lifeDomainTimer = 16;
+        this.game.addMessage('【生命礼赞领域】展开！伤势极速自动愈合！', 2.8);
+        break;
     }
   };
 
@@ -513,7 +662,7 @@
   // 每帧更新弹道与领域状态
   SkillManager.prototype.update = function (dt) {
     var player = this.game.player;
-    var enemies = this.game.dinos.filter(function (d) { return d.alive && !d.isPlayer; });
+    var enemies = this.game.dinos.filter(function (d) { return d.alive && (!player || d.id !== player.id); });
 
     // 1. 领域状态检测与灼烧
     if (this.domainActive) {
@@ -539,6 +688,19 @@
           }
         }
       }
+    }
+
+    if (this.iceDomainTimer > 0) {
+      this.iceDomainTimer -= dt;
+      for (var ice = 0; ice < enemies.length; ice++) {
+        enemies[ice].heavyDebuff = Math.max(enemies[ice].heavyDebuff, 0.4);
+        enemies[ice].mp = Math.max(0, enemies[ice].mp - 18 * dt);
+      }
+    }
+
+    if (this.lifeDomainTimer > 0 && player && player.alive) {
+      this.lifeDomainTimer -= dt;
+      player.hp = Math.min(player.maxHp, player.hp + 90 * dt);
     }
 
     // 2. 技能弹道更新

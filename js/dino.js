@@ -59,6 +59,11 @@
 
     // 技能冷却记录
     this.cooldowns = {};
+    this.fighterKind = opts.fighterKind || (this.isPlayer ? 'dragon' : 'tiger');
+    this.characterId = opts.characterId || '';
+    this.kit = opts.kit || 'full';
+    this.ringText = opts.ringText || '黄 紫 紫 黑 黑 黑 红';
+    this.role = opts.role || '';
   }
 
   SoulEntity.prototype.getSpeed = function () {

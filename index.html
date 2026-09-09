@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="description" content="3D 斗罗大陆：武魂光明圣龙，七大魂技、自创魂技、九万年魂骨技与圣龙主迹领域！" />
     <meta name="theme-color" content="#0b1118" />
-    <title>3D 斗罗大陆：光明圣龙</title>
+    <title>3D 斗罗大陆：圣龙战队大赛</title>
     <style>html,body{background:#0b1118!important;min-height:100vh;margin:0}</style>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='14' font-size='14'>🐉</text></svg>" />
     <link rel="stylesheet" href="css/style.css" />
@@ -19,7 +19,7 @@
 
     <main class="page">
       <header class="page__header">
-        <h1 class="page__title">3D 斗罗大陆 · 光明圣龙 <span class="badge-3d">3D 引擎</span></h1>
+        <h1 class="page__title">3D 斗罗大陆 · 圣龙战队大赛 <span class="badge-3d">1v1 团队赛</span></h1>
         <div class="page__tools">
           <button id="btn-sound" class="tool" type="button" aria-pressed="false">音效：开</button>
           <button id="btn-pause" class="tool" type="button">暂停</button>
@@ -49,8 +49,9 @@
             <div class="hud__buffs" id="hud-buffs">魂环：黄 紫 紫 黑 黑 黑 红</div>
           </div>
           <div class="hud__remain">
-            <div>击杀魂兽: <strong id="hud-kills">0</strong></div>
-            <div>最高击杀: <strong id="hud-best">0</strong></div>
+            <div>比赛: <strong id="hud-match">圣龙战队 VS —</strong></div>
+            <div>比分: 我方 <strong id="hud-my-left">7</strong> · 敌方 <strong id="hud-en-left">7</strong></div>
+            <div>连胜队伍: <strong id="hud-team-wins">0</strong></div>
             <div id="hud-domain-status" style="color:#ffd700;margin-top:4px">领域：待命</div>
           </div>
         </div>
@@ -60,18 +61,23 @@
 
         <!-- 游戏初始界面 -->
         <div class="overlay" id="overlay-ready">
-          <p class="overlay__title">3D 斗罗大陆 · 光明圣龙 🐉</p>
-          <p class="overlay__hint">武魂：光明圣龙 · 七环魂圣（黄 紫 紫 黑 黑 黑 红）</p>
-          <p class="overlay__hint">全套资料完整收录：七大魂技 + 七大自创魂技 + 九万年双臂魂骨技 + 十万年圣龙主迹领域！</p>
-          <p class="overlay__hint">操作：WASD / 方向键移动，空格键龙爪撕咬，数字键 1-7 及快捷栏释放技能</p>
-          <button class="overlay__button" type="button" data-action="start">觉醒武魂 · 进入世界</button>
+          <p class="overlay__title">全大陆魂师大赛 · 圣龙战队</p>
+          <p class="overlay__hint">队长陈凯威（光明圣龙）带领七人小队，按斗罗大陆赛制 1v1 连战其他队伍。</p>
+          <p class="overlay__hint">每局结束后可以换人。败者退场，先让对方全员倒下即赢下团队赛，然后继续打下一队。</p>
+          <p class="overlay__hint">WASD 移动 · 空格攻击 · 1/2/T 放魂技（陈凯威可使用全部魂技）</p>
+          <button class="overlay__button" type="button" data-action="start">进入选人 · 开始比赛</button>
         </div>
 
-        <!-- 死亡界面 -->
+        <div class="overlay overlay--hidden" id="overlay-pick">
+          <p class="overlay__title" id="pick-title">选择出战队员</p>
+          <p class="overlay__hint" id="pick-sub">1v1 单场对决 · 点选一名未退场的队员</p>
+          <div class="pick-grid" id="pick-grid"></div>
+        </div>
+
         <div class="overlay overlay--hidden" id="overlay-over">
-          <p class="overlay__title">魂力耗尽 · 战斗落幕</p>
+          <p class="overlay__title">团队赛落败</p>
           <p class="overlay__score" id="death-stats"></p>
-          <button class="overlay__button" type="button" data-action="restart">涅槃重生</button>
+          <button class="overlay__button" type="button" data-action="restart">重新组队再战</button>
         </div>
 
         <!-- 暂停界面 -->
@@ -88,7 +94,7 @@
       </div>
 
       <!-- 技能快捷释放控制面板 (支持键位与直接点击) -->
-      <section class="skill-bar-container">
+      <section class="skill-bar-container" id="kit-full">
         <!-- 1. 七大武魂魂技 -->
         <div class="skill-category-title">
           <span>🌟 七大武魂魂技 (黄·紫·紫·黑·黑·黑·红)</span>
@@ -207,15 +213,18 @@
         <button class="touch__bite" type="button" data-hold="bite">圣龙爪击</button>
       </div>
 
-      <!-- 玩法说明 -->
+      <section class="skill-bar-container overlay--hidden" id="kit-member">
+        <div class="skill-category-title"><span>⚡ 当前队员魂技</span></div>
+        <div class="skill-grid" id="member-skill-grid"></div>
+      </section>
+
       <section class="legend">
-        <h2 class="legend__title">斗罗大陆 3D 玩法指南</h2>
+        <h2 class="legend__title">斗罗大陆团队赛怎么玩</h2>
         <ul class="legend__list">
-          <li><strong>移动与普通攻击：</strong>WASD 或 方向键控制圣龙移动，按 <kbd>空格</kbd> 或 <kbd>J</kbd> 进行爪击撕咬。</li>
-          <li><strong>七大武魂魂技：</strong>按数字键 <kbd>1</kbd> - <kbd>7</kbd> 释放对应武魂技（第七魂技开启百米圣龙真身，全属性+300%且免伤！）。</li>
-          <li><strong>七大自创魂技：</strong>快捷键 <kbd>Q</kbd>、<kbd>E</kbd>、<kbd>Z</kbd>、<kbd>X</kbd>、<kbd>C</kbd>、<kbd>V</kbd>、<kbd>B</kbd> 随时发动瞬步、飞剑与破天击。</li>
-          <li><strong>九万年魂骨技：</strong>按 <kbd>F</kbd> 圣龙裂空爪远距破空，按 <kbd>G</kbd> 太阳重力拳重压定身。</li>
-          <li><strong>十万年圣龙主迹领域：</strong>按 <kbd>T</kbd> 开启领域，方圆千米化为金色世界，敌人属性减半，我方获圣龙祝福急速回蓝！</li>
+          <li><strong>赛制：</strong>圣龙战队 7 人 vs 对手 7 人，每局 1v1。败者退场，每局结束可换人。</li>
+          <li><strong>队员：</strong>陈凯威（光明圣龙）、墨影（刺客）、焱凰（凤凰）、冷凝霜（冰控）、石破天（猛犸坦克）、沈琉璃（充电宝）、白依依（治疗）。</li>
+          <li><strong>操作：</strong>WASD 移动，空格普攻。队员用 <kbd>1</kbd> <kbd>2</kbd> <kbd>T</kbd>；队长陈凯威可用全部魂技。</li>
+          <li><strong>连战：</strong>打赢一支队伍后全员复活，立刻对阵下一支学院队。</li>
         </ul>
       </section>
     </main>
@@ -225,6 +234,7 @@
     <script src="js/utils.js"></script>
     <script src="js/audio.js"></script>
     <script src="js/dinomodel.js"></script>
+    <script src="js/roster.js"></script>
     <script src="js/skills.js"></script>
     <script src="js/dino.js"></script>
     <script src="js/world.js"></script>

@@ -19,6 +19,7 @@ global.window = win;
 
 require(path.join(__dirname, '..', 'js', 'utils.js'));
 require(path.join(__dirname, '..', 'js', 'audio.js'));
+require(path.join(__dirname, '..', 'js', 'roster.js'));
 require(path.join(__dirname, '..', 'js', 'dino.js'));
 require(path.join(__dirname, '..', 'js', 'skills.js'));
 require(path.join(__dirname, '..', 'js', 'ai.js'));
@@ -44,7 +45,10 @@ expectedIds.forEach(function (id) {
   assert.ok(SKILLS_DATA[id].name, 'skill ' + id + ' has no name');
   assert.ok(SKILLS_DATA[id].cost > 0, 'skill ' + id + ' cost');
 });
-assert.strictEqual(Object.keys(SKILLS_DATA).length, 17);
+assert.ok(Object.keys(SKILLS_DATA).length >= 17);
+assert.strictEqual(win.Roster.PLAYER_TEAM.members.length, 7);
+assert.strictEqual(win.Roster.PLAYER_TEAM.members[0].name, '陈凯威');
+assert.strictEqual(win.Roster.PLAYER_TEAM.members[6].name, '白依依');
 
 var player = new Dino({
   id: 1,

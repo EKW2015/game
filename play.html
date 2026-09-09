@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="description" content="3D 斗罗大陆：武魂光明圣龙，七大魂技、自创魂技、九万年魂骨技与圣龙主迹领域！" />
     <meta name="theme-color" content="#0b1118" />
-    <title>3D 斗罗大陆：光明圣龙</title>
+    <title>3D 斗罗大陆：圣龙战队大赛</title>
     <style>html,body{background:#0b1118!important;min-height:100vh;margin:0}</style>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='14' font-size='14'>🐉</text></svg>" />
     <style>:root {
@@ -487,6 +487,50 @@ kbd {
 .legend__list li strong {
   color: var(--accent);
 }
+
+.pick-grid {
+  pointer-events: auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 8px;
+  width: min(860px, 94%);
+  max-height: 52vh;
+  overflow: auto;
+  margin-top: 8px;
+}
+
+.pick-card {
+  text-align: left;
+  background: rgba(12, 18, 28, 0.92);
+  border: 1px solid rgba(255, 215, 0, 0.35);
+  color: #f0f4f8;
+  border-radius: 10px;
+  padding: 10px 12px;
+  cursor: pointer;
+  font: inherit;
+}
+
+.pick-card:hover {
+  border-color: #ffd700;
+  box-shadow: 0 0 14px rgba(255, 215, 0, 0.35);
+}
+
+.pick-card.is-out {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.pick-card .pc-name {
+  font-weight: 800;
+  color: #ffd700;
+}
+
+.pick-card .pc-meta {
+  font-size: 12px;
+  color: #9bb0c1;
+  margin-top: 4px;
+  line-height: 1.5;
+}
 </style>
   </head>
   <body>
@@ -498,7 +542,7 @@ kbd {
 
     <main class="page">
       <header class="page__header">
-        <h1 class="page__title">3D 斗罗大陆 · 光明圣龙 <span class="badge-3d">3D 引擎</span></h1>
+        <h1 class="page__title">3D 斗罗大陆 · 圣龙战队大赛 <span class="badge-3d">1v1 团队赛</span></h1>
         <div class="page__tools">
           <button id="btn-sound" class="tool" type="button" aria-pressed="false">音效：开</button>
           <button id="btn-pause" class="tool" type="button">暂停</button>
@@ -528,8 +572,9 @@ kbd {
             <div class="hud__buffs" id="hud-buffs">魂环：黄 紫 紫 黑 黑 黑 红</div>
           </div>
           <div class="hud__remain">
-            <div>击杀魂兽: <strong id="hud-kills">0</strong></div>
-            <div>最高击杀: <strong id="hud-best">0</strong></div>
+            <div>比赛: <strong id="hud-match">圣龙战队 VS —</strong></div>
+            <div>比分: 我方 <strong id="hud-my-left">7</strong> · 敌方 <strong id="hud-en-left">7</strong></div>
+            <div>连胜队伍: <strong id="hud-team-wins">0</strong></div>
             <div id="hud-domain-status" style="color:#ffd700;margin-top:4px">领域：待命</div>
           </div>
         </div>
@@ -539,18 +584,23 @@ kbd {
 
         <!-- 游戏初始界面 -->
         <div class="overlay" id="overlay-ready">
-          <p class="overlay__title">3D 斗罗大陆 · 光明圣龙 🐉</p>
-          <p class="overlay__hint">武魂：光明圣龙 · 七环魂圣（黄 紫 紫 黑 黑 黑 红）</p>
-          <p class="overlay__hint">全套资料完整收录：七大魂技 + 七大自创魂技 + 九万年双臂魂骨技 + 十万年圣龙主迹领域！</p>
-          <p class="overlay__hint">操作：WASD / 方向键移动，空格键龙爪撕咬，数字键 1-7 及快捷栏释放技能</p>
-          <button class="overlay__button" type="button" data-action="start">觉醒武魂 · 进入世界</button>
+          <p class="overlay__title">全大陆魂师大赛 · 圣龙战队</p>
+          <p class="overlay__hint">队长陈凯威（光明圣龙）带领七人小队，按斗罗大陆赛制 1v1 连战其他队伍。</p>
+          <p class="overlay__hint">每局结束后可以换人。败者退场，先让对方全员倒下即赢下团队赛，然后继续打下一队。</p>
+          <p class="overlay__hint">WASD 移动 · 空格攻击 · 1/2/T 放魂技（陈凯威可使用全部魂技）</p>
+          <button class="overlay__button" type="button" data-action="start">进入选人 · 开始比赛</button>
         </div>
 
-        <!-- 死亡界面 -->
+        <div class="overlay overlay--hidden" id="overlay-pick">
+          <p class="overlay__title" id="pick-title">选择出战队员</p>
+          <p class="overlay__hint" id="pick-sub">1v1 单场对决 · 点选一名未退场的队员</p>
+          <div class="pick-grid" id="pick-grid"></div>
+        </div>
+
         <div class="overlay overlay--hidden" id="overlay-over">
-          <p class="overlay__title">魂力耗尽 · 战斗落幕</p>
+          <p class="overlay__title">团队赛落败</p>
           <p class="overlay__score" id="death-stats"></p>
-          <button class="overlay__button" type="button" data-action="restart">涅槃重生</button>
+          <button class="overlay__button" type="button" data-action="restart">重新组队再战</button>
         </div>
 
         <!-- 暂停界面 -->
@@ -567,7 +617,7 @@ kbd {
       </div>
 
       <!-- 技能快捷释放控制面板 (支持键位与直接点击) -->
-      <section class="skill-bar-container">
+      <section class="skill-bar-container" id="kit-full">
         <!-- 1. 七大武魂魂技 -->
         <div class="skill-category-title">
           <span>🌟 七大武魂魂技 (黄·紫·紫·黑·黑·黑·红)</span>
@@ -686,15 +736,18 @@ kbd {
         <button class="touch__bite" type="button" data-hold="bite">圣龙爪击</button>
       </div>
 
-      <!-- 玩法说明 -->
+      <section class="skill-bar-container overlay--hidden" id="kit-member">
+        <div class="skill-category-title"><span>⚡ 当前队员魂技</span></div>
+        <div class="skill-grid" id="member-skill-grid"></div>
+      </section>
+
       <section class="legend">
-        <h2 class="legend__title">斗罗大陆 3D 玩法指南</h2>
+        <h2 class="legend__title">斗罗大陆团队赛怎么玩</h2>
         <ul class="legend__list">
-          <li><strong>移动与普通攻击：</strong>WASD 或 方向键控制圣龙移动，按 <kbd>空格</kbd> 或 <kbd>J</kbd> 进行爪击撕咬。</li>
-          <li><strong>七大武魂魂技：</strong>按数字键 <kbd>1</kbd> - <kbd>7</kbd> 释放对应武魂技（第七魂技开启百米圣龙真身，全属性+300%且免伤！）。</li>
-          <li><strong>七大自创魂技：</strong>快捷键 <kbd>Q</kbd>、<kbd>E</kbd>、<kbd>Z</kbd>、<kbd>X</kbd>、<kbd>C</kbd>、<kbd>V</kbd>、<kbd>B</kbd> 随时发动瞬步、飞剑与破天击。</li>
-          <li><strong>九万年魂骨技：</strong>按 <kbd>F</kbd> 圣龙裂空爪远距破空，按 <kbd>G</kbd> 太阳重力拳重压定身。</li>
-          <li><strong>十万年圣龙主迹领域：</strong>按 <kbd>T</kbd> 开启领域，方圆千米化为金色世界，敌人属性减半，我方获圣龙祝福急速回蓝！</li>
+          <li><strong>赛制：</strong>圣龙战队 7 人 vs 对手 7 人，每局 1v1。败者退场，每局结束可换人。</li>
+          <li><strong>队员：</strong>陈凯威（光明圣龙）、墨影（刺客）、焱凰（凤凰）、冷凝霜（冰控）、石破天（猛犸坦克）、沈琉璃（充电宝）、白依依（治疗）。</li>
+          <li><strong>操作：</strong>WASD 移动，空格普攻。队员用 <kbd>1</kbd> <kbd>2</kbd> <kbd>T</kbd>；队长陈凯威可用全部魂技。</li>
+          <li><strong>连战：</strong>打赢一支队伍后全员复活，立刻对阵下一支学院队。</li>
         </ul>
       </section>
     </main>
@@ -994,11 +1047,11 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
   }
 
   // 创建魂环组（7枚魂环：黄、紫、紫、黑、黑、黑、红）
-  function createSoulRingsGroup() {
+  function createSoulRingsGroup(customColors) {
     var ringsGroup = new THREE.Group();
     ringsGroup.name = 'soulRings';
 
-    var ringColors = U.SOUL_RING_COLORS;
+    var ringColors = customColors || U.SOUL_RING_COLORS;
     var ringEmissives = U.SOUL_RING_EMISSIVES;
 
     for (var i = 0; i < 7; i++) {
@@ -1457,14 +1510,336 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     return group;
   }
 
+  function tintMat(color, emissive, intensity) {
+    return mat({
+      color: color,
+      roughness: 0.45,
+      metalness: 0.35,
+      emissive: emissive || 0x000000,
+      emissiveIntensity: intensity || 0
+    });
+  }
+
+  function createHumanoidBase(bodyColor, accentColor) {
+    var group = new THREE.Group();
+    var body = new THREE.Mesh(new THREE.CylinderGeometry(0.7, 0.9, 2.4, 8), tintMat(bodyColor));
+    body.position.y = 2.2;
+    body.castShadow = true;
+    group.add(body);
+    var head = new THREE.Mesh(new THREE.SphereGeometry(0.55, 10, 10), tintMat(accentColor || bodyColor));
+    head.position.y = 3.7;
+    head.castShadow = true;
+    group.add(head);
+    group.userData.legs = [];
+    [[-0.4, 1.4], [0.4, 1.4]].forEach(function (p) {
+      var leg = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.26, 1.6, 6), tintMat(bodyColor));
+      leg.position.set(p[0], 0.8, 0);
+      group.add(leg);
+      group.userData.legs.push({ upper: leg });
+    });
+    return group;
+  }
+
+  function createFighterMesh(kind) {
+    if (kind === 'dragon') return createSacredDragonMesh(false);
+
+    var group;
+    if (kind === 'assassin') {
+      group = createHumanoidBase(0x1a1028, 0x331144);
+      var blade = new THREE.Mesh(
+        new THREE.BoxGeometry(0.12, 0.12, 2.4),
+        tintMat(0x8866ff, 0x4422aa, 0.6)
+      );
+      blade.position.set(0.9, 2.4, 0.8);
+      group.add(blade);
+    } else if (kind === 'phoenix') {
+      group = createHumanoidBase(0xaa2200, 0xff6600);
+      var wingL = new THREE.Mesh(
+        new THREE.ConeGeometry(0.6, 2.8, 6),
+        tintMat(0xff4400, 0xff2200, 0.7)
+      );
+      wingL.rotation.z = 1.1;
+      wingL.position.set(-1.4, 2.8, -0.2);
+      group.add(wingL);
+      var wingR = wingL.clone();
+      wingR.rotation.z = -1.1;
+      wingR.position.x = 1.4;
+      group.add(wingR);
+      group.userData.wings = { userData: { leftWing: wingL, rightWing: wingR } };
+    } else if (kind === 'ice') {
+      group = createHumanoidBase(0x88ddff, 0xccffff);
+      var crystal = new THREE.Mesh(
+        new THREE.OctahedronGeometry(0.9, 0),
+        tintMat(0x66eeff, 0x2288ff, 0.8)
+      );
+      crystal.position.y = 5.0;
+      group.add(crystal);
+    } else if (kind === 'mammoth') {
+      group = new THREE.Group();
+      var torso = new THREE.Mesh(new THREE.BoxGeometry(2.8, 2.4, 3.6), tintMat(0xd4a017, 0xaa7700, 0.2));
+      torso.position.y = 2.4;
+      torso.castShadow = true;
+      group.add(torso);
+      var head = new THREE.Mesh(new THREE.BoxGeometry(1.8, 1.6, 1.8), tintMat(0xc9a227));
+      head.position.set(0, 3.4, 2.2);
+      group.add(head);
+      var tuskL = new THREE.Mesh(new THREE.ConeGeometry(0.16, 1.6, 6), tintMat(0xfff4d2));
+      tuskL.rotation.x = 2.4;
+      tuskL.position.set(-0.6, 2.4, 2.8);
+      group.add(tuskL);
+      var tuskR = tuskL.clone();
+      tuskR.position.x = 0.6;
+      group.add(tuskR);
+      group.userData.legs = [];
+      [[-0.9, 1.1], [0.9, 1.1], [-0.9, -1.1], [0.9, -1.1]].forEach(function (p) {
+        var leg = new THREE.Mesh(new THREE.CylinderGeometry(0.45, 0.5, 2.0, 8), tintMat(0xb8860b));
+        leg.position.set(p[0], 1.0, p[1]);
+        group.add(leg);
+        group.userData.legs.push({ upper: leg });
+      });
+    } else if (kind === 'lamp') {
+      group = createHumanoidBase(0x6644aa, 0xffcc66);
+      var lamp = new THREE.Mesh(
+        new THREE.SphereGeometry(0.7, 12, 12),
+        tintMat(0xffaa33, 0xff6600, 0.9)
+      );
+      lamp.position.set(0, 5.1, 0);
+      group.add(lamp);
+    } else if (kind === 'bird') {
+      group = createHumanoidBase(0x228844, 0x66ff99);
+      var wingL = new THREE.Mesh(
+        new THREE.ConeGeometry(0.45, 2.2, 6),
+        tintMat(0x33cc66, 0x22aa44, 0.5)
+      );
+      wingL.rotation.z = 1.0;
+      wingL.position.set(-1.2, 3.0, -0.2);
+      group.add(wingL);
+      var wingR = wingL.clone();
+      wingR.rotation.z = -1.0;
+      wingR.position.x = 1.2;
+      group.add(wingR);
+      group.userData.wings = { userData: { leftWing: wingL, rightWing: wingR } };
+    } else {
+      group = createSoulBeastMesh('tiger');
+    }
+
+    var aura = new THREE.Mesh(
+      new THREE.RingGeometry(2.2, 2.7, 24),
+      new THREE.MeshBasicMaterial({ color: 0xffd700, transparent: true, opacity: 0.35, side: THREE.DoubleSide })
+    );
+    aura.rotation.x = -Math.PI / 2;
+    aura.position.y = 0.12;
+    group.add(aura);
+    return group;
+  }
+
   global.DinoModel = {
     createSacredDragonMesh: createSacredDragonMesh,
     createSoulRingsGroup: createSoulRingsGroup,
     createHolyWings: createHolyWings,
     createSoulBeastMesh: createSoulBeastMesh,
+    createFighterMesh: createFighterMesh,
     create: function () {
       return createSacredDragonMesh(false);
     }
+  };
+})(window);
+
+/**
+ * 圣龙战队七人名单 + 对手学院队伍（斗罗大陆团队赛 1v1）
+ */
+(function (global) {
+  'use strict';
+
+  var RING_YPPBBBR = '黄 紫 紫 黑 黑 黑 红';
+  var RING_YYPPBBB = '黄 黄 紫 紫 黑 黑 黑';
+
+  var PLAYER_TEAM = {
+    id: 'shenglong',
+    name: '圣龙战队',
+    motto: '队长陈凯威 · 光明圣龙核心输出',
+    members: [
+      {
+        id: 'chen',
+        name: '陈凯威',
+        title: '队长 · 强攻系战魂圣',
+        soul: '光明圣龙',
+        rings: RING_YPPBBBR,
+        model: 'dragon',
+        bone: '九万年双臂骨',
+        domain: '十万年·圣龙主迹领域',
+        role: '全队核心输出',
+        hp: 3500, mp: 1200, attack: 250, defense: 170, level: 78,
+        skills: ['ring1', 'ring2', 'ring3', 'ring4', 'ring5', 'ring6', 'ring7', 'domain'],
+        kit: 'full'
+      },
+      {
+        id: 'moying',
+        name: '墨影',
+        title: '队员1 · 敏攻系魂圣',
+        soul: '影疾夜刃',
+        rings: RING_YYPPBBB,
+        model: 'assassin',
+        bone: '九万年·柔骨兔右腿骨',
+        domain: '',
+        role: '暗影刺客',
+        hp: 2600, mp: 900, attack: 230, defense: 90, level: 76,
+        skills: ['shadowStrike', 'bladeStorm'],
+        kit: 'member'
+      },
+      {
+        id: 'yanhuang',
+        name: '焱凰',
+        title: '队员2 · 远攻/控制系魂圣',
+        soul: '天火凤凰',
+        rings: RING_YYPPBBB,
+        model: 'phoenix',
+        bone: '八万年·爆裂赤炎头骨',
+        domain: '',
+        role: '远程大范围爆发',
+        hp: 2400, mp: 1100, attack: 220, defense: 85, level: 75,
+        skills: ['phoenixMeteor', 'fireCage'],
+        kit: 'member'
+      },
+      {
+        id: 'lengningshuang',
+        name: '冷凝霜',
+        title: '队员3 · 控制系魂圣',
+        soul: '九幽玄冰草',
+        rings: RING_YYPPBBB,
+        model: 'ice',
+        bone: '',
+        domain: '玄冰领域',
+        role: '掌控全局节奏',
+        hp: 2300, mp: 1200, attack: 150, defense: 95, level: 75,
+        skills: ['absoluteZero', 'iceVines', 'iceDomain'],
+        kit: 'member'
+      },
+      {
+        id: 'shipotian',
+        name: '石破天',
+        title: '队员4 · 防御系魂圣',
+        soul: '黄金猛犸',
+        rings: RING_YYPPBBB,
+        model: 'mammoth',
+        bone: '八万年·泰坦巨猿左臂骨',
+        domain: '',
+        role: '前排大肉盾',
+        hp: 5200, mp: 800, attack: 160, defense: 260, level: 77,
+        skills: ['mammothStomp', 'goldShield'],
+        kit: 'member'
+      },
+      {
+        id: 'shenliuli',
+        name: '沈琉璃',
+        title: '队员5 · 食物/辅助系魂圣',
+        soul: '九彩琉璃灯',
+        rings: RING_YYPPBBB,
+        model: 'lamp',
+        bone: '',
+        domain: '',
+        role: '全队充电宝',
+        hp: 2100, mp: 1400, attack: 90, defense: 80, level: 74,
+        skills: ['speedAmp', 'mpSurge'],
+        kit: 'member'
+      },
+      {
+        id: 'baiyiyi',
+        name: '白依依',
+        title: '队员6 · 治疗系魂圣',
+        soul: '生命翡翠鸟',
+        rings: RING_YYPPBBB,
+        model: 'bird',
+        bone: '七万年·生命之树躯干骨',
+        domain: '生命礼赞领域',
+        role: '超级医疗兵',
+        hp: 2800, mp: 1300, attack: 80, defense: 100, level: 75,
+        skills: ['emeraldWave', 'purify', 'lifeDomain'],
+        kit: 'member'
+      }
+    ]
+  };
+
+  var ENEMY_TEAMS = [
+    {
+      id: 'wuhun',
+      name: '武魂殿黑衣队',
+      members: [
+        { id: 'e1', name: '黑衣执事', title: '强攻系魂圣', soul: '暗影魔龙', model: 'dragon', hp: 3200, mp: 1000, attack: 210, defense: 140, level: 76, skills: ['ring1', 'ring3'] },
+        { id: 'e2', name: '夜杀', title: '敏攻系魂圣', soul: '幽冥刺', model: 'assassin', hp: 2400, mp: 800, attack: 200, defense: 80, level: 74, skills: ['shadowStrike'] },
+        { id: 'e3', name: '炎狱', title: '远攻系魂圣', soul: '狱火鸦', model: 'phoenix', hp: 2200, mp: 900, attack: 190, defense: 75, level: 74, skills: ['phoenixMeteor'] },
+        { id: 'e4', name: '寒魄', title: '控制系魂圣', soul: '玄冰蝎', model: 'ice', hp: 2100, mp: 1000, attack: 130, defense: 90, level: 73, skills: ['iceVines'] },
+        { id: 'e5', name: '铁壁', title: '防御系魂圣', soul: '玄甲犀', model: 'mammoth', hp: 4800, mp: 700, attack: 140, defense: 240, level: 75, skills: ['mammothStomp'] },
+        { id: 'e6', name: '烛阴', title: '辅助系魂圣', soul: '幽光灯', model: 'lamp', hp: 1900, mp: 1200, attack: 80, defense: 70, level: 72, skills: ['speedAmp'] },
+        { id: 'e7', name: '血藤', title: '治疗系魂圣', soul: '吸血藤', model: 'bird', hp: 2500, mp: 1100, attack: 70, defense: 90, level: 73, skills: ['emeraldWave'] }
+      ]
+    },
+    {
+      id: 'xingluo',
+      name: '星罗皇家一队',
+      members: [
+        { id: 'x1', name: '戴星河', title: '强攻系魂圣', soul: '白虎', model: 'mammoth', hp: 3400, mp: 950, attack: 220, defense: 150, level: 77, skills: ['mammothStomp'] },
+        { id: 'x2', name: '朱影', title: '敏攻系魂圣', soul: '幽冥灵猫', model: 'assassin', hp: 2500, mp: 850, attack: 210, defense: 85, level: 75, skills: ['shadowStrike', 'bladeStorm'] },
+        { id: 'x3', name: '火鸾', title: '远攻系魂圣', soul: '赤焰鸾', model: 'phoenix', hp: 2300, mp: 1000, attack: 200, defense: 80, level: 75, skills: ['phoenixMeteor', 'fireCage'] },
+        { id: 'x4', name: '冰璃', title: '控制系魂圣', soul: '霜莲', model: 'ice', hp: 2200, mp: 1100, attack: 140, defense: 90, level: 74, skills: ['absoluteZero'] },
+        { id: 'x5', name: '岩盾', title: '防御系魂圣', soul: '金刚象', model: 'mammoth', hp: 5000, mp: 750, attack: 150, defense: 250, level: 76, skills: ['goldShield'] },
+        { id: 'x6', name: '流光', title: '辅助系魂圣', soul: '琉璃盏', model: 'lamp', hp: 2000, mp: 1300, attack: 85, defense: 75, level: 73, skills: ['mpSurge'] },
+        { id: 'x7', name: '春芽', title: '治疗系魂圣', soul: '翠羽雀', model: 'bird', hp: 2600, mp: 1200, attack: 75, defense: 95, level: 74, skills: ['lifeDomain'] }
+      ]
+    },
+    {
+      id: 'tiandou',
+      name: '天斗皇家队',
+      members: [
+        { id: 't1', name: '玉天心', title: '强攻系魂圣', soul: '蓝电霸王龙', model: 'dragon', hp: 3600, mp: 1100, attack: 240, defense: 160, level: 78, skills: ['ring1', 'ring3', 'ring5'] },
+        { id: 't2', name: '独孤锋', title: '敏攻系魂圣', soul: '碧磷蛇', model: 'assassin', hp: 2550, mp: 900, attack: 215, defense: 88, level: 76, skills: ['shadowStrike'] },
+        { id: 't3', name: '火舞', title: '控制系魂圣', soul: '邪火凤凰', model: 'phoenix', hp: 2350, mp: 1050, attack: 205, defense: 82, level: 75, skills: ['fireCage', 'phoenixMeteor'] },
+        { id: 't4', name: '雪晴', title: '控制系魂圣', soul: '雪女', model: 'ice', hp: 2250, mp: 1150, attack: 145, defense: 92, level: 75, skills: ['iceDomain', 'absoluteZero'] },
+        { id: 't5', name: '大力', title: '防御系魂圣', soul: '金刚', model: 'mammoth', hp: 5300, mp: 780, attack: 155, defense: 270, level: 77, skills: ['mammothStomp', 'goldShield'] },
+        { id: 't6', name: '宁风', title: '辅助系魂圣', soul: '七宝琉璃', model: 'lamp', hp: 2050, mp: 1450, attack: 88, defense: 78, level: 74, skills: ['speedAmp', 'mpSurge'] },
+        { id: 't7', name: '叶青', title: '治疗系魂圣', soul: '青鸾', model: 'bird', hp: 2700, mp: 1250, attack: 78, defense: 98, level: 75, skills: ['emeraldWave', 'purify'] }
+      ]
+    }
+  ];
+
+  function cloneMember(m) {
+    return {
+      id: m.id,
+      name: m.name,
+      title: m.title || '',
+      soul: m.soul,
+      rings: m.rings || RING_YYPPBBB,
+      model: m.model,
+      bone: m.bone || '',
+      domain: m.domain || '',
+      role: m.role || '',
+      hp: m.hp,
+      maxHp: m.hp,
+      mp: m.mp,
+      maxMp: m.mp,
+      attack: m.attack,
+      defense: m.defense,
+      level: m.level,
+      skills: (m.skills || []).slice(),
+      kit: m.kit || 'member',
+      eliminated: false
+    };
+  }
+
+  function cloneTeam(team) {
+    return {
+      id: team.id,
+      name: team.name,
+      motto: team.motto || '',
+      members: team.members.map(cloneMember)
+    };
+  }
+
+  global.Roster = {
+    PLAYER_TEAM: PLAYER_TEAM,
+    ENEMY_TEAMS: ENEMY_TEAMS,
+    cloneTeam: cloneTeam,
+    cloneMember: cloneMember
   };
 })(window);
 
@@ -1629,19 +2004,36 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
       cd: 30.0,
       cost: 140,
       desc: '领域展开方圆千米化为金色世界！敌人全属性削弱一半且受光明灼烧；持徽章者免伤获圣龙祝福，魂力持续恢复，全属性提升30%'
-    }
+    },
+
+    shadowStrike: { id: 'shadowStrike', name: '影袭', type: 'member', cd: 4.0, cost: 35, desc: '瞬移到目标背后斩击' },
+    bladeStorm: { id: 'bladeStorm', name: '千刃风暴', type: 'member', cd: 7.0, cost: 55, desc: '大范围切割斩击' },
+    phoenixMeteor: { id: 'phoenixMeteor', name: '凤凰流星雨', type: 'member', cd: 8.0, cost: 70, desc: '火球从天而降' },
+    fireCage: { id: 'fireCage', name: '火线禁锢', type: 'member', cd: 9.0, cost: 50, desc: '火焰牢笼定身' },
+    absoluteZero: { id: 'absoluteZero', name: '绝对零度', type: 'member', cd: 12.0, cost: 80, desc: '瞬间冻结全场' },
+    iceVines: { id: 'iceVines', name: '冰蔓缠绕', type: 'member', cd: 6.0, cost: 40, desc: '冰蔓从地底缠住敌人' },
+    iceDomain: { id: 'iceDomain', name: '玄冰领域', type: 'domain', cd: 22.0, cost: 100, desc: '降低气温，减速并抑制魂力恢复' },
+    mammothStomp: { id: 'mammothStomp', name: '猛犸践踏', type: 'member', cd: 6.0, cost: 45, desc: '震晕周围' },
+    goldShield: { id: 'goldShield', name: '黄金御盾', type: 'member', cd: 10.0, cost: 50, desc: '巨大光盾挡在前方' },
+    speedAmp: { id: 'speedAmp', name: '光速增幅', type: 'member', cd: 8.0, cost: 40, desc: '大幅提升自身移速' },
+    mpSurge: { id: 'mpSurge', name: '魂力回涌', type: 'member', cd: 10.0, cost: 20, desc: '瞬间回复大量魂力' },
+    emeraldWave: { id: 'emeraldWave', name: '翡翠光波', type: 'member', cd: 6.0, cost: 45, desc: '瞬间治疗' },
+    purify: { id: 'purify', name: '净化之光', type: 'member', cd: 8.0, cost: 35, desc: '驱散负面状态' },
+    lifeDomain: { id: 'lifeDomain', name: '生命礼赞领域', type: 'domain', cd: 20.0, cost: 90, desc: '领域内伤势极速自动愈合' }
   };
 
   function SkillManager(game) {
     this.game = game;
-    this.projectiles = []; // 飞行物与特效弹道
+    this.projectiles = [];
     this.domainActive = false;
     this.domainTimer = 0;
+    this.iceDomainTimer = 0;
+    this.lifeDomainTimer = 0;
   }
 
   // 释放技能入口
-  SkillManager.prototype.castSkill = function (skillId) {
-    var player = this.game.player;
+  SkillManager.prototype.castSkill = function (skillId, caster) {
+    var player = caster || this.game.player;
     if (!player || !player.alive) return false;
 
     var skill = SKILLS_DATA[skillId];
@@ -1675,7 +2067,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
   };
 
   SkillManager.prototype.executeSkillEffect = function (skillId, p) {
-    var enemies = this.game.dinos.filter(function (d) { return d.alive && !d.isPlayer; });
+    var enemies = this.game.dinos.filter(function (d) { return d.alive && d.id !== p.id; });
     var target = this.getNearestEnemy(p, enemies, 500);
 
     switch (skillId) {
@@ -1964,6 +2356,138 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
         p.domainBlessing = true; // 拥有圣龙徽章，全属性提升30%并回蓝
         this.game.addMessage('【十万年·圣龙主迹领域】展开！方圆千米化为金色世界！', 3.0);
         break;
+
+      case 'shadowStrike':
+        Sfx.blink();
+        if (target) {
+          var behind = target.angle + Math.PI;
+          p.x = target.x + Math.cos(behind) * (target.radius + 18);
+          p.y = target.y + Math.sin(behind) * (target.radius + 18);
+          p.angle = U.angleTo(p.x, p.y, target.x, target.y);
+          target.takeDamage(p.getEffectiveAttack() * 3.2, p);
+          this.game.addParticles(target.x, target.y, '#8866ff', 22);
+        }
+        break;
+
+      case 'bladeStorm':
+        Sfx.claw();
+        this.game.addParticles(p.x, p.y, '#aa88ff', 40);
+        for (var bs = 0; bs < enemies.length; bs++) {
+          if (U.dist(p.x, p.y, enemies[bs].x, enemies[bs].y) < 160) {
+            enemies[bs].takeDamage(p.getEffectiveAttack() * 2.8, p);
+          }
+        }
+        break;
+
+      case 'phoenixMeteor':
+        Sfx.judgment();
+        for (var m = 0; m < 5; m++) {
+          var mx = (target ? target.x : p.x + Math.cos(p.angle) * 120) + U.rand(-40, 40);
+          var my = (target ? target.y : p.y + Math.sin(p.angle) * 120) + U.rand(-40, 40);
+          this.projectiles.push({
+            type: 'judgment',
+            x: mx, y: 90 + m * 18, z: my,
+            vyGround: -220,
+            life: 0.9,
+            damage: p.getEffectiveAttack() * 1.8,
+            owner: p
+          });
+        }
+        break;
+
+      case 'fireCage':
+        Sfx.goldBody();
+        if (target) {
+          target.stunned = 3.2;
+          target.takeDamage(p.getEffectiveAttack() * 1.4, p);
+          this.game.addParticles(target.x, target.y, '#ff4400', 28);
+        }
+        break;
+
+      case 'absoluteZero':
+        Sfx.roar();
+        this.game.addParticles(p.x, p.y, '#88eeff', 50);
+        for (var az = 0; az < enemies.length; az++) {
+          enemies[az].stunned = 3.8;
+          enemies[az].heavyDebuff = 5.0;
+          enemies[az].takeDamage(p.getEffectiveAttack() * 1.6, p);
+        }
+        break;
+
+      case 'iceVines':
+        Sfx.claw();
+        if (target) {
+          target.stunned = 2.4;
+          target.heavyDebuff = 4.0;
+          target.takeDamage(p.getEffectiveAttack() * 1.8, p);
+          this.game.addParticles(target.x, target.y, '#66ccff', 20);
+        }
+        break;
+
+      case 'iceDomain':
+        Sfx.domain();
+        this.iceDomainTimer = 16;
+        this.game.addMessage('【玄冰领域】展开！气温骤降，敌人移动与回蓝被压制！', 2.8);
+        break;
+
+      case 'mammothStomp':
+        Sfx.gravityPunch();
+        this.game.addParticles(p.x, p.y, '#d4a017', 35);
+        for (var st = 0; st < enemies.length; st++) {
+          if (U.dist(p.x, p.y, enemies[st].x, enemies[st].y) < 150) {
+            enemies[st].stunned = 2.2;
+            enemies[st].takeDamage(p.getEffectiveAttack() * 2.4, p);
+          }
+        }
+        break;
+
+      case 'goldShield':
+        Sfx.goldBody();
+        p.shieldActive = true;
+        p.shieldHp = 1800;
+        this.projectiles.push({
+          type: 'lightShield',
+          x: p.x, y: 12, z: p.y,
+          angle: p.angle,
+          life: 9.0,
+          owner: p
+        });
+        break;
+
+      case 'speedAmp':
+        Sfx.wing();
+        p.isFlying = true;
+        p.flightTime = 8.0;
+        this.game.addParticles(p.x, p.y, '#ffcc66', 18);
+        break;
+
+      case 'mpSurge':
+        Sfx.absorb();
+        p.mp = Math.min(p.maxMp, p.mp + 420);
+        this.game.addMessage('魂力回涌！魂力瞬间恢复', 1.6);
+        break;
+
+      case 'emeraldWave':
+        Sfx.absorb();
+        p.hp = Math.min(p.maxHp, p.hp + 900);
+        this.game.addParticles(p.x, p.y, '#66ff99', 30);
+        this.game.addMessage('翡翠光波！伤势愈合', 1.6);
+        break;
+
+      case 'purify':
+        Sfx.goldBody();
+        p.stunned = 0;
+        p.blinded = 0;
+        p.heavyDebuff = 0;
+        p.domainDebuff = false;
+        this.game.addMessage('净化之光！负面状态驱散', 1.6);
+        break;
+
+      case 'lifeDomain':
+        Sfx.domain();
+        this.lifeDomainTimer = 16;
+        this.game.addMessage('【生命礼赞领域】展开！伤势极速自动愈合！', 2.8);
+        break;
     }
   };
 
@@ -1983,7 +2507,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
   // 每帧更新弹道与领域状态
   SkillManager.prototype.update = function (dt) {
     var player = this.game.player;
-    var enemies = this.game.dinos.filter(function (d) { return d.alive && !d.isPlayer; });
+    var enemies = this.game.dinos.filter(function (d) { return d.alive && (!player || d.id !== player.id); });
 
     // 1. 领域状态检测与灼烧
     if (this.domainActive) {
@@ -2009,6 +2533,19 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
           }
         }
       }
+    }
+
+    if (this.iceDomainTimer > 0) {
+      this.iceDomainTimer -= dt;
+      for (var ice = 0; ice < enemies.length; ice++) {
+        enemies[ice].heavyDebuff = Math.max(enemies[ice].heavyDebuff, 0.4);
+        enemies[ice].mp = Math.max(0, enemies[ice].mp - 18 * dt);
+      }
+    }
+
+    if (this.lifeDomainTimer > 0 && player && player.alive) {
+      this.lifeDomainTimer -= dt;
+      player.hp = Math.min(player.maxHp, player.hp + 90 * dt);
     }
 
     // 2. 技能弹道更新
@@ -2163,6 +2700,11 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
 
     // 技能冷却记录
     this.cooldowns = {};
+    this.fighterKind = opts.fighterKind || (this.isPlayer ? 'dragon' : 'tiger');
+    this.characterId = opts.characterId || '';
+    this.kit = opts.kit || 'full';
+    this.ringText = opts.ringText || '黄 紫 紫 黑 黑 黑 红';
+    this.role = opts.role || '';
   }
 
   SoulEntity.prototype.getSpeed = function () {
@@ -2597,70 +3139,37 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
 
   var U = global.Utils;
 
-  function nearest(dino, others, skipPlayer) {
-    var best = null;
-    var bestD = Infinity;
-    for (var i = 0; i < others.length; i++) {
-      var o = others[i];
-      if (!o.alive || o.id === dino.id) continue;
-      if (skipPlayer && o.isPlayer) continue;
-      var d = U.dist(dino.x, dino.y, o.x, o.y);
-      if (d < bestD) {
-        bestD = d;
-        best = o;
-      }
-    }
-    return { target: best, dist: bestD };
-  }
-
   function updateAI(dino, others, dt, ctx) {
     if (!dino.alive || dino.isPlayer) return;
 
-    // 被眩晕状态无法行动
     if (dino.stunned > 0) return { action: 'stunned' };
 
     ctx = ctx || {};
     var player = ctx.player;
     var inGrace = ctx.playTime != null && ctx.playTime < (ctx.graceTime || 0);
 
-    // 开场保护：魂兽先游荡，不主动扑杀魂师
     if (inGrace) {
-      dino.wanderAngle += U.rand(-0.6, 0.6) * dt;
-      var gx = dino.x + Math.cos(dino.wanderAngle) * 200;
-      var gy = dino.y + Math.sin(dino.wanderAngle) * 200;
-      dino.moveToward(gx, gy, 0.22, dt);
+      dino.wanderAngle += U.rand(-0.4, 0.4) * dt;
       return { action: 'grace' };
     }
 
-    // 魂兽AI：如果玩家距离较近且在视野中，主动扑杀玩家或逃跑
     if (player && player.alive) {
       var distToPlayer = U.dist(dino.x, dino.y, player.x, player.y);
       var biteRange = dino.biteReach() + player.radius * 0.7;
-
-      // 如果玩家开启了【光明圣龙真身】或者圣龙金身，弱小魂兽本能恐惧逃窜！
-      if (player.avatarMode || player.goldBodyActive) {
-        var fearX = dino.x + (dino.x - player.x);
-        var fearY = dino.y + (dino.y - player.y);
-        dino.moveToward(fearX, fearY, 0.9, dt);
-        return { action: 'flee', target: player };
+      dino.moveToward(player.x, player.y, 0.82, dt);
+      if (distToPlayer < biteRange && dino.tryBite()) {
+        return { action: 'bite', target: player };
       }
-
-      // 否则在攻击范围内进行扑咬
-      if (distToPlayer < 260) {
-        dino.moveToward(player.x, player.y, 0.75, dt);
-        if (distToPlayer < biteRange && dino.tryBite()) {
-          return { action: 'bite', target: player };
+      if (ctx.skills && dino.characterId && Math.random() < 0.012) {
+        var mem = ctx.enemyMember;
+        if (mem && mem.skills && mem.skills.length) {
+          ctx.skills.castSkill(mem.skills[0], dino);
         }
-        return { action: 'chase', target: player };
       }
+      return { action: 'chase', target: player };
     }
 
-    // 魂兽之间日常游荡
-    dino.wanderAngle += U.rand(-0.6, 0.6) * dt;
-    var wanderX = dino.x + Math.cos(dino.wanderAngle) * 200;
-    var wanderY = dino.y + Math.sin(dino.wanderAngle) * 200;
-    dino.moveToward(wanderX, wanderY, 0.25, dt);
-    return { action: 'wander' };
+    return { action: 'idle' };
   }
 
   global.AI = { update: updateAI };
@@ -2730,19 +3239,16 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
   };
 
   Renderer3D.prototype.createEntityMesh = function (entity) {
+    var kind = entity.fighterKind || (entity.isPlayer ? 'dragon' : 'tiger');
     var group;
-    if (entity.isPlayer) {
-      // 玩家：光明圣龙武魂真身与七环
-      group = DinoModel.createSacredDragonMesh(entity.avatarMode);
-      var rings = DinoModel.createSoulRingsGroup();
-      group.add(rings);
-      group.userData.rings = rings;
+    if (kind === 'tiger' || kind === 'bear' || kind === 'ape') {
+      group = DinoModel.createSoulBeastMesh(kind);
     } else {
-      // 敌方魂兽
-      var bType = entity.beastType || 'tiger';
-      group = DinoModel.createSoulBeastMesh(bType);
+      group = DinoModel.createFighterMesh(kind);
     }
-
+    var rings = DinoModel.createSoulRingsGroup();
+    group.add(rings);
+    group.userData.rings = rings;
     this.scene.add(group);
     this.meshes.set(entity.id, group);
     return group;
@@ -2757,7 +3263,10 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     group.visible = true;
 
     // 缩放处理：如果是第七魂技【光明圣龙真身】，体型暴增为百米级圣龙！
-    var baseScale = entity.isPlayer ? (entity.avatarMode ? 3.8 : 1.35) : (entity.radius / 28);
+    var baseScale = 1.2;
+    if (entity.isPlayer) baseScale = entity.avatarMode ? 3.2 : 1.35;
+    else if (entity.fighterKind === 'mammoth') baseScale = 1.45;
+    else if (entity.fighterKind === 'dragon') baseScale = 1.25;
     group.scale.setScalar(baseScale);
 
     var gy = world.heightAt(entity.x, entity.y);
@@ -3036,20 +3545,9 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
   var Renderer3D = global.Renderer3D;
   var SkillManager = global.SkillManager;
 
-  var GRACE_TIME = 12;
-  var MAX_NPC = 8;
-  var SPAWN_MIN = 480;
-  var SPAWN_MAX = 920;
-  var DESPAWN_DIST = 1600;
+  var Roster = global.Roster;
 
-  var SOUL_BEAST_NAMES = [
-    { name: '万年·暗魔邪神虎', type: 'tiger', level: 68, hp: 3200, atk: 140 },
-    { name: '五万年·暗金恐爪熊', type: 'bear', level: 75, hp: 4500, atk: 180 },
-    { name: '八万年·泰坦巨猿', type: 'ape', level: 82, hp: 6000, atk: 220 },
-    { name: '万年·幽冥影豹', type: 'tiger', level: 60, hp: 2500, atk: 120 },
-    { name: '千年·炽火烈龙兽', type: 'bear', level: 52, hp: 2000, atk: 95 },
-    { name: '十万年·暗影狂魔', type: 'ape', level: 90, hp: 8500, atk: 280 }
-  ];
+  var GRACE_TIME = 1.2;
 
   function Game(canvas, hooks) {
     this.canvas = canvas;
@@ -3093,30 +3591,46 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     this.messages = [];
     this.nextId = 1;
     this.playTime = 0;
+    this.roundIndex = 0;
+    this.teamWins = 0;
+    this.enemyTeamIndex = 0;
+    this.pendingRoundEnd = false;
+    this.lastResult = '';
 
     if (this.r3d) this.r3d.clearEntities();
     if (this.skills) {
       this.skills.projectiles = [];
       this.skills.domainActive = false;
+      this.skills.iceDomainTimer = 0;
+      this.skills.lifeDomainTimer = 0;
     }
 
-    // 初始化玩家：七环魂帝·光明圣龙魂师
-    this.player = this.spawnEntity({
-      isPlayer: true,
-      x: 0,
-      y: 0,
-      level: 78, // 七环魂圣
-      hp: 3500,
-      mp: 1200,
-      attack: 240,
-      defense: 160,
-      name: '圣龙斗罗',
-      martialSoul: '光明圣龙'
-    });
+    this.playerTeam = Roster.cloneTeam(Roster.PLAYER_TEAM);
+    this.startNextOpponent();
+    this.player = null;
+  };
 
-    for (var i = 0; i < 7; i++) {
-      this.spawnNpcNearPlayer();
+  Game.prototype.startNextOpponent = function () {
+    var list = Roster.ENEMY_TEAMS;
+    var tmpl = list[this.enemyTeamIndex % list.length];
+    this.enemyTeam = Roster.cloneTeam(tmpl);
+    this.roundIndex = 0;
+    this.addMessage('下一场对手：【' + this.enemyTeam.name + '】', 3.0);
+  };
+
+  Game.prototype.aliveMembers = function (team) {
+    var out = [];
+    for (var i = 0; i < team.members.length; i++) {
+      if (!team.members[i].eliminated) out.push(team.members[i]);
     }
+    return out;
+  };
+
+  Game.prototype.findMember = function (team, id) {
+    for (var i = 0; i < team.members.length; i++) {
+      if (team.members[i].id === id) return team.members[i];
+    }
+    return null;
   };
 
   Game.prototype.spawnEntity = function (opts) {
@@ -3132,70 +3646,84 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
       defense: opts.defense,
       name: opts.name,
       martialSoul: opts.martialSoul,
-      beastType: opts.beastType
+      beastType: opts.beastType,
+      fighterKind: opts.fighterKind,
+      characterId: opts.characterId,
+      kit: opts.kit,
+      ringText: opts.ringText,
+      role: opts.role
     });
     this.dinos.push(entity);
     if (this.r3d) this.r3d.createEntityMesh(entity);
     return entity;
   };
 
-  Game.prototype.spawnNpcNearPlayer = function () {
-    if (!this.player) return null;
-    var angle = U.rand(0, Math.PI * 2);
-    var dist = U.rand(SPAWN_MIN, SPAWN_MAX);
-    var x = this.player.x + Math.cos(angle) * dist;
-    var y = this.player.y + Math.sin(angle) * dist;
-
-    var tmpl;
-    if (Math.random() < 0.12) {
-      tmpl = SOUL_BEAST_NAMES[SOUL_BEAST_NAMES.length - 1];
-    } else {
-      tmpl = SOUL_BEAST_NAMES[U.randInt(0, SOUL_BEAST_NAMES.length - 2)];
-    }
-
-    return this.spawnEntity({
+  Game.prototype.spawnFromMember = function (member, isPlayer, x, y, face) {
+    var e = this.spawnEntity({
+      isPlayer: isPlayer,
       x: x,
       y: y,
-      level: tmpl.level,
-      hp: tmpl.hp,
-      mp: 500,
-      attack: tmpl.atk,
-      defense: tmpl.level * 1.5,
-      name: tmpl.name,
-      beastType: tmpl.type
+      level: member.level,
+      hp: member.hp,
+      mp: member.mp,
+      attack: member.attack,
+      defense: member.defense,
+      name: member.name,
+      martialSoul: member.soul,
+      fighterKind: member.model,
+      characterId: member.id,
+      kit: member.kit || 'member',
+      ringText: member.rings,
+      role: member.role || member.title
     });
+    e.maxHp = member.maxHp;
+    e.maxMp = member.maxMp;
+    e.hp = member.hp;
+    e.mp = member.mp;
+    e.angle = face;
+    e.hasBadge = !!isPlayer;
+    return e;
   };
 
-  Game.prototype.nearbyNpcCount = function () {
-    var n = 0;
-    for (var i = 0; i < this.dinos.length; i++) {
-      var d = this.dinos[i];
-      if (!d.alive || d.isPlayer) continue;
-      if (U.dist(d.x, d.y, this.player.x, this.player.y) < SPAWN_MAX + 300) n++;
+  Game.prototype.startRound = function (playerMemberId) {
+    var mine = this.findMember(this.playerTeam, playerMemberId);
+    if (!mine || mine.eliminated) return false;
+
+    var foes = this.aliveMembers(this.enemyTeam);
+    if (!foes.length) return false;
+    var foe = foes[0];
+
+    this.dinos = [];
+    this.particles = [];
+    this.skills.projectiles = [];
+    this.skills.domainActive = false;
+    this.skills.iceDomainTimer = 0;
+    this.skills.lifeDomainTimer = 0;
+    if (this.r3d) {
+      this.r3d.clearEntities();
+      this.world.setDomainActive(false, 0, 0);
     }
-    return n;
+
+    this.roundIndex += 1;
+    this.playTime = 0;
+    this.pendingRoundEnd = false;
+
+    this.player = this.spawnFromMember(mine, true, -70, 0, 0);
+    this.opponent = this.spawnFromMember(foe, false, 70, 0, Math.PI);
+    this.currentPlayerId = mine.id;
+    this.currentEnemyId = foe.id;
+
+    this.addMessage('第 ' + this.roundIndex + ' 局 1v1：' + mine.name + ' VS ' + foe.name, 3.2);
+    this.setState('playing');
+    return true;
   };
 
-  Game.prototype.cleanupFar = function () {
-    var p = this.player;
-    for (var i = this.dinos.length - 1; i >= 0; i--) {
-      var d = this.dinos[i];
-      if (d.isPlayer || !d.alive) continue;
-      if (U.dist(d.x, d.y, p.x, p.y) > DESPAWN_DIST) {
-        d.alive = false;
-        var mesh = this.r3d.meshes.get(d.id);
-        if (mesh) this.r3d.scene.remove(mesh);
-        this.r3d.meshes.delete(d.id);
-        this.dinos.splice(i, 1);
-      }
-    }
-  };
-
-  Game.prototype.maintainPopulation = function () {
-    this.cleanupFar();
-    while (this.nearbyNpcCount() < MAX_NPC) {
-      this.spawnNpcNearPlayer();
-    }
+  Game.prototype.saveFighterHp = function (entity, team, memberId) {
+    if (!entity) return;
+    var m = this.findMember(team, memberId);
+    if (!m) return;
+    m.hp = Math.max(1, entity.hp);
+    m.mp = Math.max(0, entity.mp);
   };
 
   Game.prototype.aliveEntities = function () {
@@ -3208,11 +3736,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
 
   Game.prototype.setState = function (state) {
     if (this.state === state) return;
-    var was = this.state;
     this.state = state;
-    if (state === 'playing' && was === 'ready') {
-      this.addMessage('武魂觉醒：光明圣龙！前 12 秒魂兽不会主动攻击。按 1-7 释放魂技，T 展开领域！', 4.0);
-    }
     if (this.hooks.onState) this.hooks.onState(state, this);
   };
 
@@ -3220,10 +3744,10 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     if (action === 'bite') this.input.bite = true;
     else if (action in this.input) this.input[action] = true;
 
-    if (this.state === 'ready') this.setState('playing');
+    if (this.state === 'ready') this.setState('pick');
     else if (this.state === 'over') {
       this.reset();
-      this.setState('playing');
+      this.setState('pick');
     }
   };
 
@@ -3234,7 +3758,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
 
   Game.prototype.restart = function () {
     this.reset();
-    this.setState('playing');
+    this.setState('pick');
   };
 
   Game.prototype.togglePause = function () {
@@ -3296,7 +3820,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
 
     this.playTime += dt;
 
-    if (this.player.alive && this.player.hp < this.player.maxHp) {
+    if (this.player && this.player.alive && this.player.hp < this.player.maxHp) {
       this.player.hp = Math.min(this.player.maxHp, this.player.hp + 28 * dt);
     }
 
@@ -3305,7 +3829,6 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     this.skills.update(dt);
     this.resolveCombat();
     this.collectDeaths();
-    this.maintainPopulation();
   };
 
   Game.prototype.updatePlayer = function (dt) {
@@ -3362,7 +3885,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
 
   Game.prototype.updateNPCs = function (dt) {
     var alive = this.aliveEntities();
-    var ctx = { playTime: this.playTime, graceTime: GRACE_TIME, player: this.player };
+    var ctx = { playTime: this.playTime, graceTime: GRACE_TIME, player: this.player, skills: this.skills, enemyMember: this.findMember(this.enemyTeam, this.currentEnemyId) };
     for (var i = 0; i < this.dinos.length; i++) {
       var d = this.dinos[i];
       if (!d.alive || d.isPlayer) continue;
@@ -3384,7 +3907,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
       if (d > attacker.biteReach() + victim.radius * 0.7) continue;
 
       var dmg = attacker.biteDamage();
-      if (victim.isPlayer) dmg *= 0.28;
+      if (victim.isPlayer) dmg *= 0.42;
 
       if (victim.takeDamage(dmg, attacker)) {
         this.killEntity(victim, attacker);
@@ -3409,33 +3932,51 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     victim._credited = true;
     victim.alive = false;
     this.addParticles(victim.x, victim.y, '#ffd700', 30);
+    if (this.pendingRoundEnd) return;
+    this.pendingRoundEnd = true;
+    this.finishRound(victim, killer);
+  };
 
-    if (killer && killer.isPlayer) {
-      killer.kills += 1;
-      killer.mp = Math.min(killer.maxMp, killer.mp + 150); // 击杀魂兽恢复大量魂力
-      killer.hp = Math.min(killer.maxHp, killer.hp + 200);
+  Game.prototype.finishRound = function (loser) {
+    var playerWon = !loser.isPlayer;
+    var myMem = this.findMember(this.playerTeam, this.currentPlayerId);
+    var enMem = this.findMember(this.enemyTeam, this.currentEnemyId);
 
-      // 击杀吸收魂环，提升魂力等级与战力
-      killer.level += 1;
-      killer.title = U.getTitleByLevel(killer.level);
-      killer.attack += 15;
-      killer.defense += 10;
-      killer.maxHp += 120;
-      killer.hp += 120;
+    if (playerWon) {
+      if (enMem) enMem.eliminated = true;
+      if (this.player && this.player.alive) this.saveFighterHp(this.player, this.playerTeam, this.currentPlayerId);
       Sfx.absorb();
-      this.addMessage('击杀【' + victim.name + '】！吸收魂环，等级提升至 ' + killer.level + ' 级（' + killer.title + '）！', 3.0);
-
-      if (killer.kills > this.highKills) {
-        this.highKills = killer.kills;
-        this.saveHighKills();
-      }
-    }
-
-    if (victim.isPlayer) {
+      this.lastResult = 'win';
+      this.addMessage(this.player.name + ' 击败 ' + loser.name + '！可换人继续 1v1', 3.0);
+    } else {
+      if (myMem) myMem.eliminated = true;
+      if (this.opponent && this.opponent.alive) this.saveFighterHp(this.opponent, this.enemyTeam, this.currentEnemyId);
       Sfx.die();
-      this.setState('over');
-      this.addMessage('魂力耗尽倒下… 按 R 重新开始', 4);
+      this.lastResult = 'lose';
+      this.addMessage(loser.name + ' 战败退场！请换下一名队员', 3.0);
     }
+
+    var myLeft = this.aliveMembers(this.playerTeam).length;
+    var enLeft = this.aliveMembers(this.enemyTeam).length;
+
+    var self = this;
+    setTimeout(function () {
+      if (myLeft <= 0) {
+        self.setState('over');
+        self.addMessage('圣龙战队全员战败… 按 R 再战', 4);
+        return;
+      }
+      if (enLeft <= 0) {
+        self.teamWins += 1;
+        self.enemyTeamIndex += 1;
+        self.playerTeam = Roster.cloneTeam(Roster.PLAYER_TEAM);
+        self.startNextOpponent();
+        self.addMessage('赢下团队赛！连战下一队【' + self.enemyTeam.name + '】，全员复活换人', 4);
+        self.setState('pick');
+        return;
+      }
+      self.setState('pick');
+    }, 900);
   };
 
   Game.prototype.resize = function () {
@@ -3468,6 +4009,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
 
   var overlays = {
     ready: doc.getElementById('overlay-ready'),
+    pick: doc.getElementById('overlay-pick'),
     over: doc.getElementById('overlay-over'),
     paused: doc.getElementById('overlay-paused'),
     error: doc.getElementById('overlay-error')
@@ -3480,15 +4022,24 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
   var toast = doc.getElementById('toast');
 
   var hudTitle = doc.getElementById('hud-title');
+  var hudSoul = doc.getElementById('hud-soul');
   var hudLevel = doc.getElementById('hud-level');
   var hudHp = doc.getElementById('hud-hp');
   var hudHpBar = doc.getElementById('hud-hp-bar');
   var hudMp = doc.getElementById('hud-mp');
   var hudMpBar = doc.getElementById('hud-mp-bar');
-  var hudKills = doc.getElementById('hud-kills');
-  var hudBest = doc.getElementById('hud-best');
   var hudBuffs = doc.getElementById('hud-buffs');
   var hudDomainStatus = doc.getElementById('hud-domain-status');
+  var hudMatch = doc.getElementById('hud-match');
+  var hudMyLeft = doc.getElementById('hud-my-left');
+  var hudEnLeft = doc.getElementById('hud-en-left');
+  var hudTeamWins = doc.getElementById('hud-team-wins');
+  var kitFull = doc.getElementById('kit-full');
+  var kitMember = doc.getElementById('kit-member');
+  var memberSkillGrid = doc.getElementById('member-skill-grid');
+  var pickGrid = doc.getElementById('pick-grid');
+  var pickTitle = doc.getElementById('pick-title');
+  var pickSub = doc.getElementById('pick-sub');
   var bootScreen = doc.getElementById('boot-screen');
   var bootMsg = doc.getElementById('boot-msg');
 
@@ -3513,8 +4064,72 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
   }
 
   function formatStats(g) {
+    var my = g.aliveMembers(g.playerTeam).length;
+    var en = g.aliveMembers(g.enemyTeam).length;
+    return '对阵 ' + g.enemyTeam.name + ' · 我方剩余 ' + my + ' · 敌方剩余 ' + en + ' · 连胜 ' + g.teamWins + ' 场';
+  }
+
+  function skillMapFor(g) {
+    var full = {
+      Digit1: 'ring1', Digit2: 'ring2', Digit3: 'ring3', Digit4: 'ring4',
+      Digit5: 'ring5', Digit6: 'ring6', Digit7: 'ring7',
+      KeyQ: 'custom1', KeyE: 'custom2', KeyZ: 'custom3', KeyX: 'custom4',
+      KeyC: 'custom5', KeyV: 'custom6', KeyB: 'custom7',
+      KeyF: 'boneL', KeyG: 'boneR', KeyT: 'domain'
+    };
     var p = g.player;
-    return '魂力等级 ' + p.level + ' 级（' + p.title + '） · 击杀魂兽 ' + p.kills + ' 头 · 魂力 ' + Math.round(p.mp) + '/' + p.maxMp;
+    if (!p || p.kit === 'full' || p.characterId === 'chen') return full;
+    var mem = g.findMember(g.playerTeam, p.characterId);
+    var map = {};
+    if (!mem) return map;
+    if (mem.skills[0]) map.Digit1 = mem.skills[0];
+    if (mem.skills[1]) map.Digit2 = mem.skills[1];
+    if (mem.skills[2]) {
+      map.Digit3 = mem.skills[2];
+      map.KeyT = mem.skills[2];
+    }
+    return map;
+  }
+
+  function renderPick(g) {
+    if (!pickGrid) return;
+    var enemy = g.aliveMembers(g.enemyTeam)[0];
+    pickTitle.textContent = '第 ' + (g.roundIndex + 1) + ' 局 · 选择出战';
+    pickSub.textContent = '对阵【' + g.enemyTeam.name + '】下一名：' + (enemy ? enemy.name + '（' + enemy.soul + '）' : '无') +
+      '　我方剩余 ' + g.aliveMembers(g.playerTeam).length + ' / 敌方剩余 ' + g.aliveMembers(g.enemyTeam).length;
+    pickGrid.innerHTML = '';
+    g.playerTeam.members.forEach(function (m) {
+      var btn = doc.createElement('button');
+      btn.type = 'button';
+      btn.className = 'pick-card' + (m.eliminated ? ' is-out' : '');
+      btn.disabled = !!m.eliminated;
+      btn.setAttribute('data-pick', m.id);
+      btn.innerHTML = '<div class="pc-name">' + m.name + (m.eliminated ? ' · 已退场' : '') + '</div>' +
+        '<div class="pc-meta">' + m.title + '<br>武魂：' + m.soul + '<br>生命 ' + Math.round(m.hp) + '/' + m.maxHp +
+        '<br>' + (m.role || '') + '</div>';
+      pickGrid.appendChild(btn);
+    });
+  }
+
+  function renderMemberSkills(g) {
+    if (!memberSkillGrid) return;
+    var p = g.player;
+    memberSkillGrid.innerHTML = '';
+    if (!p || p.kit === 'full' || p.characterId === 'chen') return;
+    var mem = g.findMember(g.playerTeam, p.characterId);
+    if (!mem) return;
+    var keys = ['1', '2', 'T'];
+    mem.skills.forEach(function (sid, i) {
+      var data = global.SKILLS_DATA[sid] || { name: sid, cost: 0 };
+      var btn = doc.createElement('button');
+      btn.type = 'button';
+      btn.className = 'skill-btn';
+      btn.setAttribute('data-skill', sid);
+      btn.innerHTML = '<span class="s-key">[' + keys[i] + '] ' + (i === 2 ? '领域' : '魂技') + '</span>' +
+        '<span class="s-name">' + data.name + '</span>' +
+        '<span class="s-cost">魂力 ' + data.cost + '</span>';
+      memberSkillGrid.appendChild(btn);
+    });
   }
 
   function bindControls() {
@@ -3562,11 +4177,11 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
         return;
       }
 
-      // 释放魂技
-      if (SKILL_KEY_MAP[code]) {
+      var liveMap = skillMapFor(game);
+      if (liveMap[code] || SKILL_KEY_MAP[code]) {
         event.preventDefault();
         if (game.state === 'playing') {
-          game.skills.castSkill(SKILL_KEY_MAP[code]);
+          game.skills.castSkill(liveMap[code] || SKILL_KEY_MAP[code]);
         }
         return;
       }
@@ -3590,10 +4205,15 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     // 技能按钮点击释放
     doc.addEventListener('click', function (event) {
       if (!game) return;
+      var pickBtn = event.target.closest('[data-pick]');
+      if (pickBtn && game.state === 'pick') {
+        game.startRound(pickBtn.getAttribute('data-pick'));
+        return;
+      }
       var skillBtn = event.target.closest('[data-skill]');
       if (skillBtn) {
         var skillId = skillBtn.getAttribute('data-skill');
-        if (game.state === 'ready') game.setState('playing');
+        if (game.state === 'ready') game.setState('pick');
         if (game.state === 'playing') game.skills.castSkill(skillId);
         return;
       }
@@ -3601,7 +4221,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
       var target = event.target.closest('[data-action]');
       if (!target) return;
       var action = target.getAttribute('data-action');
-      if (action === 'start') game.setState('playing');
+      if (action === 'start') game.setState('pick');
       else if (action === 'restart') game.restart();
       else if (action === 'resume') game.togglePause();
     });
@@ -3613,7 +4233,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
         event.preventDefault();
         button.setPointerCapture(event.pointerId);
         game.press(action);
-        if (game.state === 'ready') game.setState('playing');
+        if (game.state === 'ready') game.setState('pick');
       });
       button.addEventListener('pointerup', function () { if (game) game.release(action); });
       button.addEventListener('pointercancel', function () { if (game) game.release(action); });
@@ -3640,36 +4260,52 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
   }
 
   function updateHUD(g) {
-    var p = g.player;
-    if (!p) return;
+    if (hudMatch && g.enemyTeam) {
+      hudMatch.textContent = g.playerTeam.name + ' VS ' + g.enemyTeam.name;
+      hudMyLeft.textContent = g.aliveMembers(g.playerTeam).length;
+      hudEnLeft.textContent = g.aliveMembers(g.enemyTeam).length;
+      hudTeamWins.textContent = g.teamWins;
+    }
 
-    hudTitle.textContent = p.title;
+    var p = g.player;
+    if (!p) {
+      if (g.messages.length > 0) {
+        toast.textContent = g.messages[0].text;
+        toast.style.opacity = '1';
+      }
+      return;
+    }
+
+    if (hudSoul) hudSoul.textContent = p.martialSoul;
+    hudTitle.textContent = p.name;
     hudLevel.textContent = p.level + ' 级';
     hudHp.textContent = Math.round(p.hp) + '/' + p.maxHp;
     hudHpBar.style.width = Math.max(0, Math.min(100, (p.hp / p.maxHp) * 100)) + '%';
-
     hudMp.textContent = Math.round(p.mp) + '/' + p.maxMp;
     hudMpBar.style.width = Math.max(0, Math.min(100, (p.mp / p.maxMp) * 100)) + '%';
 
-    hudKills.textContent = p.kills;
-    hudBest.textContent = g.highKills;
+    var isFull = p.kit === 'full' || p.characterId === 'chen';
+    if (kitFull) kitFull.classList.toggle('overlay--hidden', !isFull && g.state === 'playing');
+    if (kitMember) kitMember.classList.toggle('overlay--hidden', isFull || g.state !== 'playing');
 
     var buffs = [];
-    if (p.avatarMode) buffs.push('🐉 光明圣龙真身');
-    if (p.goldBodyActive) buffs.push('🛡️ 圣龙金身');
-    if (p.isFlying) buffs.push('🪽 圣龙之翼飞行');
-    if (p.shieldActive) buffs.push('☀️ 光盾守护');
+    if (p.avatarMode) buffs.push('🐉 真身');
+    if (p.goldBodyActive) buffs.push('🛡️ 金身');
+    if (p.isFlying) buffs.push('🪽 加速/飞行');
+    if (p.shieldActive) buffs.push('☀️ 护盾');
     if (p.domainBlessing) buffs.push('✨ 圣龙祝福');
-
-    hudBuffs.innerHTML = buffs.length > 0 ? ('增益状态：' + buffs.join(' | ')) : '魂环：黄 紫 紫 黑 黑 黑 红';
+    hudBuffs.innerHTML = buffs.length > 0 ? ('增益：' + buffs.join(' | ')) : (p.ringText || '');
 
     if (g.skills.domainActive) {
-      hudDomainStatus.innerHTML = '<span style="color:#ffd700;font-weight:bold">领域：金色世界激活中 (' + Math.ceil(g.skills.domainTimer) + 's)</span>';
+      hudDomainStatus.innerHTML = '<span style="color:#ffd700;font-weight:bold">领域：金色世界 (' + Math.ceil(g.skills.domainTimer) + 's)</span>';
+    } else if (g.skills.iceDomainTimer > 0) {
+      hudDomainStatus.textContent = '领域：玄冰领域 (' + Math.ceil(g.skills.iceDomainTimer) + 's)';
+    } else if (g.skills.lifeDomainTimer > 0) {
+      hudDomainStatus.textContent = '领域：生命礼赞 (' + Math.ceil(g.skills.lifeDomainTimer) + 's)';
     } else {
-      hudDomainStatus.textContent = '领域：待命中 (按T展开)';
+      hudDomainStatus.textContent = '领域：待命';
     }
 
-    // 动态刷新技能按钮文本（显示冷却时间）
     var allSkillBtns = doc.querySelectorAll('[data-skill]');
     for (var i = 0; i < allSkillBtns.length; i++) {
       var btn = allSkillBtns[i];
@@ -3683,9 +4319,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
         } else {
           var sData = global.SKILLS_DATA[sId];
           var cost = sData ? sData.cost : 0;
-          if (p.avatarMode && sData && sData.type === 'ring' && sId !== 'ring7') {
-            cost = 0;
-          }
+          if (p.avatarMode && sData && sData.type === 'ring' && sId !== 'ring7') cost = 0;
           costEl.textContent = '魂力 ' + cost;
           costEl.style.color = '#66ccff';
         }
@@ -3719,11 +4353,15 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
             showOverlay('paused');
           } else if (state === 'ready') {
             showOverlay('ready');
+          } else if (state === 'pick') {
+            renderPick(g);
+            showOverlay('pick');
           } else {
+            renderMemberSkills(g);
             showOverlay(null);
           }
           pauseButton.textContent = state === 'paused' ? '继续' : '暂停';
-          pauseButton.disabled = state === 'ready';
+          pauseButton.disabled = state === 'ready' || state === 'pick';
         },
         onHud: function (g) {
           updateHUD(g);
@@ -3735,7 +4373,6 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
       hideBoot();
       global.requestAnimationFrame(function () {
         game.resize();
-        game.setState('playing');
       });
     } catch (err) {
       console.error(err);

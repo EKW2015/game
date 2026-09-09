@@ -62,19 +62,16 @@
   };
 
   Renderer3D.prototype.createEntityMesh = function (entity) {
+    var kind = entity.fighterKind || (entity.isPlayer ? 'dragon' : 'tiger');
     var group;
-    if (entity.isPlayer) {
-      // 玩家：光明圣龙武魂真身与七环
-      group = DinoModel.createSacredDragonMesh(entity.avatarMode);
-      var rings = DinoModel.createSoulRingsGroup();
-      group.add(rings);
-      group.userData.rings = rings;
+    if (kind === 'tiger' || kind === 'bear' || kind === 'ape') {
+      group = DinoModel.createSoulBeastMesh(kind);
     } else {
-      // 敌方魂兽
-      var bType = entity.beastType || 'tiger';
-      group = DinoModel.createSoulBeastMesh(bType);
+      group = DinoModel.createFighterMesh(kind);
     }
-
+    var rings = DinoModel.createSoulRingsGroup();
+    group.add(rings);
+    group.userData.rings = rings;
     this.scene.add(group);
     this.meshes.set(entity.id, group);
     return group;
@@ -89,7 +86,10 @@
     group.visible = true;
 
     // 缩放处理：如果是第七魂技【光明圣龙真身】，体型暴增为百米级圣龙！
-    var baseScale = entity.isPlayer ? (entity.avatarMode ? 3.8 : 1.35) : (entity.radius / 28);
+    var baseScale = 1.2;
+    if (entity.isPlayer) baseScale = entity.avatarMode ? 3.2 : 1.35;
+    else if (entity.fighterKind === 'mammoth') baseScale = 1.45;
+    else if (entity.fighterKind === 'dragon') baseScale = 1.25;
     group.scale.setScalar(baseScale);
 
     var gy = world.heightAt(entity.x, entity.y);

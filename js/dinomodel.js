@@ -11,11 +11,11 @@
   }
 
   // 创建魂环组（7枚魂环：黄、紫、紫、黑、黑、黑、红）
-  function createSoulRingsGroup() {
+  function createSoulRingsGroup(customColors) {
     var ringsGroup = new THREE.Group();
     ringsGroup.name = 'soulRings';
 
-    var ringColors = U.SOUL_RING_COLORS;
+    var ringColors = customColors || U.SOUL_RING_COLORS;
     var ringEmissives = U.SOUL_RING_EMISSIVES;
 
     for (var i = 0; i < 7; i++) {
@@ -474,11 +474,135 @@
     return group;
   }
 
+  function tintMat(color, emissive, intensity) {
+    return mat({
+      color: color,
+      roughness: 0.45,
+      metalness: 0.35,
+      emissive: emissive || 0x000000,
+      emissiveIntensity: intensity || 0
+    });
+  }
+
+  function createHumanoidBase(bodyColor, accentColor) {
+    var group = new THREE.Group();
+    var body = new THREE.Mesh(new THREE.CylinderGeometry(0.7, 0.9, 2.4, 8), tintMat(bodyColor));
+    body.position.y = 2.2;
+    body.castShadow = true;
+    group.add(body);
+    var head = new THREE.Mesh(new THREE.SphereGeometry(0.55, 10, 10), tintMat(accentColor || bodyColor));
+    head.position.y = 3.7;
+    head.castShadow = true;
+    group.add(head);
+    group.userData.legs = [];
+    [[-0.4, 1.4], [0.4, 1.4]].forEach(function (p) {
+      var leg = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.26, 1.6, 6), tintMat(bodyColor));
+      leg.position.set(p[0], 0.8, 0);
+      group.add(leg);
+      group.userData.legs.push({ upper: leg });
+    });
+    return group;
+  }
+
+  function createFighterMesh(kind) {
+    if (kind === 'dragon') return createSacredDragonMesh(false);
+
+    var group;
+    if (kind === 'assassin') {
+      group = createHumanoidBase(0x1a1028, 0x331144);
+      var blade = new THREE.Mesh(
+        new THREE.BoxGeometry(0.12, 0.12, 2.4),
+        tintMat(0x8866ff, 0x4422aa, 0.6)
+      );
+      blade.position.set(0.9, 2.4, 0.8);
+      group.add(blade);
+    } else if (kind === 'phoenix') {
+      group = createHumanoidBase(0xaa2200, 0xff6600);
+      var wingL = new THREE.Mesh(
+        new THREE.ConeGeometry(0.6, 2.8, 6),
+        tintMat(0xff4400, 0xff2200, 0.7)
+      );
+      wingL.rotation.z = 1.1;
+      wingL.position.set(-1.4, 2.8, -0.2);
+      group.add(wingL);
+      var wingR = wingL.clone();
+      wingR.rotation.z = -1.1;
+      wingR.position.x = 1.4;
+      group.add(wingR);
+      group.userData.wings = { userData: { leftWing: wingL, rightWing: wingR } };
+    } else if (kind === 'ice') {
+      group = createHumanoidBase(0x88ddff, 0xccffff);
+      var crystal = new THREE.Mesh(
+        new THREE.OctahedronGeometry(0.9, 0),
+        tintMat(0x66eeff, 0x2288ff, 0.8)
+      );
+      crystal.position.y = 5.0;
+      group.add(crystal);
+    } else if (kind === 'mammoth') {
+      group = new THREE.Group();
+      var torso = new THREE.Mesh(new THREE.BoxGeometry(2.8, 2.4, 3.6), tintMat(0xd4a017, 0xaa7700, 0.2));
+      torso.position.y = 2.4;
+      torso.castShadow = true;
+      group.add(torso);
+      var head = new THREE.Mesh(new THREE.BoxGeometry(1.8, 1.6, 1.8), tintMat(0xc9a227));
+      head.position.set(0, 3.4, 2.2);
+      group.add(head);
+      var tuskL = new THREE.Mesh(new THREE.ConeGeometry(0.16, 1.6, 6), tintMat(0xfff4d2));
+      tuskL.rotation.x = 2.4;
+      tuskL.position.set(-0.6, 2.4, 2.8);
+      group.add(tuskL);
+      var tuskR = tuskL.clone();
+      tuskR.position.x = 0.6;
+      group.add(tuskR);
+      group.userData.legs = [];
+      [[-0.9, 1.1], [0.9, 1.1], [-0.9, -1.1], [0.9, -1.1]].forEach(function (p) {
+        var leg = new THREE.Mesh(new THREE.CylinderGeometry(0.45, 0.5, 2.0, 8), tintMat(0xb8860b));
+        leg.position.set(p[0], 1.0, p[1]);
+        group.add(leg);
+        group.userData.legs.push({ upper: leg });
+      });
+    } else if (kind === 'lamp') {
+      group = createHumanoidBase(0x6644aa, 0xffcc66);
+      var lamp = new THREE.Mesh(
+        new THREE.SphereGeometry(0.7, 12, 12),
+        tintMat(0xffaa33, 0xff6600, 0.9)
+      );
+      lamp.position.set(0, 5.1, 0);
+      group.add(lamp);
+    } else if (kind === 'bird') {
+      group = createHumanoidBase(0x228844, 0x66ff99);
+      var wingL = new THREE.Mesh(
+        new THREE.ConeGeometry(0.45, 2.2, 6),
+        tintMat(0x33cc66, 0x22aa44, 0.5)
+      );
+      wingL.rotation.z = 1.0;
+      wingL.position.set(-1.2, 3.0, -0.2);
+      group.add(wingL);
+      var wingR = wingL.clone();
+      wingR.rotation.z = -1.0;
+      wingR.position.x = 1.2;
+      group.add(wingR);
+      group.userData.wings = { userData: { leftWing: wingL, rightWing: wingR } };
+    } else {
+      group = createSoulBeastMesh('tiger');
+    }
+
+    var aura = new THREE.Mesh(
+      new THREE.RingGeometry(2.2, 2.7, 24),
+      new THREE.MeshBasicMaterial({ color: 0xffd700, transparent: true, opacity: 0.35, side: THREE.DoubleSide })
+    );
+    aura.rotation.x = -Math.PI / 2;
+    aura.position.y = 0.12;
+    group.add(aura);
+    return group;
+  }
+
   global.DinoModel = {
     createSacredDragonMesh: createSacredDragonMesh,
     createSoulRingsGroup: createSoulRingsGroup,
     createHolyWings: createHolyWings,
     createSoulBeastMesh: createSoulBeastMesh,
+    createFighterMesh: createFighterMesh,
     create: function () {
       return createSacredDragonMesh(false);
     }
