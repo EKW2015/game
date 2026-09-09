@@ -68,7 +68,7 @@
   }
 
   SoulEntity.prototype.getSpeed = function () {
-    var base = this.isPlayer ? 180 : 110;
+    var base = this.isPlayer ? 186 : 178;
     if (this.avatarMode) base *= 1.6;
     if (this.isFlying) base *= 1.8;
     if (this.heavyDebuff > 0) base *= 0.35; // 太阳重力拳：身体瞬间变沉重
@@ -157,9 +157,13 @@
 
     // 魂力被动自然恢复
     if (this.alive && this.mp < this.maxMp) {
-      var regen = 15;
-      if (this.hasBadge && this.domainBlessing) regen += 45; // 领域内圣龙祝福：魂力持续快速恢复
+      var regen = this.isPlayer ? 12 : 22;
+      if (this.hasBadge && this.domainBlessing) regen += 45;
       this.mp = Math.min(this.maxMp, this.mp + regen * dt);
+    }
+    if (this.alive && this.hp < this.maxHp) {
+      var hpRegen = this.isPlayer ? 5 : 9;
+      this.hp = Math.min(this.maxHp, this.hp + hpRegen * dt);
     }
   };
 
@@ -179,13 +183,16 @@
   };
 
   SoulEntity.prototype.takeDamage = function (amount, from) {
-    if (this.goldBodyActive || (this.avatarMode && this.isPlayer)) {
-      // 圣龙金身 / 圣龙真身 免疫伤害！反弹冲击波
-      if (this.goldBodyActive && from) {
+    if (this.goldBodyActive) {
+      if (from) {
         var reflectDmg = amount * 0.6;
         from.takeDamage(reflectDmg, null);
       }
       return false;
+    }
+
+    if (this.avatarMode) {
+      amount *= this.isPlayer ? 0.42 : 0.50;
     }
 
     // 光盾吸收伤害

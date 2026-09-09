@@ -13,7 +13,7 @@
 
   var Roster = global.Roster;
 
-  var GRACE_TIME = 1.2;
+  var GRACE_TIME = 0.35;
 
   function Game(canvas, hooks) {
     this.canvas = canvas;
@@ -316,10 +316,6 @@
 
     this.playTime += dt;
 
-    if (this.player && this.player.alive && this.player.hp < this.player.maxHp) {
-      this.player.hp = Math.min(this.player.maxHp, this.player.hp + 28 * dt);
-    }
-
     this.updatePlayer(dt);
     this.updateNPCs(dt);
     this.skills.update(dt);
@@ -417,7 +413,6 @@
       if (d > attacker.biteReach() + victim.radius * 0.7) continue;
 
       var dmg = attacker.biteDamage();
-      if (victim.isPlayer) dmg *= 0.42;
 
       if (victim.takeDamage(dmg, attacker)) {
         this.killEntity(victim, attacker);

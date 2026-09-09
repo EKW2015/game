@@ -126,39 +126,39 @@
       id: 'wuhun',
       name: '武魂殿黑衣队',
       members: [
-        { id: 'e1', name: '黑衣执事', title: '强攻系魂圣', soul: '暗影魔龙', model: 'dragon', hp: 3200, mp: 1000, attack: 210, defense: 140, level: 76, skills: ['ring1', 'ring3', 'trueBody'] },
-        { id: 'e2', name: '夜杀', title: '敏攻系魂圣', soul: '幽冥刺', model: 'assassin', hp: 2400, mp: 800, attack: 200, defense: 80, level: 74, skills: ['shadowStrike', 'trueBody'] },
-        { id: 'e3', name: '炎狱', title: '远攻系魂圣', soul: '狱火鸦', model: 'phoenix', hp: 2200, mp: 900, attack: 190, defense: 75, level: 74, skills: ['phoenixMeteor', 'trueBody'] },
-        { id: 'e4', name: '寒魄', title: '控制系魂圣', soul: '玄冰蝎', model: 'ice', hp: 2100, mp: 1000, attack: 130, defense: 90, level: 73, skills: ['iceVines', 'trueBody'] },
-        { id: 'e5', name: '铁壁', title: '防御系魂圣', soul: '玄甲犀', model: 'mammoth', hp: 4800, mp: 700, attack: 140, defense: 240, level: 75, skills: ['mammothStomp', 'trueBody'] },
-        { id: 'e6', name: '烛阴', title: '辅助系魂圣', soul: '幽光灯', model: 'lamp', hp: 1900, mp: 1200, attack: 80, defense: 70, level: 72, skills: ['speedAmp', 'trueBody'] },
-        { id: 'e7', name: '血藤', title: '治疗系魂圣', soul: '吸血藤', model: 'bird', hp: 2500, mp: 1100, attack: 70, defense: 90, level: 73, skills: ['emeraldWave', 'trueBody'] }
+        { id: 'e1', name: '黑衣执事', title: '强攻系魂圣', soul: '暗影魔龙', model: 'dragon', hp: 4300, mp: 1200, attack: 290, defense: 185, level: 77, skills: ['ring1', 'ring3', 'ring5', 'trueBody'] },
+        { id: 'e2', name: '夜杀', title: '敏攻系魂圣', soul: '幽冥刺', model: 'assassin', hp: 3100, mp: 980, attack: 280, defense: 100, level: 76, skills: ['shadowStrike', 'bladeStorm', 'trueBody'] },
+        { id: 'e3', name: '炎狱', title: '远攻系魂圣', soul: '狱火鸦', model: 'phoenix', hp: 2900, mp: 1100, attack: 265, defense: 95, level: 76, skills: ['phoenixMeteor', 'fireCage', 'trueBody'] },
+        { id: 'e4', name: '寒魄', title: '控制系魂圣', soul: '玄冰蝎', model: 'ice', hp: 2800, mp: 1200, attack: 190, defense: 115, level: 75, skills: ['iceVines', 'absoluteZero', 'iceDomain', 'trueBody'] },
+        { id: 'e5', name: '铁壁', title: '防御系魂圣', soul: '玄甲犀', model: 'mammoth', hp: 6200, mp: 850, attack: 200, defense: 290, level: 76, skills: ['mammothStomp', 'goldShield', 'trueBody'] },
+        { id: 'e6', name: '烛阴', title: '辅助系魂圣', soul: '幽光灯', model: 'lamp', hp: 2500, mp: 1400, attack: 120, defense: 90, level: 74, skills: ['speedAmp', 'mpSurge', 'trueBody'] },
+        { id: 'e7', name: '血藤', title: '治疗系魂圣', soul: '吸血藤', model: 'bird', hp: 3200, mp: 1300, attack: 110, defense: 115, level: 75, skills: ['emeraldWave', 'purify', 'trueBody'] }
       ]
     },
     {
       id: 'xingluo',
       name: '星罗皇家一队',
       members: [
-        { id: 'x1', name: '戴星河', title: '强攻系魂圣', soul: '白虎', model: 'mammoth', hp: 3400, mp: 950, attack: 220, defense: 150, level: 77, skills: ['mammothStomp'] },
-        { id: 'x2', name: '朱影', title: '敏攻系魂圣', soul: '幽冥灵猫', model: 'assassin', hp: 2500, mp: 850, attack: 210, defense: 85, level: 75, skills: ['shadowStrike', 'bladeStorm'] },
-        { id: 'x3', name: '火鸾', title: '远攻系魂圣', soul: '赤焰鸾', model: 'phoenix', hp: 2300, mp: 1000, attack: 200, defense: 80, level: 75, skills: ['phoenixMeteor', 'fireCage'] },
-        { id: 'x4', name: '冰璃', title: '控制系魂圣', soul: '霜莲', model: 'ice', hp: 2200, mp: 1100, attack: 140, defense: 90, level: 74, skills: ['absoluteZero'] },
-        { id: 'x5', name: '岩盾', title: '防御系魂圣', soul: '金刚象', model: 'mammoth', hp: 5000, mp: 750, attack: 150, defense: 250, level: 76, skills: ['goldShield'] },
-        { id: 'x6', name: '流光', title: '辅助系魂圣', soul: '琉璃盏', model: 'lamp', hp: 2000, mp: 1300, attack: 85, defense: 75, level: 73, skills: ['mpSurge'] },
-        { id: 'x7', name: '春芽', title: '治疗系魂圣', soul: '翠羽雀', model: 'bird', hp: 2600, mp: 1200, attack: 75, defense: 95, level: 74, skills: ['lifeDomain'] }
+        { id: 'x1', name: '戴星河', title: '强攻系魂圣', soul: '白虎', model: 'mammoth', hp: 4600, mp: 1150, attack: 310, defense: 200, level: 78, skills: ['mammothStomp', 'goldShield', 'trueBody'] },
+        { id: 'x2', name: '朱影', title: '敏攻系魂圣', soul: '幽冥灵猫', model: 'assassin', hp: 3300, mp: 1000, attack: 300, defense: 110, level: 77, skills: ['shadowStrike', 'bladeStorm', 'trueBody'] },
+        { id: 'x3', name: '火鸾', title: '远攻系魂圣', soul: '赤焰鸾', model: 'phoenix', hp: 3100, mp: 1200, attack: 285, defense: 105, level: 77, skills: ['phoenixMeteor', 'fireCage', 'trueBody'] },
+        { id: 'x4', name: '冰璃', title: '控制系魂圣', soul: '霜莲', model: 'ice', hp: 3000, mp: 1300, attack: 210, defense: 120, level: 76, skills: ['absoluteZero', 'iceDomain', 'iceVines', 'trueBody'] },
+        { id: 'x5', name: '岩盾', title: '防御系魂圣', soul: '金刚象', model: 'mammoth', hp: 6800, mp: 900, attack: 220, defense: 320, level: 78, skills: ['goldShield', 'mammothStomp', 'trueBody'] },
+        { id: 'x6', name: '流光', title: '辅助系魂圣', soul: '琉璃盏', model: 'lamp', hp: 2700, mp: 1550, attack: 130, defense: 100, level: 75, skills: ['mpSurge', 'speedAmp', 'trueBody'] },
+        { id: 'x7', name: '春芽', title: '治疗系魂圣', soul: '翠羽雀', model: 'bird', hp: 3500, mp: 1450, attack: 120, defense: 125, level: 76, skills: ['lifeDomain', 'emeraldWave', 'trueBody'] }
       ]
     },
     {
       id: 'tiandou',
       name: '天斗皇家队',
       members: [
-        { id: 't1', name: '玉天心', title: '强攻系魂圣', soul: '蓝电霸王龙', model: 'dragon', hp: 3600, mp: 1100, attack: 240, defense: 160, level: 78, skills: ['ring1', 'ring3', 'ring5'] },
-        { id: 't2', name: '独孤锋', title: '敏攻系魂圣', soul: '碧磷蛇', model: 'assassin', hp: 2550, mp: 900, attack: 215, defense: 88, level: 76, skills: ['shadowStrike'] },
-        { id: 't3', name: '火舞', title: '控制系魂圣', soul: '邪火凤凰', model: 'phoenix', hp: 2350, mp: 1050, attack: 205, defense: 82, level: 75, skills: ['fireCage', 'phoenixMeteor'] },
-        { id: 't4', name: '雪晴', title: '控制系魂圣', soul: '雪女', model: 'ice', hp: 2250, mp: 1150, attack: 145, defense: 92, level: 75, skills: ['iceDomain', 'absoluteZero'] },
-        { id: 't5', name: '大力', title: '防御系魂圣', soul: '金刚', model: 'mammoth', hp: 5300, mp: 780, attack: 155, defense: 270, level: 77, skills: ['mammothStomp', 'goldShield'] },
-        { id: 't6', name: '宁风', title: '辅助系魂圣', soul: '七宝琉璃', model: 'lamp', hp: 2050, mp: 1450, attack: 88, defense: 78, level: 74, skills: ['speedAmp', 'mpSurge'] },
-        { id: 't7', name: '叶青', title: '治疗系魂圣', soul: '青鸾', model: 'bird', hp: 2700, mp: 1250, attack: 78, defense: 98, level: 75, skills: ['emeraldWave', 'purify'] }
+        { id: 't1', name: '玉天心', title: '强攻系魂圣', soul: '蓝电霸王龙', model: 'dragon', hp: 5000, mp: 1300, attack: 340, defense: 220, level: 80, skills: ['ring1', 'ring3', 'ring5', 'trueBody'] },
+        { id: 't2', name: '独孤锋', title: '敏攻系魂圣', soul: '碧磷蛇', model: 'assassin', hp: 3500, mp: 1100, attack: 320, defense: 120, level: 78, skills: ['shadowStrike', 'bladeStorm', 'trueBody'] },
+        { id: 't3', name: '火舞', title: '控制系魂圣', soul: '邪火凤凰', model: 'phoenix', hp: 3300, mp: 1250, attack: 300, defense: 115, level: 77, skills: ['fireCage', 'phoenixMeteor', 'trueBody'] },
+        { id: 't4', name: '雪晴', title: '控制系魂圣', soul: '雪女', model: 'ice', hp: 3200, mp: 1400, attack: 230, defense: 130, level: 77, skills: ['iceDomain', 'absoluteZero', 'iceVines', 'trueBody'] },
+        { id: 't5', name: '大力', title: '防御系魂圣', soul: '金刚', model: 'mammoth', hp: 7600, mp: 980, attack: 240, defense: 360, level: 79, skills: ['mammothStomp', 'goldShield', 'trueBody'] },
+        { id: 't6', name: '宁风', title: '辅助系魂圣', soul: '七宝琉璃', model: 'lamp', hp: 2900, mp: 1700, attack: 145, defense: 110, level: 76, skills: ['speedAmp', 'mpSurge', 'trueBody'] },
+        { id: 't7', name: '叶青', title: '治疗系魂圣', soul: '青鸾', model: 'bird', hp: 3800, mp: 1550, attack: 135, defense: 140, level: 77, skills: ['emeraldWave', 'purify', 'lifeDomain', 'trueBody'] }
       ]
     }
   ];

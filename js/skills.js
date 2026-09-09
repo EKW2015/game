@@ -213,10 +213,13 @@
     this.domainTimer = 0;
     this.iceDomainTimer = 0;
     this.lifeDomainTimer = 0;
+    this.iceDomainOwner = null;
+    this.lifeDomainOwner = null;
   }
 
   // 释放技能入口
-  SkillManager.prototype.castSkill = function (skillId, caster) {
+  SkillManager.prototype.castSkill = function (skillId, caster, opts) {
+    opts = opts || {};
     var player = caster || this.game.player;
     if (!player || !player.alive) return false;
 
@@ -234,14 +237,14 @@
         if (mem && !mem.eliminated) partnerOk = true;
       }
       if (!partnerOk) {
-        this.game.addMessage('【' + skill.name + '】需要' + (skill.partnerHint || partnerNames.join('、')) + '仍在队伍中！', 1.8);
+        if (!opts.silentFail) this.game.addMessage('【' + skill.name + '】需要' + (skill.partnerHint || partnerNames.join('、')) + '仍在队伍中！', 1.8);
         return false;
       }
     }
 
     // 冷却判断
     if (player.cooldowns[skillId] > 0) {
-      this.game.addMessage(skill.name + ' 冷却中 (' + player.cooldowns[skillId].toFixed(1) + 's)', 1.0);
+      if (!opts.silentFail) this.game.addMessage(skill.name + ' 冷却中 (' + player.cooldowns[skillId].toFixed(1) + 's)', 1.0);
       return false;
     }
 
@@ -252,7 +255,7 @@
     }
 
     if (player.mp < cost) {
-      this.game.addMessage('魂力不足！需要 ' + cost + ' 点魂力', 1.2);
+      if (!opts.silentFail) this.game.addMessage('魂力不足！需要 ' + cost + ' 点魂力', 1.2);
       return false;
     }
 
@@ -628,6 +631,7 @@
       case 'iceDomain':
         Sfx.domain();
         this.iceDomainTimer = 16;
+        this.iceDomainOwner = p;
         this.game.addMessage('【玄冰领域】展开！气温骤降，敌人移动与回蓝被压制！', 2.8);
         break;
 
@@ -687,6 +691,7 @@
       case 'lifeDomain':
         Sfx.domain();
         this.lifeDomainTimer = 16;
+        this.lifeDomainOwner = p;
         this.game.addMessage('【生命礼赞领域】展开！伤势极速自动愈合！', 2.8);
         break;
 
@@ -753,26 +758,25 @@
   // 每帧更新弹道与领域状态
   SkillManager.prototype.update = function (dt) {
     var player = this.game.player;
-    var enemies = this.game.dinos.filter(function (d) { return d.alive && (!player || d.id !== player.id); });
+    var everyone = this.game.dinos.filter(function (d) { return d.alive; });
 
-    // 1. 领域状态检测与灼烧
     if (this.domainActive) {
       this.domainTimer -= dt;
       if (this.domainTimer <= 0) {
         this.domainActive = false;
         this.game.world.setDomainActive(false, 0, 0);
-        if (player) player.domainBlessing = false;
-        for (var k = 0; k < enemies.length; k++) {
-          enemies[k].domainDebuff = false;
+        for (var k = 0; k < everyone.length; k++) {
+          everyone[k].domainBlessing = false;
+          everyone[k].domainDebuff = false;
         }
       } else {
-        // 领域内对无徽章敌人持续施加灼烧与50%属性削弱
-        for (var e = 0; e < enemies.length; e++) {
-          var enemy = enemies[e];
+        for (var e = 0; e < everyone.length; e++) {
+          var enemy = everyone[e];
           if (!enemy.hasBadge) {
             enemy.domainDebuff = true;
-            // 每秒受到光明火焰灼烧伤害
-            enemy.takeDamage(player.getEffectiveAttack() * 0.25 * dt, player);
+            if (player && player.alive) {
+              enemy.takeDamage(player.getEffectiveAttack() * 0.25 * dt, player);
+            }
             if (Math.random() < 0.15) {
               this.game.addParticles(enemy.x, enemy.y, '#ffaa00', 2);
             }
@@ -783,34 +787,38 @@
 
     if (this.iceDomainTimer > 0) {
       this.iceDomainTimer -= dt;
-      for (var ice = 0; ice < enemies.length; ice++) {
-        enemies[ice].heavyDebuff = Math.max(enemies[ice].heavyDebuff, 0.4);
-        enemies[ice].mp = Math.max(0, enemies[ice].mp - 18 * dt);
+      var iceOwner = this.iceDomainOwner;
+      for (var ice = 0; ice < everyone.length; ice++) {
+        if (iceOwner && everyone[ice].id === iceOwner.id) continue;
+        everyone[ice].heavyDebuff = Math.max(everyone[ice].heavyDebuff, 0.4);
+        everyone[ice].mp = Math.max(0, everyone[ice].mp - 18 * dt);
       }
     }
 
-    if (this.lifeDomainTimer > 0 && player && player.alive) {
+    if (this.lifeDomainTimer > 0) {
       this.lifeDomainTimer -= dt;
-      player.hp = Math.min(player.maxHp, player.hp + 90 * dt);
+      var healTgt = (this.lifeDomainOwner && this.lifeDomainOwner.alive) ? this.lifeDomainOwner : player;
+      if (healTgt && healTgt.alive) {
+        healTgt.hp = Math.min(healTgt.maxHp, healTgt.hp + 90 * dt);
+      }
     }
 
-    // 2. 技能弹道更新
     for (var i = this.projectiles.length - 1; i >= 0; i--) {
       var p = this.projectiles[i];
       p.life -= dt;
+      var victims = everyone.filter(function (d) {
+        return !p.owner || d.id !== p.owner.id;
+      });
 
-      // 跟踪型激光柱 (第六魂技追踪太阳神光)
       if (p.type === 'laser') {
         if (p.target && p.target.alive) {
           var targetAngle = U.angleTo(p.x, p.z, p.target.x, p.target.y);
           var angleDiff = U.wrapAngle(targetAngle - p.angle);
-          p.angle += angleDiff * dt * 4.5; // 自动拐弯追踪敌人！
+          p.angle += angleDiff * dt * 4.5;
         }
         p.x += Math.cos(p.angle) * p.speed * dt;
         p.z += Math.sin(p.angle) * p.speed * dt;
-      }
-      // 御剑术飞剑
-      else if (p.type === 'sword') {
+      } else if (p.type === 'sword') {
         if (p.target && p.target.alive) {
           var swTgtAngle = U.angleTo(p.x, p.z, p.target.x, p.target.y);
           var swDiff = U.wrapAngle(swTgtAngle - p.angle);
@@ -818,9 +826,7 @@
         }
         p.x += Math.cos(p.angle) * p.speed * dt;
         p.z += Math.sin(p.angle) * p.speed * dt;
-      }
-      // 光耀审判天降巨剑
-      else if (p.type === 'judgment' || p.type === 'sunPhoenix') {
+      } else if (p.type === 'judgment' || p.type === 'sunPhoenix') {
         p.y += p.vyGround * dt;
         if (p.y <= 0) {
           p.y = 0;
@@ -828,41 +834,35 @@
           Sfx.hit();
           this.game.addParticles(p.x, p.z, p.type === 'sunPhoenix' ? '#ff6622' : '#ffffff', p.type === 'sunPhoenix' ? 80 : 40);
           var boomR = p.type === 'sunPhoenix' ? 240 : 90;
-          for (var j = 0; j < enemies.length; j++) {
-            var distJ = U.dist(p.x, p.z, enemies[j].x, enemies[j].y);
+          for (var j = 0; j < victims.length; j++) {
+            var distJ = U.dist(p.x, p.z, victims[j].x, victims[j].y);
             if (distJ < boomR) {
-              enemies[j].takeDamage(p.damage, p.owner);
-              if (p.type === 'sunPhoenix') enemies[j].stunned = Math.max(enemies[j].stunned, 2.4);
+              victims[j].takeDamage(p.damage, p.owner);
+              if (p.type === 'sunPhoenix') victims[j].stunned = Math.max(victims[j].stunned, 2.4);
             }
           }
         }
-      }
-      // 光盾持续依附在玩家身前
-      else if (p.type === 'lightShield') {
-        if (player) {
-          p.x = player.x + Math.cos(player.angle) * 16;
-          p.z = player.y + Math.sin(player.angle) * 16;
-          p.angle = player.angle;
+      } else if (p.type === 'lightShield') {
+        var shOwner = (p.owner && p.owner.alive) ? p.owner : player;
+        if (shOwner) {
+          p.x = shOwner.x + Math.cos(shOwner.angle) * 16;
+          p.z = shOwner.y + Math.sin(shOwner.angle) * 16;
+          p.angle = shOwner.angle;
         }
-      }
-      // 圣龙爆破拳二次金色爆炸
-      else if (p.type === 'explosion') {
+      } else if (p.type === 'explosion') {
         if (p.life <= 0 && p.target && p.target.alive) {
           p.target.takeDamage(p.damage, p.owner);
           this.game.addParticles(p.target.x, p.target.y, '#ffa500', 30);
           Sfx.hit();
         }
-      }
-      // 常规弹道 (龙羽、龙针、裂空爪光刃)
-      else {
+      } else {
         p.x += (p.vx || 0) * dt;
         p.z += (p.vy || 0) * dt;
       }
 
-      // 弹道命中敌人碰撞检测
-      if (p.type !== 'judgment' && p.type !== 'lightShield' && p.type !== 'explosion') {
-        for (var m = 0; m < enemies.length; m++) {
-          var victim = enemies[m];
+      if (p.type !== 'judgment' && p.type !== 'sunPhoenix' && p.type !== 'lightShield' && p.type !== 'explosion') {
+        for (var m = 0; m < victims.length; m++) {
+          var victim = victims[m];
           var hitDist = U.dist(p.x, p.z, victim.x, victim.y);
           if (hitDist < victim.radius + 15) {
             victim.takeDamage(p.damage || 50, p.owner);

@@ -76,9 +76,27 @@ assert.strictEqual(died, false, 'avatar + gold body should be immune');
 assert.ok(player.hp > 3400);
 assert.ok(dummy.alive, 'reflect should not instantly kill a tanky beast');
 
+player.goldBodyActive = false;
+player.avatarMode = true;
+var hpBeforeAvatar = player.hp;
+player.takeDamage(400, dummy);
+assert.ok(player.hp < hpBeforeAvatar, 'true body is tanky but not immortal');
+assert.ok(player.alive);
+
 player.avatarMode = false;
 player.goldBodyActive = false;
+player.hp = 3500;
 player.mp = 1200;
+
+assert.ok(win.Roster.ENEMY_TEAMS[0].members[0].attack >= 280, 'first opponent hits harder');
+dummy.mp = 1000;
+dummy.cooldowns = {};
+dummy.avatarMode = false;
+dummy.hp = 5000;
+dummy.maxHp = 5000;
+assert.strictEqual(win.AI.pickSkill(dummy, { skills: ['ring1', 'ring3', 'trueBody'] }, 90, 40), 'ring1');
+dummy.hp = 2000;
+assert.strictEqual(win.AI.pickSkill(dummy, { skills: ['ring1', 'ring3', 'trueBody'] }, 90, 40), 'trueBody');
 
 var gameStub = {
   player: player,
@@ -159,6 +177,39 @@ gameStub.playerTeam.members.forEach(function (m) {
   if (m.id === 'yanhuang') m.eliminated = false;
 });
 assert.strictEqual(skills.castSkill('fusionPhoenix'), true, 'fusionPhoenix with 焱凰 on roster');
+
+player.hp = 3500;
+player.avatarMode = false;
+player.goldBodyActive = false;
+player.x = 0;
+player.y = 0;
+dummy.x = 40;
+dummy.y = 0;
+skills.projectiles.push({
+  type: 'bolt',
+  x: 1,
+  z: 0,
+  vx: 0,
+  vy: 0,
+  life: 1,
+  damage: 300,
+  owner: dummy
+});
+var hpHit = player.hp;
+skills.update(0.016);
+assert.ok(player.hp < hpHit, 'enemy projectile can hit the player');
+
+dummy.cooldowns = dummy.cooldowns || {};
+dummy.cooldowns.ring1 = 2;
+dummy.mp = 1000;
+assert.strictEqual(skills.castSkill('ring1', dummy, { silentFail: true }), false, 'silent fail on cooldown');
+
+dummy.stunned = 0;
+dummy.heavyDebuff = 0;
+dummy.domainDebuff = false;
+dummy.avatarMode = false;
+dummy.isFlying = false;
+assert.ok(dummy.getSpeed() >= 170, 'enemy chase speed is competitive');
 
 console.log('smoke ok');
 console.log('skills', Object.keys(SKILLS_DATA).length);
