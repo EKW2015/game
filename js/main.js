@@ -40,6 +40,7 @@
   var bootScreen = doc.getElementById('boot-screen');
   var bootMsg = doc.getElementById('boot-msg');
   var bootEnter = doc.getElementById('boot-enter');
+  var startMatchBtn = doc.getElementById('btn-start-match');
 
   var game = null;
 
@@ -291,7 +292,7 @@
       else if (action === 'reload') global.location.reload();
     });
 
-    Array.prototype.forEach.call(touchControls.querySelectorAll('[data-hold]'), function (button) {
+    Array.prototype.forEach.call((touchControls && touchControls.querySelectorAll('[data-hold]')) || [], function (button) {
       var action = button.getAttribute('data-hold');
       button.addEventListener('pointerdown', function (event) {
         if (!game) return;
@@ -304,8 +305,14 @@
       button.addEventListener('pointercancel', function () { if (game) game.release(action); });
     });
 
-    soundButton.addEventListener('click', toggleSound);
-    pauseButton.addEventListener('click', function () { if (game) game.togglePause(); });
+    if (soundButton) soundButton.addEventListener('click', toggleSound);
+    if (pauseButton) pauseButton.addEventListener('click', function () { if (game) game.togglePause(); });
+    if (startMatchBtn) {
+      startMatchBtn.addEventListener('click', function () {
+        hideBoot();
+        if (game && (game.state === 'ready' || game.state === 'over')) game.setState('pick');
+      });
+    }
 
     var resizeTimer = 0;
     global.addEventListener('resize', function () {
@@ -426,16 +433,23 @@
             renderMemberSkills(g);
             showOverlay(null);
           }
-          pauseButton.textContent = state === 'paused' ? '继续' : '暂停';
-          pauseButton.disabled = state === 'ready' || state === 'pick';
+          if (pauseButton) {
+            pauseButton.textContent = state === 'paused' ? '继续' : '暂停';
+            pauseButton.disabled = state === 'ready' || state === 'pick';
+          }
+          if (startMatchBtn) {
+            startMatchBtn.style.display = (state === 'playing' || state === 'paused') ? 'none' : '';
+          }
         },
         onHud: function (g) {
           updateHUD(g);
         }
       });
 
-      showOverlay('ready');
-      pauseButton.disabled = true;
+      showOverlay('pick');
+      renderPick(game);
+      game.setState('pick');
+      if (pauseButton) pauseButton.disabled = true;
       hideBoot();
       global.requestAnimationFrame(function () {
         game.resize();

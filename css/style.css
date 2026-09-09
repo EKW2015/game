@@ -64,6 +64,13 @@ body {
   gap: 8px;
 }
 
+.tool--play {
+  background: linear-gradient(135deg, #ffd700, #ffaa00);
+  color: #1a0f00;
+  font-weight: 800;
+  border: 0;
+}
+
 .tool {
   font: inherit;
   font-size: 13px;

@@ -8,553 +8,31 @@
     <title>3D 斗罗大陆：圣龙神辉战队大赛</title>
     <style>html,body{background:#0b1118!important;min-height:100vh;margin:0}</style>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='14' font-size='14'>🐉</text></svg>" />
-    <style>:root {
-  --page-bg: #0b1118;
-  --card-bg: #141c24;
-  --ink: #f0f4f8;
-  --ink-soft: #9bb0c1;
-  --line: rgba(255, 215, 0, 0.22);
-  --accent: #ffd700;
-  --accent-gold: #ffb800;
-  --accent-ink: #110d02;
-  --win: #ffdd44;
-  --shadow: 0 18px 45px -20px rgba(0, 0, 0, 0.85);
-  --radius: 14px;
-  color-scheme: dark;
-}
-
-* {
-  box-sizing: border-box;
-}
-
-html, body {
-  margin: 0;
-  padding: 0;
-}
-
-body {
-  min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 20px 16px calc(24px + env(safe-area-inset-bottom));
-  background: radial-gradient(circle at 50% 20%, #172433 0%, var(--page-bg) 100%);
-  color: var(--ink);
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
-    "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", sans-serif;
-  -webkit-font-smoothing: antialiased;
-}
-
-.page {
-  width: min(1120px, 100%);
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-}
-
-.page__header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  flex-wrap: wrap;
-}
-
-.page__title {
-  margin: 0;
-  font-size: clamp(20px, 3.8vw, 26px);
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  color: var(--accent);
-  text-shadow: 0 0 16px rgba(255, 215, 0, 0.4);
-}
-
-.page__tools {
-  display: flex;
-  gap: 8px;
-}
-
-.tool {
-  font: inherit;
-  font-size: 13px;
-  padding: 7px 14px;
-  border-radius: 999px;
-  border: 1px solid var(--line);
-  background: var(--card-bg);
-  color: var(--ink-soft);
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.tool:hover {
-  color: #fff;
-  border-color: var(--accent);
-  box-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
-}
-
-.tool:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
-}
-
-.stage {
-  position: relative;
-  border-radius: var(--radius);
-  overflow: hidden;
-  background: var(--card-bg);
-  box-shadow: var(--shadow);
-  border: 1px solid var(--line);
-  touch-action: manipulation;
-  user-select: none;
-  min-height: 400px;
-}
-
-.stage__canvas {
-  display: block;
-  width: 100%;
-  min-height: 400px;
-  height: auto;
-  aspect-ratio: 16 / 9;
-  background: #38556b;
-}
-
-.crosshair {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  width: 18px;
-  height: 18px;
-  margin: -9px 0 0 -9px;
-  pointer-events: none;
-  opacity: 0.65;
-}
-
-.crosshair::before,
-.crosshair::after {
-  content: "";
-  position: absolute;
-  background: #ffd700;
-  border-radius: 1px;
-  box-shadow: 0 0 6px rgba(255, 215, 0, 0.8);
-}
-
-.crosshair::before {
-  left: 50%;
-  top: 2px;
-  width: 2px;
-  height: 14px;
-  margin-left: -1px;
-}
-
-.crosshair::after {
-  top: 50%;
-  left: 2px;
-  width: 14px;
-  height: 2px;
-  margin-top: -1px;
-}
-
-.badge-3d {
-  display: inline-block;
-  font-size: 0.45em;
-  padding: 2px 8px;
-  border-radius: 6px;
-  background: linear-gradient(135deg, #ffd700, #ff8c00);
-  color: #1a0f00;
-  font-weight: 900;
-  vertical-align: middle;
-  letter-spacing: 0.05em;
-}
-
-/* 斗罗大陆专属 HUD 界面 */
-.hud {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  padding: 14px;
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-}
-
-.hud__panel {
-  background: rgba(10, 16, 24, 0.78);
-  border: 1px solid rgba(255, 215, 0, 0.3);
-  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.6);
-  color: #f0f4f8;
-  padding: 10px 14px;
-  border-radius: 10px;
-  font-size: 13px;
-  line-height: 1.8;
-  backdrop-filter: blur(4px);
-}
-
-.hud__bar-wrap {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 2px;
-}
-
-.hud__bar {
-  width: 110px;
-  height: 8px;
-  background: rgba(255, 255, 255, 0.15);
-  border-radius: 4px;
-  overflow: hidden;
-}
-
-.hud__bar-inner-hp {
-  height: 100%;
-  background: linear-gradient(90deg, #ff4444, #ff8888);
-  width: 100%;
-  transition: width 0.15s ease;
-}
-
-.hud__bar-inner-mp {
-  height: 100%;
-  background: linear-gradient(90deg, #3399ff, #66ccff);
-  width: 100%;
-  transition: width 0.15s ease;
-}
-
-.hud__panel strong {
-  color: var(--accent);
-}
-
-.hud__remain {
-  background: rgba(10, 16, 24, 0.78);
-  border: 1px solid rgba(255, 215, 0, 0.3);
-  color: #ffcc66;
-  padding: 8px 14px;
-  border-radius: 10px;
-  font-size: 13px;
-  font-weight: 600;
-  backdrop-filter: blur(4px);
-  text-align: right;
-  line-height: 1.6;
-}
-
-.hud__buffs {
-  margin-top: 4px;
-  font-size: 12px;
-  color: #88ff88;
-}
-
-.toast {
-  position: absolute;
-  top: 18%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  background: linear-gradient(135deg, rgba(20, 26, 36, 0.92), rgba(35, 45, 60, 0.92));
-  border: 1px solid #ffd700;
-  box-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
-  color: #fff;
-  padding: 10px 24px;
-  border-radius: 999px;
-  font-size: 15px;
-  font-weight: 700;
-  opacity: 0;
-  transition: opacity 0.25s ease, transform 0.25s ease;
-  pointer-events: none;
-  white-space: nowrap;
-  letter-spacing: 0.05em;
-  z-index: 20;
-}
-
-/* 技能快捷控制栏 */
-.skill-bar-container {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  background: var(--card-bg);
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  padding: 12px;
-}
-
-.skill-category-title {
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--accent);
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin-bottom: 2px;
-}
-
-.skill-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
-  gap: 8px;
-}
-
-.skill-btn {
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 215, 0, 0.25);
-  color: var(--ink);
-  padding: 8px 10px;
-  border-radius: 8px;
-  cursor: pointer;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 3px;
-  font-size: 12px;
-  transition: all 0.15s ease;
-  text-align: left;
-}
-
-.skill-btn:hover {
-  background: rgba(255, 215, 0, 0.15);
-  border-color: var(--accent);
-  transform: translateY(-1px);
-}
-
-.skill-btn:active {
-  transform: translateY(1px);
-}
-
-.skill-btn.ring-yellow { border-left: 4px solid #f6d32d; }
-.skill-btn.ring-purple { border-left: 4px solid #b55fe6; }
-.skill-btn.ring-black  { border-left: 4px solid #555566; }
-.skill-btn.ring-red    { border-left: 4px solid #ff3344; background: rgba(255, 51, 68, 0.1); }
-.skill-btn.bone        { border-left: 4px solid #ffaa00; }
-.skill-btn.domain      { border-left: 4px solid #ffd700; background: rgba(255, 215, 0, 0.12); }
-
-.skill-btn .s-key {
-  font-size: 11px;
-  color: var(--accent);
-  font-weight: 700;
-}
-
-.skill-btn .s-name {
-  font-weight: 600;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  width: 100%;
-}
-
-.skill-btn .s-cost {
-  font-size: 11px;
-  color: #66ccff;
-}
-
-.overlay {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  padding: 16px 18px 20px;
-  text-align: center;
-  pointer-events: none;
-  background: rgba(10, 16, 24, 0.85);
-  backdrop-filter: blur(4px);
-  z-index: 30;
-  overflow-y: auto;
-}
-
-.overlay--hidden {
-  display: none;
-}
-
-#overlay-ready,
-#overlay-pick,
-#overlay-over,
-#overlay-paused,
-#overlay-error {
-  pointer-events: auto;
-}
-
-.overlay__title {
-  margin: 0;
-  font-size: clamp(22px, 4.5vw, 32px);
-  font-weight: 800;
-  letter-spacing: 0.12em;
-  color: var(--accent);
-  text-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
-}
-
-.overlay__hint,
-.overlay__score {
-  margin: 0;
-  font-size: 14px;
-  color: var(--ink-soft);
-  max-width: 520px;
-  line-height: 1.6;
-}
-
-.overlay__button {
-  pointer-events: auto;
-  flex-shrink: 0;
-  margin-top: 8px;
-  font: inherit;
-  font-size: 15px;
-  padding: 12px 36px;
-  border: 0;
-  border-radius: 999px;
-  background: linear-gradient(135deg, #ffd700, #ffaa00);
-  color: #1a0f00;
-  font-weight: 700;
-  cursor: pointer;
-  box-shadow: 0 6px 20px rgba(255, 170, 0, 0.4);
-  transition: all 0.2s ease;
-}
-
-.overlay__button:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(255, 170, 0, 0.6);
-}
-
-kbd {
-  display: inline-block;
-  min-width: 20px;
-  padding: 2px 6px;
-  border: 1px solid var(--line);
-  border-radius: 5px;
-  background: var(--card-bg);
-  font-size: 11px;
-  color: var(--accent);
-}
-
-.touch {
-  display: none;
-  align-items: center;
-  gap: 16px;
-}
-
-.touch__dpad {
-  display: grid;
-  grid-template-columns: repeat(3, 52px);
-  grid-template-rows: repeat(3, 52px);
-  gap: 4px;
-}
-
-.touch__btn {
-  font: inherit;
-  font-size: 18px;
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  background: var(--card-bg);
-  color: var(--ink);
-  cursor: pointer;
-}
-
-.touch__btn--up { grid-column: 2; grid-row: 1; }
-.touch__btn--left { grid-column: 1; grid-row: 2; }
-.touch__btn--right { grid-column: 3; grid-row: 2; }
-.touch__btn--down { grid-column: 2; grid-row: 3; }
-
-.touch__bite {
-  flex: 1;
-  font: inherit;
-  font-size: 16px;
-  font-weight: 700;
-  padding: 20px;
-  border-radius: 12px;
-  border: 1px solid var(--line);
-  background: linear-gradient(135deg, #ffd700, #ff9900);
-  color: #1a0f00;
-  cursor: pointer;
-}
-
-@media (pointer: coarse) {
-  .touch {
-    display: flex;
-  }
-}
-
-.legend {
-  padding: 16px 18px;
-  border-radius: var(--radius);
-  border: 1px solid var(--line);
-  background: var(--card-bg);
-}
-
-.legend__title {
-  margin: 0 0 10px;
-  font-size: 14px;
-  font-weight: 700;
-  color: var(--accent);
-  letter-spacing: 0.1em;
-}
-
-.legend__list {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  display: grid;
-  gap: 8px;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-  font-size: 13px;
-  line-height: 1.6;
-}
-
-.legend__list li strong {
-  color: var(--accent);
-}
-
-.pick-grid {
-  pointer-events: auto;
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 8px;
-  width: min(860px, 94%);
-  max-height: 52vh;
-  overflow: auto;
-  margin-top: 8px;
-}
-
-.pick-card {
-  text-align: left;
-  background: rgba(12, 18, 28, 0.92);
-  border: 1px solid rgba(255, 215, 0, 0.35);
-  color: #f0f4f8;
-  border-radius: 10px;
-  padding: 10px 12px;
-  cursor: pointer;
-  font: inherit;
-}
-
-.pick-card:hover {
-  border-color: #ffd700;
-  box-shadow: 0 0 14px rgba(255, 215, 0, 0.35);
-}
-
-.pick-card.is-out {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
-
-.pick-card .pc-name {
-  font-weight: 800;
-  color: #ffd700;
-}
-
-.pick-card .pc-meta {
-  font-size: 12px;
-  color: #9bb0c1;
-  margin-top: 4px;
-  line-height: 1.5;
-}
-</style>
+    <script>
+      window.onerror = function (msg) {
+        var boot = document.getElementById('boot-msg');
+        var btn = document.getElementById('boot-enter');
+        if (boot) {
+          boot.style.color = '#ff8888';
+          boot.innerHTML = '加载出错：' + msg + '<br>请用 Chrome 双击打开 play.html，不要用微信，也不要打开 GitHub 源码页';
+        }
+        if (btn) btn.style.display = 'inline-block';
+      };
+    </script>
   </head>
   <body>
     <div id="boot-screen" style="position:fixed;inset:0;background:#0b1118;z-index:99999;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#ffd700;font-family:sans-serif;text-align:center;padding:20px">
       <div style="font-size:60px;margin-bottom:12px">🐉</div>
       <div style="font-size:26px;font-weight:bold;letter-spacing:2px">3D 斗罗大陆：光明圣龙</div>
-      <div id="boot-msg" style="font-size:15px;color:#9bb0c1;margin-top:14px">正在觉醒武魂光明圣龙，构建星斗大森林 3D 世界…</div>
-      <button id="boot-enter" type="button" style="display:none;margin-top:18px;padding:12px 28px;border:0;border-radius:999px;background:#ffd700;color:#1a0f00;font-weight:700;font-size:16px;cursor:pointer">点这里进入比赛</button>
+      <div id="boot-msg" style="font-size:15px;color:#9bb0c1;margin-top:14px;max-width:420px;line-height:1.6">正在进入比赛…<br>请用 Chrome。不要用微信，不要打开 GitHub 源码页。</div>
+      <button id="boot-enter" type="button" style="display:inline-block;margin-top:18px;padding:12px 28px;border:0;border-radius:999px;background:#ffd700;color:#1a0f00;font-weight:700;font-size:16px;cursor:pointer">点这里进入比赛</button>
     </div>
 
     <main class="page">
       <header class="page__header">
         <h1 class="page__title">3D 斗罗大陆 · 圣龙神辉战队 <span class="badge-3d">1v1 团队赛</span></h1>
         <div class="page__tools">
+          <button id="btn-start-match" class="tool tool--play" type="button" data-action="start">▶ 开始比赛</button>
           <button id="btn-sound" class="tool" type="button" aria-pressed="false">音效：开</button>
           <button id="btn-pause" class="tool" type="button">暂停</button>
         </div>
@@ -3662,6 +3140,25 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
   var DinoModel = global.DinoModel;
   var World = global.World;
 
+  function createWebGLRenderer(canvas) {
+    var attempts = [
+      { canvas: canvas, antialias: true, failIfMajorPerformanceCaveat: false, powerPreference: 'high-performance' },
+      { canvas: canvas, antialias: false, failIfMajorPerformanceCaveat: false },
+      { canvas: canvas, antialias: false, alpha: false, depth: true }
+    ];
+    var lastErr = 'WebGL 不可用';
+    for (var i = 0; i < attempts.length; i++) {
+      try {
+        var renderer = new THREE.WebGLRenderer(attempts[i]);
+        if (renderer.getContext()) return renderer;
+        lastErr = 'WebGL 上下文为空';
+      } catch (err) {
+        lastErr = err && err.message ? err.message : String(err);
+      }
+    }
+    throw new Error(lastErr);
+  }
+
   function Renderer3D(canvas) {
     if (typeof THREE === 'undefined') throw new Error('Three.js 未加载');
 
@@ -3677,11 +3174,14 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     this.camera = new THREE.PerspectiveCamera(65, 16 / 9, 2, 6000);
     this.camera.position.set(0, 50, -60);
 
-    this.renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true });
-    if (!this.renderer.getContext()) throw new Error('WebGL 不可用');
+    this.renderer = createWebGLRenderer(canvas);
     this.renderer.setPixelRatio(Math.min(global.devicePixelRatio || 1, 2));
-    this.renderer.shadowMap.enabled = true;
-    this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    try {
+      this.renderer.shadowMap.enabled = true;
+      this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    } catch (e) {
+      this.renderer.shadowMap.enabled = false;
+    }
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
     this.renderer.toneMappingExposure = 1.15;
 
@@ -4613,6 +4113,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
   var bootScreen = doc.getElementById('boot-screen');
   var bootMsg = doc.getElementById('boot-msg');
   var bootEnter = doc.getElementById('boot-enter');
+  var startMatchBtn = doc.getElementById('btn-start-match');
 
   var game = null;
 
@@ -4864,7 +4365,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
       else if (action === 'reload') global.location.reload();
     });
 
-    Array.prototype.forEach.call(touchControls.querySelectorAll('[data-hold]'), function (button) {
+    Array.prototype.forEach.call((touchControls && touchControls.querySelectorAll('[data-hold]')) || [], function (button) {
       var action = button.getAttribute('data-hold');
       button.addEventListener('pointerdown', function (event) {
         if (!game) return;
@@ -4877,8 +4378,14 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
       button.addEventListener('pointercancel', function () { if (game) game.release(action); });
     });
 
-    soundButton.addEventListener('click', toggleSound);
-    pauseButton.addEventListener('click', function () { if (game) game.togglePause(); });
+    if (soundButton) soundButton.addEventListener('click', toggleSound);
+    if (pauseButton) pauseButton.addEventListener('click', function () { if (game) game.togglePause(); });
+    if (startMatchBtn) {
+      startMatchBtn.addEventListener('click', function () {
+        hideBoot();
+        if (game && (game.state === 'ready' || game.state === 'over')) game.setState('pick');
+      });
+    }
 
     var resizeTimer = 0;
     global.addEventListener('resize', function () {
@@ -4999,16 +4506,23 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
             renderMemberSkills(g);
             showOverlay(null);
           }
-          pauseButton.textContent = state === 'paused' ? '继续' : '暂停';
-          pauseButton.disabled = state === 'ready' || state === 'pick';
+          if (pauseButton) {
+            pauseButton.textContent = state === 'paused' ? '继续' : '暂停';
+            pauseButton.disabled = state === 'ready' || state === 'pick';
+          }
+          if (startMatchBtn) {
+            startMatchBtn.style.display = (state === 'playing' || state === 'paused') ? 'none' : '';
+          }
         },
         onHud: function (g) {
           updateHUD(g);
         }
       });
 
-      showOverlay('ready');
-      pauseButton.disabled = true;
+      showOverlay('pick');
+      renderPick(game);
+      game.setState('pick');
+      if (pauseButton) pauseButton.disabled = true;
       hideBoot();
       global.requestAnimationFrame(function () {
         game.resize();

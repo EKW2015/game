@@ -8,20 +8,31 @@
     <title>3D 斗罗大陆：圣龙神辉战队大赛</title>
     <style>html,body{background:#0b1118!important;min-height:100vh;margin:0}</style>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='14' font-size='14'>🐉</text></svg>" />
-    <link rel="stylesheet" href="css/style.css" />
+    <script>
+      window.onerror = function (msg) {
+        var boot = document.getElementById('boot-msg');
+        var btn = document.getElementById('boot-enter');
+        if (boot) {
+          boot.style.color = '#ff8888';
+          boot.innerHTML = '加载出错：' + msg + '<br>请用 Chrome 双击打开 play.html，不要用微信，也不要打开 GitHub 源码页';
+        }
+        if (btn) btn.style.display = 'inline-block';
+      };
+    </script>
   </head>
   <body>
     <div id="boot-screen" style="position:fixed;inset:0;background:#0b1118;z-index:99999;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#ffd700;font-family:sans-serif;text-align:center;padding:20px">
       <div style="font-size:60px;margin-bottom:12px">🐉</div>
       <div style="font-size:26px;font-weight:bold;letter-spacing:2px">3D 斗罗大陆：光明圣龙</div>
-      <div id="boot-msg" style="font-size:15px;color:#9bb0c1;margin-top:14px">正在觉醒武魂光明圣龙，构建星斗大森林 3D 世界…</div>
-      <button id="boot-enter" type="button" style="display:none;margin-top:18px;padding:12px 28px;border:0;border-radius:999px;background:#ffd700;color:#1a0f00;font-weight:700;font-size:16px;cursor:pointer">点这里进入比赛</button>
+      <div id="boot-msg" style="font-size:15px;color:#9bb0c1;margin-top:14px;max-width:420px;line-height:1.6">正在进入比赛…<br>请用 Chrome。不要用微信，不要打开 GitHub 源码页。</div>
+      <button id="boot-enter" type="button" style="display:inline-block;margin-top:18px;padding:12px 28px;border:0;border-radius:999px;background:#ffd700;color:#1a0f00;font-weight:700;font-size:16px;cursor:pointer">点这里进入比赛</button>
     </div>
 
     <main class="page">
       <header class="page__header">
         <h1 class="page__title">3D 斗罗大陆 · 圣龙神辉战队 <span class="badge-3d">1v1 团队赛</span></h1>
         <div class="page__tools">
+          <button id="btn-start-match" class="tool tool--play" type="button" data-action="start">▶ 开始比赛</button>
           <button id="btn-sound" class="tool" type="button" aria-pressed="false">音效：开</button>
           <button id="btn-pause" class="tool" type="button">暂停</button>
         </div>

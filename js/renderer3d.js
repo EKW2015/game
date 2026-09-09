@@ -7,6 +7,25 @@
   var DinoModel = global.DinoModel;
   var World = global.World;
 
+  function createWebGLRenderer(canvas) {
+    var attempts = [
+      { canvas: canvas, antialias: true, failIfMajorPerformanceCaveat: false, powerPreference: 'high-performance' },
+      { canvas: canvas, antialias: false, failIfMajorPerformanceCaveat: false },
+      { canvas: canvas, antialias: false, alpha: false, depth: true }
+    ];
+    var lastErr = 'WebGL 不可用';
+    for (var i = 0; i < attempts.length; i++) {
+      try {
+        var renderer = new THREE.WebGLRenderer(attempts[i]);
+        if (renderer.getContext()) return renderer;
+        lastErr = 'WebGL 上下文为空';
+      } catch (err) {
+        lastErr = err && err.message ? err.message : String(err);
+      }
+    }
+    throw new Error(lastErr);
+  }
+
   function Renderer3D(canvas) {
     if (typeof THREE === 'undefined') throw new Error('Three.js 未加载');
 
@@ -22,11 +41,14 @@
     this.camera = new THREE.PerspectiveCamera(65, 16 / 9, 2, 6000);
     this.camera.position.set(0, 50, -60);
 
-    this.renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true });
-    if (!this.renderer.getContext()) throw new Error('WebGL 不可用');
+    this.renderer = createWebGLRenderer(canvas);
     this.renderer.setPixelRatio(Math.min(global.devicePixelRatio || 1, 2));
-    this.renderer.shadowMap.enabled = true;
-    this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    try {
+      this.renderer.shadowMap.enabled = true;
+      this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    } catch (e) {
+      this.renderer.shadowMap.enabled = false;
+    }
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
     this.renderer.toneMappingExposure = 1.15;
 
