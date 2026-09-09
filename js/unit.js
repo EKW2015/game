@@ -55,7 +55,7 @@
     this.maxSoul = this.baseSoul;
     this.soul = this.baseSoul;
 
-    this.radius = opts.radius || (this.kind === 'ape' ? 22 : this.kind === 'wolf' ? 16 : 14);
+    this.radius = opts.radius || (this.kind === 'ape' ? 22 : this.kind === 'wolf' ? 16 : 16);
     this.alive = true;
     this.kills = 0;
     this.hitFlash = 0;

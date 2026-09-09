@@ -39,8 +39,8 @@
     for (var i = 0; i < n; i++) {
       var col = global.Utils.RING_GLOW[Math.min(i, 6)];
       var torus = new THREE.Mesh(
-        new THREE.TorusGeometry(5.2 + i * 0.42, 0.16, 8, 28),
-        glowMat(col, 0.72)
+        new THREE.TorusGeometry(4.4 + i * 0.55, 0.28, 8, 32),
+        glowMat(col, 0.88)
       );
       torus.rotation.x = Math.PI / 2;
       torus.rotation.z = i * 0.15;
@@ -60,11 +60,15 @@
     g.add(human);
     g.userData.human = human;
 
-    var skin = mat(colors.body, 0.62, 0.04);
-    var robe = mat(colors.robe, 0.78, 0.06);
-    var trim = mat(colors.trim, 0.35, 0.55, colors.trim);
-    var hairM = mat(colors.hair, 0.7, 0.02);
-    var gold = mat('#e8c35a', 0.28, 0.7, '#c9a227');
+    var holy = opts.holy;
+    var skin = mat(holy ? '#f0d7b0' : colors.body, 0.62, 0.04);
+    var robe = holy
+      ? mat('#c9a227', 0.45, 0.28, '#8a6a18')
+      : mat(colors.robe, 0.78, 0.06);
+    var trim = mat(colors.trim, 0.28, 0.55, colors.trim);
+    var hairM = mat(colors.hair, 0.55, 0.08);
+    var gold = mat('#e8c35a', 0.22, 0.78, '#ffd36a');
+    var inner = mat(holy ? '#fff8e8' : colors.accent, 0.7, 0.05);
 
     var hips = new THREE.Mesh(new THREE.BoxGeometry(2.4, 1.3, 1.5), robe);
     hips.position.y = 5.1;
@@ -76,9 +80,18 @@
     torso.castShadow = true;
     human.add(torso);
 
-    var collar = new THREE.Mesh(new THREE.BoxGeometry(2.9, 0.35, 1.9), trim);
+    var chest = new THREE.Mesh(new THREE.BoxGeometry(2.2, 1.6, 0.45), gold);
+    chest.position.set(0, 7.6, 0.95);
+    if (holy) human.add(chest);
+
+    var collar = new THREE.Mesh(new THREE.BoxGeometry(2.9, 0.4, 1.9), trim);
     collar.position.y = 8.9;
     human.add(collar);
+
+    var cape = new THREE.Mesh(new THREE.BoxGeometry(3.1, 4.2, 0.18), inner);
+    cape.position.set(0, 6.6, -1.05);
+    cape.rotation.x = 0.12;
+    human.add(cape);
 
     var head = new THREE.Mesh(new THREE.SphereGeometry(0.95, 12, 10), skin);
     head.position.y = 10.3;
@@ -86,10 +99,19 @@
     human.add(head);
     g.userData.head = head;
 
-    var hair = new THREE.Mesh(new THREE.SphereGeometry(1.02, 10, 8), hairM);
-    hair.position.y = 10.55;
-    hair.scale.set(1.05, 0.85, 1.15);
+    var hair = new THREE.Mesh(new THREE.SphereGeometry(1.08, 10, 8), hairM);
+    hair.position.y = 10.7;
+    hair.scale.set(1.08, 0.95, 1.2);
     human.add(hair);
+
+    var hornL = new THREE.Mesh(new THREE.ConeGeometry(0.16, 1.35, 6), gold);
+    hornL.position.set(-0.45, 11.45, 0.05);
+    hornL.rotation.z = 0.25;
+    if (holy) human.add(hornL);
+    var hornR = hornL.clone();
+    hornR.position.x = 0.45;
+    hornR.rotation.z = -0.25;
+    if (holy) human.add(hornR);
 
     var eyeL = new THREE.Mesh(new THREE.SphereGeometry(0.13, 8, 8), mat('#fff8e0', 0.4));
     eyeL.position.set(-0.32, 10.35, 0.82);
@@ -340,7 +362,7 @@
     if (unit.kind === 'wolf') return createWolf(c);
     if (unit.kind === 'ape') return createApe(c);
     if (unit.kind === 'dragon') return createDragon(unit.attr === 'light');
-    return createHumanoid(c, { rings: unit.isPlayer ? 7 : unit.rings });
+    return createHumanoid(c, { rings: unit.isPlayer ? 7 : unit.rings, holy: unit.isPlayer || unit.martialSoul === 'brightDragon' });
   }
 
   global.UnitModel = { create: create, hex: hex, mat: mat };

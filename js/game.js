@@ -108,7 +108,7 @@
       def: 110,
       spd: 155,
       soul: 1200,
-      radius: 15
+      radius: 18
     });
     this.lookYaw = this.player.angle;
 
@@ -276,6 +276,7 @@
 
   Game.prototype.addMessage = function (text, duration) {
     this.messages.push({ text: text, life: duration || 2.2 });
+    if (this.messages.length > 3) this.messages.shift();
   };
 
   Game.prototype.addParticles = function (x, y, color, count) {

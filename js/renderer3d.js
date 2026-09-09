@@ -290,8 +290,8 @@
 
     var ground = this.world.heightAt(player.x, player.y);
     var trueBody = player.buffs.trueBody > 0;
-    var dist = trueBody ? 150 : 58;
-    var height = trueBody ? 70 : 26;
+    var dist = trueBody ? 130 : 42;
+    var height = trueBody ? 58 : 18;
     var yaw = this.camYaw;
     var idealX = player.x - Math.cos(yaw) * dist;
     var idealZ = player.y - Math.sin(yaw) * dist;
@@ -308,7 +308,7 @@
     this.camera.position.y += (idealY - this.camera.position.y) * lerp;
     this.camera.position.z += (idealZ - this.camera.position.z) * lerp;
 
-    this.camera.lookAt(player.x, ground + player.h + (trueBody ? 28 : 12), player.y);
+    this.camera.lookAt(player.x, ground + player.h + (trueBody ? 24 : 14), player.y);
     this.world.update(player.x, player.y);
   };
 

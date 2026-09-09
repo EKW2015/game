@@ -74,7 +74,9 @@
       btn.type = 'button';
       btn.className = 'sk';
       btn.dataset.skill = sk.id;
-      btn.innerHTML = '<span class="sk-key">' + sk.hotkey + '</span><span class="sk-name">' + sk.name + '</span><small>' + sk.group + '</small>';
+      btn.innerHTML = '<span class="sk-key">' + sk.hotkey + '</span><span class="sk-name">' + sk.name + '</span><small>' + (
+        sk.group === 'soul' ? '魂技' : sk.group === 'self' ? '自创' : sk.group === 'bone' ? '魂骨' : '领域'
+      ) + '</small>';
       btn.title = sk.desc;
       btn.addEventListener('click', function (ev) {
         ev.preventDefault();
@@ -244,7 +246,7 @@
     }
 
     if (g.messages.length > 0) {
-      toast.textContent = g.messages[0].text;
+      toast.textContent = g.messages[g.messages.length - 1].text;
       toast.style.opacity = '1';
     } else {
       toast.style.opacity = '0';

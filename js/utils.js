@@ -38,8 +38,8 @@
     return (Math.cos(unit.angle) * dx + Math.sin(unit.angle) * dy) / len;
   }
 
-  var RING_COLORS = ['#f5c542', '#b44cff', '#b44cff', '#1a1a1a', '#1a1a1a', '#1a1a1a', '#e23b3b'];
-  var RING_GLOW = ['#ffe27a', '#d9a0ff', '#d9a0ff', '#444444', '#444444', '#444444', '#ff6b6b'];
+  var RING_COLORS = ['#ffd24a', '#c56bff', '#c56bff', '#4a4a52', '#4a4a52', '#4a4a52', '#ff4d4d'];
+  var RING_GLOW = ['#ffe27a', '#e0b0ff', '#e0b0ff', '#8a8a96', '#8a8a96', '#8a8a96', '#ff7a7a'];
 
   global.Utils = {
     clamp: clamp,
