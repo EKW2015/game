@@ -233,11 +233,10 @@
   }
 
   function radiusAlongDragon(t) {
-    if (t < 0.06) return 0.95 + t * 8;
-    if (t < 0.2) return 1.55 + (0.2 - t) * 0.6;
-    if (t < 0.38) return 1.72;
-    if (t < 0.62) return 1.72 - (t - 0.38) * 1.35;
-    return Math.max(0.14, 1.15 * Math.pow(1 - t, 1.05));
+    if (t < 0.1) return 1.05 + t * 5;
+    if (t < 0.32) return 1.7;
+    if (t < 0.58) return 1.7 - (t - 0.32) * 1.4;
+    return Math.max(0.16, 1.05 * Math.pow(1 - t, 0.9));
   }
 
   function createSerpentBody(points, radiusFn, tubular, radial) {
@@ -321,18 +320,15 @@
     });
 
     var spine = [
-      new THREE.Vector3(0.0, 7.6, 13.2),
-      new THREE.Vector3(0.35, 7.1, 9.4),
-      new THREE.Vector3(1.45, 6.4, 5.4),
-      new THREE.Vector3(-0.15, 6.0, 1.2),
-      new THREE.Vector3(-1.55, 5.7, -3.2),
-      new THREE.Vector3(0.55, 5.5, -7.8),
-      new THREE.Vector3(1.35, 5.3, -12.6),
-      new THREE.Vector3(-0.55, 5.0, -17.8),
-      new THREE.Vector3(0.25, 4.8, -23.2),
-      new THREE.Vector3(0.0, 5.6, -29.4)
+      new THREE.Vector3(0.0, 8.6, 7.8),
+      new THREE.Vector3(0.0, 6.2, 4.4),
+      new THREE.Vector3(0.0, 4.6, 1.2),
+      new THREE.Vector3(0.0, 5.8, -2.2),
+      new THREE.Vector3(0.0, 7.2, -5.6),
+      new THREE.Vector3(0.0, 5.4, -8.8),
+      new THREE.Vector3(0.0, 4.6, -12.6)
     ];
-    var bodyBuilt = createSerpentBody(spine, radiusAlongDragon, 72, 12);
+    var bodyBuilt = createSerpentBody(spine, radiusAlongDragon, 64, 16);
     var bodyMesh = new THREE.Mesh(bodyBuilt.geo, bodyMat);
     bodyMesh.castShadow = true;
     g.add(bodyMesh);
@@ -340,12 +336,12 @@
 
     var p = new THREE.Vector3();
     var tan = new THREE.Vector3();
-    for (var sp = 0; sp <= 20; sp++) {
-      var st = 0.05 + sp / 20 * 0.9;
+    for (var sp = 0; sp <= 8; sp++) {
+      var st = 0.08 + sp / 8 * 0.82;
       p.copy(curve.getPointAt(st));
       tan.copy(curve.getTangentAt(st));
       var spike = new THREE.Mesh(
-        new THREE.ConeGeometry(0.16 + (1 - st) * 0.16, 1.05 + (1 - st) * 0.7, 5),
+        new THREE.ConeGeometry(0.22 + (1 - st) * 0.2, 1.45 + (1 - st) * 0.55, 5),
         hornM
       );
       spike.position.set(p.x, p.y + radiusAlongDragon(st) + 0.45, p.z);
@@ -367,32 +363,32 @@
       return mesh;
     }
 
-    var skull = new THREE.Mesh(new THREE.SphereGeometry(1.55, 12, 10), gold);
-    skull.scale.set(1.05, 1.0, 1.25);
-    hadd(skull, 0, 0.55, 1.35);
+    var skull = new THREE.Mesh(new THREE.SphereGeometry(1.15, 12, 10), gold);
+    skull.scale.set(1.05, 0.95, 1.15);
+    hadd(skull, 0, 0.55, 1.05);
     g.userData.head = skull;
 
-    var brow = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.55, 1.1), dark);
-    hadd(brow, 0, 1.45, 1.7);
+    var brow = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.55, 1.1), dark);
+    hadd(brow, 0, 1.45, 1.35);
 
-    var snout = new THREE.Mesh(new THREE.BoxGeometry(1.55, 1.15, 3.15), pale);
-    hadd(snout, 0, 0.15, 3.35);
+    var snout = new THREE.Mesh(new THREE.BoxGeometry(1.35, 1.15, 5.4), pale);
+    hadd(snout, 0, 0.15, 4.85);
 
-    var nose = new THREE.Mesh(new THREE.SphereGeometry(0.38, 8, 6), gold);
-    hadd(nose, 0, 0.55, 4.85);
+    var nose = new THREE.Mesh(new THREE.SphereGeometry(0.42, 8, 6), gold);
+    hadd(nose, 0, 0.55, 7.4);
 
-    var mouthIn = new THREE.Mesh(new THREE.BoxGeometry(1.15, 0.55, 2.2), dark);
-    hadd(mouthIn, 0, -0.35, 3.4, false);
+    var mouthIn = new THREE.Mesh(new THREE.BoxGeometry(1.05, 0.55, 4.2), dark);
+    hadd(mouthIn, 0, -0.55, 4.7, false);
 
-    var jaw = new THREE.Mesh(new THREE.BoxGeometry(1.35, 0.42, 2.7), dark);
-    jaw.position.set(0, -0.72, 3.15);
+    var jaw = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.42, 4.6), dark);
+    jaw.position.set(0, -1.05, 4.5);
     jaw.castShadow = true;
     headRoot.add(jaw);
     g.userData.jaw = jaw;
 
     for (var ti = 0; ti < 8; ti++) {
       var tooth = new THREE.Mesh(new THREE.ConeGeometry(0.08, 0.42, 4), hornM);
-      tooth.position.set(-0.55 + ti * 0.16, -0.48, 4.35 + (ti % 2) * 0.12);
+      tooth.position.set(-0.4 + ti * 0.12, -0.62, 6.4 + (ti % 2) * 0.12);
       headRoot.add(tooth);
     }
 
@@ -402,10 +398,10 @@
       horn.rotation.x = xRot;
       hadd(horn, x, 2.15, 0.85);
     }
-    addHorn(-0.55, 0.32, -0.72, 3.6, 0.28);
-    addHorn(0.55, -0.32, -0.72, 3.6, 0.28);
-    addHorn(-0.95, 0.7, -0.35, 2.1, 0.16);
-    addHorn(0.95, -0.7, -0.35, 2.1, 0.16);
+    addHorn(-0.45, 0.18, -1.05, 5.4, 0.32);
+    addHorn(0.45, -0.18, -1.05, 5.4, 0.32);
+    addHorn(-0.85, 0.55, -0.55, 2.8, 0.18);
+    addHorn(0.85, -0.55, -0.55, 2.8, 0.18);
 
     var antlerL = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.11, 1.6, 5), hornM);
     antlerL.rotation.z = 1.05;
@@ -431,14 +427,14 @@
     var beard = new THREE.Mesh(new THREE.ConeGeometry(0.22, 1.4, 5), maneM);
     hadd(beard, 0, -1.25, 3.9);
 
-    var eye = new THREE.Mesh(new THREE.SphereGeometry(0.32, 8, 8), mat('#fffde8', 0.2, 0.1, '#fffde8'));
-    hadd(eye, 0.72, 0.85, 2.35, false);
-    var pupil = new THREE.Mesh(new THREE.SphereGeometry(0.14, 6, 6), mat('#3a2008', 0.3, 0.1, '#ff9a3c'));
-    hadd(pupil, 0.82, 0.85, 2.55, false);
+    var eye = new THREE.Mesh(new THREE.SphereGeometry(0.38, 8, 8), mat('#fffde8', 0.2, 0.1, '#fffde8'));
+    hadd(eye, 0.92, 1.15, 2.65, false);
+    var pupil = new THREE.Mesh(new THREE.SphereGeometry(0.16, 6, 6), mat('#3a2008', 0.3, 0.1, '#ff9a3c'));
+    hadd(pupil, 1.04, 1.15, 2.88, false);
     var eye2 = eye.clone();
-    hadd(eye2, -0.72, 0.85, 2.35, false);
+    hadd(eye2, -0.92, 1.15, 2.65, false);
     var pupil2 = pupil.clone();
-    hadd(pupil2, -0.82, 0.85, 2.55, false);
+    hadd(pupil2, -1.04, 1.15, 2.88, false);
 
     for (var mi = 0; mi < 9; mi++) {
       var mane = new THREE.Mesh(new THREE.ConeGeometry(0.22, 1.8 - mi * 0.08, 5), maneM);
@@ -452,18 +448,18 @@
     function addLeg(t, side, front) {
       p.copy(curve.getPointAt(t));
       var lg = new THREE.Group();
-      lg.position.set(p.x + side * 0.85, p.y - 0.15, p.z);
-      var upper = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.4, 2.35, 7), gold);
-      upper.position.set(side * 0.15, -1.15, front ? 0.2 : -0.15);
-      upper.rotation.z = side * 0.18;
+      lg.position.set(p.x + side * 0.15, p.y - 0.2, p.z);
+      var upper = new THREE.Mesh(new THREE.CylinderGeometry(0.38, 0.52, 2.6, 7), gold);
+      upper.position.set(side * 0.2, -1.2, front ? 0.25 : -0.1);
+      upper.rotation.z = side * 0.22;
       upper.castShadow = true;
       lg.add(upper);
-      var lower = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.28, 2.05, 7), gold);
-      lower.position.set(side * 0.35, -2.85, front ? 0.45 : 0.1);
+      var lower = new THREE.Mesh(new THREE.CylinderGeometry(0.26, 0.36, 2.2, 7), gold);
+      lower.position.set(side * 0.45, -3.1, front ? 0.5 : 0.15);
       lower.castShadow = true;
       lg.add(lower);
-      var foot = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.28, 1.05), dark);
-      foot.position.set(side * 0.35, -3.85, front ? 0.75 : 0.4);
+      var foot = new THREE.Mesh(new THREE.BoxGeometry(0.95, 0.34, 1.25), dark);
+      foot.position.set(side * 0.45, -4.15, front ? 0.85 : 0.5);
       lg.add(foot);
       for (var c = 0; c < 3; c++) {
         var claw = new THREE.Mesh(new THREE.ConeGeometry(0.07, 0.42, 4), clawM);
@@ -481,37 +477,36 @@
 
     function makeWing(side) {
       var wg = new THREE.Group();
-      p.copy(curve.getPointAt(0.18));
-      wg.position.set(p.x + side * 0.35, p.y + 0.4, p.z);
+      p.copy(curve.getPointAt(0.14));
+      wg.position.set(p.x + side * 0.15, p.y + 0.3, p.z);
 
-      var shape = new THREE.Shape();
-      shape.moveTo(0, 0);
-      shape.bezierCurveTo(2.2, 3.8, 5.5, 7.4, 3.2, 10.6);
-      shape.bezierCurveTo(0.4, 12.2, -4.5, 10.4, -8.8, 7.2);
-      shape.bezierCurveTo(-12.5, 4.2, -14.2, 0.6, -11.4, -1.6);
-      shape.bezierCurveTo(-7.2, -3.0, -3.2, -1.8, 0, -0.35);
-      var membrane = new THREE.Mesh(new THREE.ShapeGeometry(shape), wingM);
-      membrane.rotation.y = Math.PI / 2;
-      membrane.position.x = side * 0.9;
-      wg.add(membrane);
+      var geo = new THREE.BufferGeometry();
+      geo.setAttribute('position', new THREE.Float32BufferAttribute([
+        0, 0.2, 0.4,
+        0, 6.4, 1.2,
+        0, 1.4, -7.8,
+        0, 0.2, 0.4,
+        0, 1.4, -7.8,
+        0, -1.6, -4.6
+      ], 3));
+      geo.computeVertexNormals();
+      var sail = new THREE.Mesh(geo, wingM);
+      sail.position.x = side * 0.8;
+      wg.add(sail);
 
-      var membrane2 = new THREE.Mesh(new THREE.ShapeGeometry(shape), wingM);
-      membrane2.rotation.y = Math.PI / 2 + side * 0.42;
-      membrane2.position.set(side * 1.6, 0.2, -0.4);
-      wg.add(membrane2);
+      var geo2 = geo.clone();
+      var sail2 = new THREE.Mesh(geo2, wingM);
+      sail2.rotation.y = side * 0.45;
+      sail2.position.set(side * 2.4, 0.4, 0.2);
+      sail2.scale.set(1, 0.85, 0.85);
+      wg.add(sail2);
 
-      var bones = [
-        [0.2, 4.8, -1.2, 0.55],
-        [-3.4, 3.6, -4.2, 0.85],
-        [-6.8, 1.8, -6.5, 1.05],
-        [-9.2, -0.2, -8.4, 1.25]
-      ];
-      for (var bi = 0; bi < bones.length; bi++) {
-        var bone = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.12, 8.4 - bi * 0.6, 5), dark);
-        bone.rotation.x = bones[bi][3];
-        bone.position.set(side * 0.95, bones[bi][1], bones[bi][2]);
-        wg.add(bone);
-      }
+      var arm = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.16, 7.2, 6), dark);
+      arm.rotation.z = side * 0.7;
+      arm.rotation.x = -0.4;
+      arm.position.set(side * 1.8, 3.6, -1.2);
+      wg.add(arm);
+
       g.add(wg);
       return wg;
     }

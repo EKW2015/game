@@ -231,11 +231,15 @@
     group.rotation.y = -unit.angle + Math.PI;
 
     if (group.userData.dragon) {
-      group.userData.dragon.scale.setScalar(trueBody ? 2.4 : 1.15);
-      group.userData.dragon.position.y = trueBody ? 2.4 : 0;
+      group.userData.dragon.scale.setScalar(trueBody ? 1.85 : 1.0);
+      group.userData.dragon.position.y = trueBody ? 0.4 : 0;
     }
 
-    if (group.userData.human) group.userData.human.visible = !trueBody;
+    if (group.userData.human) {
+      group.userData.human.visible = !trueBody;
+      group.userData.human.scale.setScalar(trueBody ? 0.001 : 1);
+      group.userData.human.position.y = trueBody ? -40 : 0;
+    }
     if (group.userData.dragon) group.userData.dragon.visible = trueBody;
     if (group.userData.ringPivot) group.userData.ringPivot.visible = !trueBody;
 
@@ -299,7 +303,7 @@
       if (d.userData.wingL) d.userData.wingL.rotation.x = dflap;
       if (d.userData.wingR) d.userData.wingR.rotation.x = dflap * 0.92;
       if (d.userData.jaw) d.userData.jaw.rotation.x = 0.18 + Math.sin(t * 2.6) * 0.14;
-      if (d.userData.headRoot) d.userData.headRoot.rotation.x = Math.sin(t * 1.5) * 0.08;
+      if (d.userData.headRoot) d.userData.headRoot.rotation.x = -0.12 + Math.sin(t * 1.5) * 0.06;
       if (d.userData.tailRoot) {
         d.userData.tailRoot.rotation.y = Math.sin(t * 1.9) * 0.35;
         d.userData.tailRoot.rotation.x = Math.sin(t * 2.4) * 0.12;
@@ -380,8 +384,7 @@
         this.placeFx({ kind: 'column', x: e.x, y: gy + 18, z: e.y, sx: 6, sy: 36, sz: 6, color: '#ffe27a', opacity: 0.4 });
         this.placeFx({ kind: 'ring', x: e.x, y: gy + 6, z: e.y, s: 8, rotX: Math.PI / 2, color: '#ffd36a', opacity: 0.75 });
       } else if (e.type === 'truebody') {
-        this.placeFx({ kind: 'ring', x: e.x, y: gy + 2, z: e.y, s: 11, rotX: Math.PI / 2, color: '#ffe27a', opacity: 0.55 });
-        this.placeFx({ kind: 'column', x: e.x, y: gy + 26, z: e.y, sx: 3.2, sy: 48, sz: 3.2, color: '#ffd36a', opacity: 0.16 });
+        this.placeFx({ kind: 'ring', x: e.x, y: gy + 1.5, z: e.y, s: 9, rotX: Math.PI / 2, color: '#ffe27a', opacity: 0.4 });
       } else if (e.type === 'tail') {
         this.placeFx({ kind: 'slash', x: e.x, y: gy + 8, z: e.y, s: 18, color: '#e8c35a', opacity: 0.85, rotX: Math.PI / 2 });
         this.placeFx({ kind: 'ring', x: e.x, y: gy + 3, z: e.y, s: 10, rotX: Math.PI / 2, color: '#ffe27a', opacity: 0.55 });
@@ -482,10 +485,10 @@
 
     var ground = this.world.heightAt(player.x, player.y);
     var trueBody = player.buffs.trueBody > 0;
-    var dist = trueBody ? 64 : 42;
-    var height = trueBody ? 11 : 18;
+    var dist = trueBody ? 52 : 42;
+    var height = trueBody ? 15 : 18;
     var yaw = this.camYaw;
-    var side = trueBody ? 20 : 0;
+    var side = trueBody ? -18 : 0;
     var idealX = player.x - Math.cos(yaw) * dist + Math.cos(yaw + Math.PI / 2) * side;
     var idealZ = player.y - Math.sin(yaw) * dist + Math.sin(yaw + Math.PI / 2) * side;
     var idealY = ground + player.h + height;
@@ -497,15 +500,15 @@
     }
     if (this.flash > 0) this.flash -= dt;
 
-    var lerp = 1 - Math.pow(0.0004, dt);
+    var lerp = trueBody ? 1 : (1 - Math.pow(0.0004, dt));
     this.camera.position.x += (idealX - this.camera.position.x) * lerp;
     this.camera.position.y += (idealY - this.camera.position.y) * lerp;
     this.camera.position.z += (idealZ - this.camera.position.z) * lerp;
 
     this.camera.lookAt(
-      player.x + Math.cos(yaw) * (trueBody ? 10 : 0),
-      ground + player.h + (trueBody ? 8 : 14),
-      player.y + Math.sin(yaw) * (trueBody ? 10 : 0)
+      player.x,
+      ground + player.h + (trueBody ? 10 : 14),
+      player.y
     );
     this.world.update(player.x, player.y);
   };
