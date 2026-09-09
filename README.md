@@ -2,7 +2,7 @@
 
 ## 直接玩（用 Chrome 打开下面这个链接）
 
-https://litter.catbox.moe/pdqp82.html
+https://litter.catbox.moe/ihprj9.html
 
 打开后会立刻开战（陈凯威上场）。点地面走路，WASD 移动，空格或右下角「攻击」键出手。
 
