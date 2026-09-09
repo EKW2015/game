@@ -231,8 +231,8 @@
     group.rotation.y = -unit.angle + Math.PI;
 
     if (group.userData.dragon) {
-      group.userData.dragon.scale.setScalar(trueBody ? 2.15 : 1.15);
-      group.userData.dragon.position.y = trueBody ? 1.2 : 0;
+      group.userData.dragon.scale.setScalar(trueBody ? 2.4 : 1.15);
+      group.userData.dragon.position.y = trueBody ? 2.4 : 0;
     }
 
     if (group.userData.human) group.userData.human.visible = !trueBody;
@@ -295,12 +295,21 @@
 
     if (trueBody && group.userData.dragon) {
       var d = group.userData.dragon;
-      var dflap = Math.sin(t * 5.5) * 0.28;
-      if (d.userData.wingL) d.userData.wingL.rotation.z = dflap;
-      if (d.userData.wingR) d.userData.wingR.rotation.z = -dflap;
-      if (d.userData.jaw) d.userData.jaw.rotation.x = 0.12 + Math.sin(t * 3) * 0.08;
-      var segs = d.userData.tail || [];
-      if (segs[0]) segs[0].rotation.z = Math.sin(t * 2.2) * 0.12;
+      var dflap = Math.sin(t * 4.6) * 0.22;
+      if (d.userData.wingL) d.userData.wingL.rotation.x = dflap;
+      if (d.userData.wingR) d.userData.wingR.rotation.x = dflap * 0.92;
+      if (d.userData.jaw) d.userData.jaw.rotation.x = 0.18 + Math.sin(t * 2.6) * 0.14;
+      if (d.userData.headRoot) d.userData.headRoot.rotation.x = Math.sin(t * 1.5) * 0.08;
+      if (d.userData.tailRoot) {
+        d.userData.tailRoot.rotation.y = Math.sin(t * 1.9) * 0.35;
+        d.userData.tailRoot.rotation.x = Math.sin(t * 2.4) * 0.12;
+      }
+      var dlegs = d.userData.legs || [];
+      for (var di = 0; di < dlegs.length; di++) {
+        var dswing = Math.sin(t * 5 + (di % 2) * Math.PI) * 0.28;
+        if (dlegs[di].upper) dlegs[di].upper.rotation.x = dswing;
+        if (dlegs[di].lower) dlegs[di].lower.rotation.x = -dswing * 0.45;
+      }
     }
 
     if (unit.hitFlash > 0) {
@@ -473,10 +482,10 @@
 
     var ground = this.world.heightAt(player.x, player.y);
     var trueBody = player.buffs.trueBody > 0;
-    var dist = trueBody ? 78 : 42;
-    var height = trueBody ? 28 : 18;
+    var dist = trueBody ? 64 : 42;
+    var height = trueBody ? 11 : 18;
     var yaw = this.camYaw;
-    var side = trueBody ? 16 : 0;
+    var side = trueBody ? 20 : 0;
     var idealX = player.x - Math.cos(yaw) * dist + Math.cos(yaw + Math.PI / 2) * side;
     var idealZ = player.y - Math.sin(yaw) * dist + Math.sin(yaw + Math.PI / 2) * side;
     var idealY = ground + player.h + height;
@@ -493,7 +502,11 @@
     this.camera.position.y += (idealY - this.camera.position.y) * lerp;
     this.camera.position.z += (idealZ - this.camera.position.z) * lerp;
 
-    this.camera.lookAt(player.x, ground + player.h + (trueBody ? 14 : 14), player.y);
+    this.camera.lookAt(
+      player.x + Math.cos(yaw) * (trueBody ? 10 : 0),
+      ground + player.h + (trueBody ? 8 : 14),
+      player.y + Math.sin(yaw) * (trueBody ? 10 : 0)
+    );
     this.world.update(player.x, player.y);
   };
 
