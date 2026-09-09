@@ -1,0 +1,14 @@
+{
+  "name": "3D 斗罗大陆 · 圣龙战队",
+  "install": "node tools/build-play.js",
+  "terminals": [
+    {
+      "name": "web",
+      "command": "python3 -m http.server 8000",
+      "description": "Static web server for the game. Open http://localhost:8000/index.html (multi-file dev build) or http://localhost:8000/play.html (single-file bundle) in Chrome."
+    }
+  ],
+  "ports": [
+    { "name": "web server", "port": 8000 }
+  ]
+}
