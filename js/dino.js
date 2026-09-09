@@ -64,6 +64,7 @@
     this.kit = opts.kit || 'full';
     this.ringText = opts.ringText || '黄 紫 紫 黑 黑 黑 红';
     this.role = opts.role || '';
+    this.uniform = opts.uniform || '';
   }
 
   SoulEntity.prototype.getSpeed = function () {

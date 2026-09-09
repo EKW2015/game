@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="description" content="3D 斗罗大陆：武魂光明圣龙，七大魂技、自创魂技、九万年魂骨技与圣龙主迹领域！" />
     <meta name="theme-color" content="#0b1118" />
-    <title>3D 斗罗大陆：圣龙战队大赛</title>
+    <title>3D 斗罗大陆：圣龙神辉战队大赛</title>
     <style>html,body{background:#0b1118!important;min-height:100vh;margin:0}</style>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='14' font-size='14'>🐉</text></svg>" />
     <style>:root {
@@ -549,7 +549,7 @@ kbd {
 
     <main class="page">
       <header class="page__header">
-        <h1 class="page__title">3D 斗罗大陆 · 圣龙战队大赛 <span class="badge-3d">1v1 团队赛</span></h1>
+        <h1 class="page__title">3D 斗罗大陆 · 圣龙神辉战队 <span class="badge-3d">1v1 团队赛</span></h1>
         <div class="page__tools">
           <button id="btn-sound" class="tool" type="button" aria-pressed="false">音效：开</button>
           <button id="btn-pause" class="tool" type="button">暂停</button>
@@ -579,7 +579,7 @@ kbd {
             <div class="hud__buffs" id="hud-buffs">魂环：黄 紫 紫 黑 黑 黑 红</div>
           </div>
           <div class="hud__remain">
-            <div>比赛: <strong id="hud-match">圣龙战队 VS —</strong></div>
+            <div>比赛: <strong id="hud-match">圣龙神辉战队 VS —</strong></div>
             <div>比分: 我方 <strong id="hud-my-left">7</strong> · 敌方 <strong id="hud-en-left">7</strong></div>
             <div>连胜队伍: <strong id="hud-team-wins">0</strong></div>
             <div id="hud-domain-status" style="color:#ffd700;margin-top:4px">领域：待命</div>
@@ -591,10 +591,11 @@ kbd {
 
         <!-- 游戏初始界面 -->
         <div class="overlay" id="overlay-ready" data-action="start">
-          <p class="overlay__title">全大陆魂师大赛 · 圣龙战队</p>
-          <p class="overlay__hint">队长陈凯威（光明圣龙）带领七人小队，按斗罗大陆赛制 1v1 连战其他队伍。</p>
-          <p class="overlay__hint">每局结束后可以换人。败者退场，先让对方全员倒下即赢下团队赛，然后继续打下一队。</p>
-          <p class="overlay__hint">WASD 移动 · 空格攻击 · 1/2/T 放魂技 · 按 7 释放武魂真身才会化作魂兽（平时是魂师人形）</p>
+          <p class="overlay__title">全大陆魂师大赛 · 圣龙神辉战队</p>
+          <p class="overlay__hint">「圣龙出世，震碎全场！凯威带队，势不可挡！」</p>
+          <p class="overlay__hint">光明圣龙的神圣光辉 · 白金主宰风队服 · 优雅高贵，极具正义感。</p>
+          <p class="overlay__hint">队长陈凯威带领七人小队，按斗罗大陆赛制 1v1 连战其他队伍。平时是魂师人形，按 7 才释放武魂真身化兽。</p>
+          <p class="overlay__hint">WASD 移动 · 空格攻击 · 1/2/T 魂技 · 7 真身 · U 光明影刃融合技 · I 太阳神凰融合技</p>
           <button class="overlay__button" type="button" data-action="start">进入选人 · 开始比赛</button>
         </div>
 
@@ -730,6 +731,21 @@ kbd {
             <span class="s-cost">魂力 140</span>
           </button>
         </div>
+        <div class="skill-category-title" style="margin-top:8px">
+          <span>✨ 武魂融合技（队友仍在队伍中才可释放）</span>
+        </div>
+        <div class="skill-grid">
+          <button class="skill-btn ring-yellow" data-skill="fusionTwin" title="陈凯威×墨影：九道龙人分身，金光与黑雾齐斩">
+            <span class="s-key">[U] 融合技</span>
+            <span class="s-name">光明影刃·双生主宰</span>
+            <span class="s-cost">魂力 180</span>
+          </button>
+          <button class="skill-btn ring-red" data-skill="fusionPhoenix" title="陈凯威×焱凰：千米金火凤凰坠地蒸发敌阵">
+            <span class="s-key">[I] 融合技</span>
+            <span class="s-name">太阳神凰·末日审判</span>
+            <span class="s-cost">魂力 220</span>
+          </button>
+        </div>
       </section>
 
       <!-- 移动端虚拟按键 -->
@@ -751,9 +767,10 @@ kbd {
       <section class="legend">
         <h2 class="legend__title">斗罗大陆团队赛怎么玩</h2>
         <ul class="legend__list">
-          <li><strong>赛制：</strong>圣龙战队 7 人 vs 对手 7 人，每局 1v1。败者退场，每局结束可换人。</li>
+          <li><strong>赛制：</strong>圣龙神辉战队 7 人 vs 对手 7 人，每局 1v1。败者退场，每局结束可换人。</li>
+          <li><strong>队服：</strong>白金主宰风。男款白金长袍金龙纹与圣龙徽章（陈凯威、墨影、石破天）；女款白金战裙光明流光（冷凝霜、沈琉璃、白依依、焱凰）。</li>
           <li><strong>队员：</strong>陈凯威（光明圣龙）、墨影（刺客）、焱凰（凤凰）、冷凝霜（冰控）、石破天（猛犸坦克）、沈琉璃（充电宝）、白依依（治疗）。</li>
-          <li><strong>操作：</strong>WASD 移动，空格普攻。队员用 <kbd>1</kbd> <kbd>2</kbd> <kbd>T</kbd>；队长陈凯威可用全部魂技。</li>
+          <li><strong>操作：</strong>WASD 移动，空格普攻。队员用 <kbd>1</kbd> <kbd>2</kbd> <kbd>T</kbd>、<kbd>7</kbd> 真身；队长另有全部魂技。<kbd>U</kbd> 光明影刃融合技，<kbd>I</kbd> 太阳神凰融合技。</li>
           <li><strong>连战：</strong>打赢一支队伍后全员复活，立刻对阵下一支学院队。</li>
         </ul>
       </section>
@@ -1675,15 +1692,89 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
 
     addGoldenShield(group, 2.35, 2.15);
     addFootAura(group, opts.aura || 0xffd700);
+    if (opts.uniform === 'male' || opts.uniform === 'female') {
+      applyPlatinumUniform(group, opts.uniform);
+    }
     return group;
   }
 
-  function createSoulMasterMesh(kind) {
+  function applyPlatinumUniform(group, style) {
+    var plat = tintMat(0xf4f0e6, 0xfff6d8, 0.2);
+    var gold = tintMat(0xd4af37, 0xffcc55, 0.55);
+    var collar = new THREE.Mesh(new THREE.TorusGeometry(0.3, 0.055, 6, 16), gold);
+    collar.position.y = 2.98;
+    collar.rotation.x = Math.PI / 2;
+    group.add(collar);
+
+    if (style === 'male') {
+      var robe = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.7, 1.9, 10), plat);
+      robe.position.y = 1.12;
+      group.add(robe);
+      if (group.userData.handL) {
+        var cuffL = new THREE.Mesh(new THREE.TorusGeometry(0.15, 0.035, 6, 10), gold);
+        cuffL.position.copy(group.userData.handL.position);
+        cuffL.position.y += 0.16;
+        group.add(cuffL);
+        var cuffR = cuffL.clone();
+        cuffR.position.x = group.userData.handR.position.x;
+        group.add(cuffR);
+      }
+      var badge = new THREE.Mesh(new THREE.CircleGeometry(0.3, 14), gold);
+      badge.position.set(0, 2.52, -0.44);
+      badge.rotation.y = Math.PI;
+      group.add(badge);
+      var mark = new THREE.Mesh(new THREE.ConeGeometry(0.09, 0.34, 5), tintMat(0xffe066, 0xffaa00, 0.85));
+      mark.position.set(0, 2.58, -0.48);
+      group.add(mark);
+    } else {
+      var skirt = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.88, 0.4, 1.18, 12),
+        new THREE.MeshStandardMaterial({
+          color: 0xf4f0e6,
+          roughness: 0.32,
+          metalness: 0.48,
+          emissive: 0xfff6d8,
+          emissiveIntensity: 0.22,
+          transparent: true,
+          opacity: 0.93
+        })
+      );
+      skirt.position.y = 1.04;
+      group.add(skirt);
+      group.userData.streamers = [];
+      for (var i = 0; i < 5; i++) {
+        var ang = i * 1.256;
+        var st = new THREE.Mesh(
+          new THREE.PlaneGeometry(0.16, 1.4),
+          new THREE.MeshBasicMaterial({
+            color: 0xfff2aa,
+            transparent: true,
+            opacity: 0.48,
+            side: THREE.DoubleSide
+          })
+        );
+        st.position.set(Math.cos(ang) * 0.58, 0.52, Math.sin(ang) * 0.58);
+        group.add(st);
+        group.userData.streamers.push(st);
+      }
+    }
+  }
+
+  function createSoulMasterMesh(kind, look) {
+    look = look || {};
+    var uni = look.uniform;
+    var plat = uni ? {
+      cloth: 0xf4f0e6,
+      accent: 0xd4af37,
+      uniform: uni,
+      emissive: 0xfff6d8,
+      emissiveInt: 0.16
+    } : {};
     var group;
     if (kind === 'dragon') {
-      group = createHumanoidBase({
+      group = createHumanoidBase(Object.assign({
         cloth: 0xc9a227, accent: 0xffe066, hair: 0x3a2208, aura: 0xffd700
-      });
+      }, plat));
       var claw = new THREE.Mesh(new THREE.ConeGeometry(0.16, 1.15, 5), tintMat(0xfff2a0, 0xffaa00, 0.7));
       claw.rotation.x = 1.15;
       claw.position.set(0.92, 1.55, 0.55);
@@ -1693,9 +1784,9 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
       claw2.rotation.y = 0.25;
       group.add(claw2);
     } else if (kind === 'assassin') {
-      group = createHumanoidBase({
+      group = createHumanoidBase(Object.assign({
         cloth: 0x1a1028, accent: 0x442266, hair: 0x0a0610, hairStyle: 'tail', aura: 0x8866ff
-      });
+      }, plat));
       var blade = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.1, 1.7), tintMat(0x8866ff, 0x4422aa, 0.65));
       blade.position.set(0.86, 1.7, 0.7);
       group.add(blade);
@@ -1703,17 +1794,17 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
       blade2.position.set(-0.86, 1.7, 0.55);
       group.add(blade2);
     } else if (kind === 'phoenix') {
-      group = createHumanoidBase({
+      group = createHumanoidBase(Object.assign({
         cloth: 0xaa2200, accent: 0xffaa33, hair: 0x4a0a00, hairStyle: 'long', aura: 0xff4400
-      });
+      }, plat));
       var fan = new THREE.Mesh(new THREE.ConeGeometry(0.55, 0.12, 8), tintMat(0xff6622, 0xff2200, 0.7));
       fan.rotation.x = 1.2;
       fan.position.set(0.9, 1.72, 0.35);
       group.add(fan);
     } else if (kind === 'ice') {
-      group = createHumanoidBase({
+      group = createHumanoidBase(Object.assign({
         cloth: 0x88ccee, accent: 0xccffff, hair: 0xddeeff, hairStyle: 'long', skin: 0xf0d8c8, aura: 0x66eeff
-      });
+      }, plat));
       var staff = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.06, 2.2, 6), tintMat(0x88eeff, 0x2288ff, 0.5));
       staff.position.set(0.82, 2.15, 0.2);
       group.add(staff);
@@ -1721,23 +1812,23 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
       bud.position.set(0.82, 3.3, 0.2);
       group.add(bud);
     } else if (kind === 'mammoth') {
-      group = createHumanoidBase({
+      group = createHumanoidBase(Object.assign({
         cloth: 0x8a6a22, accent: 0xd4a017, hair: 0x2a1a08, aura: 0xd4a017
-      });
+      }, plat));
       var gaunt = new THREE.Mesh(new THREE.BoxGeometry(0.38, 0.38, 0.5), tintMat(0xc9a227, 0xaa7700, 0.25));
       gaunt.position.set(0.86, 1.62, 0.18);
       group.add(gaunt);
     } else if (kind === 'lamp') {
-      group = createHumanoidBase({
+      group = createHumanoidBase(Object.assign({
         cloth: 0x6644aa, accent: 0xffcc66, hair: 0x221133, hairStyle: 'long', aura: 0xffaa33
-      });
+      }, plat));
       var lamp = new THREE.Mesh(new THREE.SphereGeometry(0.28, 10, 10), tintMat(0xffaa33, 0xff6600, 0.95));
       lamp.position.set(-0.78, 1.85, 0.22);
       group.add(lamp);
     } else if (kind === 'bird') {
-      group = createHumanoidBase({
+      group = createHumanoidBase(Object.assign({
         cloth: 0x228844, accent: 0x88ffaa, hair: 0xf5e6c8, hairStyle: 'long', aura: 0x66ff99
-      });
+      }, plat));
       var wand = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.06, 1.8, 6), tintMat(0x66ff99, 0x22aa44, 0.45));
       wand.position.set(0.82, 2.05, 0.18);
       group.add(wand);
@@ -1745,7 +1836,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
       gem.position.set(0.82, 3.0, 0.18);
       group.add(gem);
     } else {
-      group = createHumanoidBase({ cloth: 0x4a4038, accent: 0x6a5a4a });
+      group = createHumanoidBase(Object.assign({ cloth: 0x4a4038, accent: 0x6a5a4a }, plat));
     }
     return group;
   }
@@ -1917,7 +2008,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
 })(window);
 
 /**
- * 圣龙战队七人名单 + 对手学院队伍（斗罗大陆团队赛 1v1）
+ * 圣龙神辉战队七人名单 + 对手学院队伍（斗罗大陆团队赛 1v1）
  */
 (function (global) {
   'use strict';
@@ -1927,8 +2018,9 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
 
   var PLAYER_TEAM = {
     id: 'shenglong',
-    name: '圣龙战队',
-    motto: '队长陈凯威 · 光明圣龙核心输出',
+    name: '圣龙神辉战队',
+    motto: '光明圣龙的神圣光辉 · 优雅高贵，极具正义感',
+    slogan: '圣龙出世，震碎全场！凯威带队，势不可挡！',
     members: [
       {
         id: 'chen',
@@ -1941,8 +2033,9 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
         domain: '十万年·圣龙主迹领域',
         role: '全队核心输出',
         hp: 3500, mp: 1200, attack: 250, defense: 170, level: 78,
-        skills: ['ring1', 'ring2', 'ring3', 'ring4', 'ring5', 'ring6', 'ring7', 'domain'],
-        kit: 'full'
+        skills: ['ring1', 'ring2', 'ring3', 'ring4', 'ring5', 'ring6', 'ring7', 'domain', 'fusionTwin', 'fusionPhoenix'],
+        kit: 'full',
+        uniform: 'male'
       },
       {
         id: 'moying',
@@ -1955,8 +2048,9 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
         domain: '',
         role: '暗影刺客',
         hp: 2600, mp: 900, attack: 230, defense: 90, level: 76,
-        skills: ['shadowStrike', 'bladeStorm', 'trueBody'],
-        kit: 'member'
+        skills: ['shadowStrike', 'bladeStorm', 'trueBody', 'fusionTwin'],
+        kit: 'member',
+        uniform: 'male'
       },
       {
         id: 'yanhuang',
@@ -1969,8 +2063,9 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
         domain: '',
         role: '远程大范围爆发',
         hp: 2400, mp: 1100, attack: 220, defense: 85, level: 75,
-        skills: ['phoenixMeteor', 'fireCage', 'trueBody'],
-        kit: 'member'
+        skills: ['phoenixMeteor', 'fireCage', 'trueBody', 'fusionPhoenix'],
+        kit: 'member',
+        uniform: 'female'
       },
       {
         id: 'lengningshuang',
@@ -1984,7 +2079,8 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
         role: '掌控全局节奏',
         hp: 2300, mp: 1200, attack: 150, defense: 95, level: 75,
         skills: ['absoluteZero', 'iceVines', 'iceDomain', 'trueBody'],
-        kit: 'member'
+        kit: 'member',
+        uniform: 'female'
       },
       {
         id: 'shipotian',
@@ -1998,7 +2094,8 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
         role: '前排大肉盾',
         hp: 5200, mp: 800, attack: 160, defense: 260, level: 77,
         skills: ['mammothStomp', 'goldShield', 'trueBody'],
-        kit: 'member'
+        kit: 'member',
+        uniform: 'male'
       },
       {
         id: 'shenliuli',
@@ -2012,7 +2109,8 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
         role: '全队充电宝',
         hp: 2100, mp: 1400, attack: 90, defense: 80, level: 74,
         skills: ['speedAmp', 'mpSurge', 'trueBody'],
-        kit: 'member'
+        kit: 'member',
+        uniform: 'female'
       },
       {
         id: 'baiyiyi',
@@ -2026,7 +2124,8 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
         role: '超级医疗兵',
         hp: 2800, mp: 1300, attack: 80, defense: 100, level: 75,
         skills: ['emeraldWave', 'purify', 'lifeDomain', 'trueBody'],
-        kit: 'member'
+        kit: 'member',
+        uniform: 'female'
       }
     ]
   };
@@ -2097,6 +2196,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
         return s;
       })(),
       kit: m.kit || 'member',
+      uniform: m.uniform || '',
       eliminated: false
     };
   }
@@ -2106,6 +2206,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
       id: team.id,
       name: team.name,
       motto: team.motto || '',
+      slogan: team.slogan || '',
       members: team.members.map(cloneMember)
     };
   }
@@ -2202,6 +2303,26 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
       cd: 35.0,
       cost: 150,
       desc: '魂师释放武魂真身，短暂化作武魂本体。平时保持人形'
+    },
+    fusionTwin: {
+      id: 'fusionTwin',
+      name: '武魂融合技·光明影刃·双生主宰',
+      type: 'fusion',
+      cd: 28.0,
+      cost: 180,
+      needAlive: ['chen', 'moying'],
+      partnerHint: '陈凯威与墨影',
+      desc: '光明圣龙×影疾夜刃：九道龙人分身金光黑雾齐斩，光速暗杀流'
+    },
+    fusionPhoenix: {
+      id: 'fusionPhoenix',
+      name: '武魂融合技·太阳神凰·末日审判',
+      type: 'fusion',
+      cd: 32.0,
+      cost: 220,
+      needAlive: ['chen', 'yanhuang'],
+      partnerHint: '陈凯威与焱凰',
+      desc: '光明圣龙×天火凤凰：千米金火凤凰坠地，光火轰蒸发敌阵'
     },
 
     // === 2. 七大自创魂技 ===
@@ -2322,6 +2443,22 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
 
     var skill = SKILLS_DATA[skillId];
     if (!skill) return false;
+
+    if (skill.needAlive && skill.needAlive.length) {
+      var partnerOk = false;
+      var partnerNames = [];
+      for (var n = 0; n < skill.needAlive.length; n++) {
+        var pid = skill.needAlive[n];
+        if (player.characterId === pid) continue;
+        var mem = this.game.findMember ? this.game.findMember(this.game.playerTeam, pid) : null;
+        if (mem) partnerNames.push(mem.name);
+        if (mem && !mem.eliminated) partnerOk = true;
+      }
+      if (!partnerOk) {
+        this.game.addMessage('【' + skill.name + '】需要' + (skill.partnerHint || partnerNames.join('、')) + '仍在队伍中！', 1.8);
+        return false;
+      }
+    }
 
     // 冷却判断
     if (player.cooldowns[skillId] > 0) {
@@ -2773,6 +2910,51 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
         this.lifeDomainTimer = 16;
         this.game.addMessage('【生命礼赞领域】展开！伤势极速自动愈合！', 2.8);
         break;
+
+      case 'fusionTwin':
+        Sfx.avatar();
+        Sfx.claw();
+        var twinX = target ? target.x : p.x + Math.cos(p.angle) * 90;
+        var twinY = target ? target.y : p.y + Math.sin(p.angle) * 90;
+        this.game.addParticles(twinX, twinY, '#ffe066', 40);
+        this.game.addParticles(twinX, twinY, '#221133', 40);
+        for (var cl = 0; cl < 9; cl++) {
+          var cAng = (Math.PI * 2 * cl) / 9;
+          var inward = cAng + Math.PI;
+          this.projectiles.push({
+            type: 'cloneSlash',
+            x: twinX + Math.cos(cAng) * 78,
+            y: 9,
+            z: twinY + Math.sin(cAng) * 78,
+            vx: Math.cos(inward) * 520,
+            vy: Math.sin(inward) * 520,
+            angle: inward,
+            damage: p.getEffectiveAttack() * 1.55,
+            life: 1.15,
+            tint: cl % 2 === 0 ? 'gold' : 'shadow',
+            owner: p
+          });
+        }
+        this.game.addMessage('九道龙人分身！金光与黑雾无从分辨！', 2.4);
+        break;
+
+      case 'fusionPhoenix':
+        Sfx.judgment();
+        Sfx.avatar();
+        var px = target ? target.x : p.x + Math.cos(p.angle) * 120;
+        var py = target ? target.y : p.y + Math.sin(p.angle) * 120;
+        this.projectiles.push({
+          type: 'sunPhoenix',
+          x: px,
+          y: 170,
+          z: py,
+          vyGround: -260,
+          life: 1.35,
+          damage: p.getEffectiveAttack() * 11,
+          owner: p
+        });
+        this.game.addMessage('太阳神凰降临！光火轰蒸发敌阵！', 2.6);
+        break;
     }
   };
 
@@ -2859,17 +3041,19 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
         p.z += Math.sin(p.angle) * p.speed * dt;
       }
       // 光耀审判天降巨剑
-      else if (p.type === 'judgment') {
+      else if (p.type === 'judgment' || p.type === 'sunPhoenix') {
         p.y += p.vyGround * dt;
         if (p.y <= 0) {
           p.y = 0;
-          p.life = 0; // 落地爆炸
+          p.life = 0;
           Sfx.hit();
-          this.game.addParticles(p.x, p.z, '#ffffff', 40);
+          this.game.addParticles(p.x, p.z, p.type === 'sunPhoenix' ? '#ff6622' : '#ffffff', p.type === 'sunPhoenix' ? 80 : 40);
+          var boomR = p.type === 'sunPhoenix' ? 240 : 90;
           for (var j = 0; j < enemies.length; j++) {
             var distJ = U.dist(p.x, p.z, enemies[j].x, enemies[j].y);
-            if (distJ < 90) {
+            if (distJ < boomR) {
               enemies[j].takeDamage(p.damage, p.owner);
+              if (p.type === 'sunPhoenix') enemies[j].stunned = Math.max(enemies[j].stunned, 2.4);
             }
           }
         }
@@ -2990,6 +3174,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     this.kit = opts.kit || 'full';
     this.ringText = opts.ringText || '黄 紫 紫 黑 黑 黑 红';
     this.role = opts.role || '';
+    this.uniform = opts.uniform || '';
   }
 
   SoulEntity.prototype.getSpeed = function () {
@@ -3535,6 +3720,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
       group.userData.tail = null;
       group.userData.jaw = null;
       group.userData.goldenShield = null;
+      group.userData.streamers = null;
       return;
     }
     group.userData.legs = form.userData.legs;
@@ -3542,6 +3728,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     group.userData.tail = form.userData.tail;
     group.userData.jaw = form.userData.jaw;
     group.userData.goldenShield = form.userData.goldenShield;
+    group.userData.streamers = form.userData.streamers;
   };
 
   Renderer3D.prototype.createEntityMesh = function (entity) {
@@ -3554,7 +3741,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
       group.userData.trueForm = wild;
       this.bindFormAnim(group, wild);
     } else {
-      var human = DinoModel.createSoulMasterMesh(kind);
+      var human = DinoModel.createSoulMasterMesh(kind, { uniform: entity.uniform });
       var beast = DinoModel.createTrueFormMesh(kind);
       human.name = 'humanForm';
       beast.name = 'trueForm';
@@ -3660,6 +3847,14 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     if (group.userData.jaw) {
       group.userData.jaw.rotation.x = bite * 0.4;
     }
+
+    if (group.userData.streamers && group.userData.streamers.length) {
+      var stt = Date.now() * 0.004;
+      for (var s = 0; s < group.userData.streamers.length; s++) {
+        group.userData.streamers[s].rotation.y = stt + s * 0.7;
+        group.userData.streamers[s].position.y = 0.52 + Math.sin(stt * 2 + s) * 0.08;
+      }
+    }
   };
 
   // 技能法术弹道与特殊视觉对象同步（审判巨剑、太阳神光激光柱、御剑术飞剑、护盾、龙针等）
@@ -3759,6 +3954,45 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
           );
           shield.rotation.x = Math.PI / 2;
           group.add(shield);
+        } else if (p.type === 'cloneSlash') {
+          var cloneCol = p.tint === 'shadow' ? 0x221133 : 0xffe066;
+          var cloneEm = p.tint === 'shadow' ? 0x442266 : 0xffaa00;
+          var cloneBody = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.28, 0.34, 1.6, 6),
+            new THREE.MeshStandardMaterial({
+              color: cloneCol,
+              emissive: cloneEm,
+              emissiveIntensity: 0.85,
+              transparent: true,
+              opacity: 0.82
+            })
+          );
+          group.add(cloneBody);
+          var cloneBlade = new THREE.Mesh(
+            new THREE.BoxGeometry(0.12, 0.08, 1.8),
+            new THREE.MeshBasicMaterial({ color: cloneCol })
+          );
+          cloneBlade.position.z = 0.9;
+          group.add(cloneBlade);
+        } else if (p.type === 'sunPhoenix') {
+          var fireM = new THREE.MeshStandardMaterial({
+            color: 0xff6622,
+            emissive: 0xffaa00,
+            emissiveIntensity: 1.1,
+            transparent: true,
+            opacity: 0.9
+          });
+          var phoenixBody = new THREE.Mesh(new THREE.SphereGeometry(4.2, 10, 8), fireM);
+          phoenixBody.scale.set(1, 0.7, 1.6);
+          group.add(phoenixBody);
+          var pWingL = new THREE.Mesh(new THREE.ConeGeometry(2.4, 12, 6), fireM);
+          pWingL.rotation.z = 1.1;
+          pWingL.position.set(-6, 0, 0);
+          group.add(pWingL);
+          var pWingR = pWingL.clone();
+          pWingR.rotation.z = -1.1;
+          pWingR.position.x = 6;
+          group.add(pWingR);
         } else {
           // 默认光球/龙羽
           var sphere = new THREE.Mesh(
@@ -3979,7 +4213,8 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
       characterId: opts.characterId,
       kit: opts.kit,
       ringText: opts.ringText,
-      role: opts.role
+      role: opts.role,
+      uniform: opts.uniform
     });
     this.dinos.push(entity);
     if (this.r3d) this.r3d.createEntityMesh(entity);
@@ -4002,7 +4237,8 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
       characterId: member.id,
       kit: member.kit || 'member',
       ringText: member.rings,
-      role: member.role || member.title
+      role: member.role || member.title,
+      uniform: member.uniform || ''
     });
     e.maxHp = member.maxHp;
     e.maxMp = member.maxMp;
@@ -4042,6 +4278,9 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     this.currentEnemyId = foe.id;
 
     this.addMessage('第 ' + this.roundIndex + ' 局 1v1：' + mine.name + ' VS ' + foe.name, 3.2);
+    if (mine.id === 'chen' && this.playerTeam && this.playerTeam.slogan) {
+      this.addMessage(this.playerTeam.slogan, 3.6);
+    }
     this.setState('playing');
     return true;
   };
@@ -4291,7 +4530,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     setTimeout(function () {
       if (myLeft <= 0) {
         self.setState('over');
-        self.addMessage('圣龙战队全员战败… 按 R 再战', 4);
+        self.addMessage((self.playerTeam && self.playerTeam.name ? self.playerTeam.name : '圣龙神辉战队') + '全员战败… 按 R 再战', 4);
         return;
       }
       if (enLeft <= 0) {
@@ -4403,7 +4642,8 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
       Digit5: 'ring5', Digit6: 'ring6', Digit7: 'ring7',
       KeyQ: 'custom1', KeyE: 'custom2', KeyZ: 'custom3', KeyX: 'custom4',
       KeyC: 'custom5', KeyV: 'custom6', KeyB: 'custom7',
-      KeyF: 'boneL', KeyG: 'boneR', KeyT: 'domain'
+      KeyF: 'boneL', KeyG: 'boneR', KeyT: 'domain',
+      KeyU: 'fusionTwin', KeyI: 'fusionPhoenix'
     };
     var p = g.player;
     if (!p || p.kit === 'full' || p.characterId === 'chen') return full;
@@ -4414,6 +4654,14 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     var ni = 0;
     (mem.skills || []).forEach(function (sid) {
       if (sid === 'trueBody' || sid === 'ring7') return;
+      if (sid === 'fusionTwin') {
+        map.KeyU = sid;
+        return;
+      }
+      if (sid === 'fusionPhoenix') {
+        map.KeyI = sid;
+        return;
+      }
       if (sid === 'iceDomain' || sid === 'lifeDomain' || sid === 'domain') {
         map.KeyT = sid;
       }
@@ -4454,7 +4702,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     if (!mem) return;
     var combat = [];
     (mem.skills || []).forEach(function (sid) {
-      if (sid !== 'trueBody' && sid !== 'ring7') combat.push(sid);
+      if (sid !== 'trueBody' && sid !== 'ring7' && sid !== 'fusionTwin' && sid !== 'fusionPhoenix') combat.push(sid);
     });
     var keys = ['1', '2', '3'];
     combat.forEach(function (sid, i) {
@@ -4478,6 +4726,24 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
       '<span class="s-name">' + trueData.name + '</span>' +
       '<span class="s-cost">魂力 ' + trueData.cost + '</span>';
     memberSkillGrid.appendChild(trueBtn);
+    if ((mem.skills || []).indexOf('fusionTwin') >= 0) {
+      var ft = global.SKILLS_DATA.fusionTwin || { name: '光明影刃·双生主宰', cost: 180 };
+      var ftBtn = doc.createElement('button');
+      ftBtn.type = 'button';
+      ftBtn.className = 'skill-btn ring-yellow';
+      ftBtn.setAttribute('data-skill', 'fusionTwin');
+      ftBtn.innerHTML = '<span class="s-key">[U] 融合技</span><span class="s-name">' + ft.name + '</span><span class="s-cost">魂力 ' + ft.cost + '</span>';
+      memberSkillGrid.appendChild(ftBtn);
+    }
+    if ((mem.skills || []).indexOf('fusionPhoenix') >= 0) {
+      var fp = global.SKILLS_DATA.fusionPhoenix || { name: '太阳神凰·末日审判', cost: 220 };
+      var fpBtn = doc.createElement('button');
+      fpBtn.type = 'button';
+      fpBtn.className = 'skill-btn ring-red';
+      fpBtn.setAttribute('data-skill', 'fusionPhoenix');
+      fpBtn.innerHTML = '<span class="s-key">[I] 融合技</span><span class="s-name">' + fp.name + '</span><span class="s-cost">魂力 ' + fp.cost + '</span>';
+      memberSkillGrid.appendChild(fpBtn);
+    }
   }
 
   function bindControls() {
@@ -4507,7 +4773,9 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
       KeyB: 'custom7',
       KeyF: 'boneL',
       KeyG: 'boneR',
-      KeyT: 'domain'
+      KeyT: 'domain',
+      KeyU: 'fusionTwin',
+      KeyI: 'fusionPhoenix'
     };
 
     doc.addEventListener('keydown', function (event) {

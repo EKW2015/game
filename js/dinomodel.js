@@ -632,15 +632,89 @@
 
     addGoldenShield(group, 2.35, 2.15);
     addFootAura(group, opts.aura || 0xffd700);
+    if (opts.uniform === 'male' || opts.uniform === 'female') {
+      applyPlatinumUniform(group, opts.uniform);
+    }
     return group;
   }
 
-  function createSoulMasterMesh(kind) {
+  function applyPlatinumUniform(group, style) {
+    var plat = tintMat(0xf4f0e6, 0xfff6d8, 0.2);
+    var gold = tintMat(0xd4af37, 0xffcc55, 0.55);
+    var collar = new THREE.Mesh(new THREE.TorusGeometry(0.3, 0.055, 6, 16), gold);
+    collar.position.y = 2.98;
+    collar.rotation.x = Math.PI / 2;
+    group.add(collar);
+
+    if (style === 'male') {
+      var robe = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.7, 1.9, 10), plat);
+      robe.position.y = 1.12;
+      group.add(robe);
+      if (group.userData.handL) {
+        var cuffL = new THREE.Mesh(new THREE.TorusGeometry(0.15, 0.035, 6, 10), gold);
+        cuffL.position.copy(group.userData.handL.position);
+        cuffL.position.y += 0.16;
+        group.add(cuffL);
+        var cuffR = cuffL.clone();
+        cuffR.position.x = group.userData.handR.position.x;
+        group.add(cuffR);
+      }
+      var badge = new THREE.Mesh(new THREE.CircleGeometry(0.3, 14), gold);
+      badge.position.set(0, 2.52, -0.44);
+      badge.rotation.y = Math.PI;
+      group.add(badge);
+      var mark = new THREE.Mesh(new THREE.ConeGeometry(0.09, 0.34, 5), tintMat(0xffe066, 0xffaa00, 0.85));
+      mark.position.set(0, 2.58, -0.48);
+      group.add(mark);
+    } else {
+      var skirt = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.88, 0.4, 1.18, 12),
+        new THREE.MeshStandardMaterial({
+          color: 0xf4f0e6,
+          roughness: 0.32,
+          metalness: 0.48,
+          emissive: 0xfff6d8,
+          emissiveIntensity: 0.22,
+          transparent: true,
+          opacity: 0.93
+        })
+      );
+      skirt.position.y = 1.04;
+      group.add(skirt);
+      group.userData.streamers = [];
+      for (var i = 0; i < 5; i++) {
+        var ang = i * 1.256;
+        var st = new THREE.Mesh(
+          new THREE.PlaneGeometry(0.16, 1.4),
+          new THREE.MeshBasicMaterial({
+            color: 0xfff2aa,
+            transparent: true,
+            opacity: 0.48,
+            side: THREE.DoubleSide
+          })
+        );
+        st.position.set(Math.cos(ang) * 0.58, 0.52, Math.sin(ang) * 0.58);
+        group.add(st);
+        group.userData.streamers.push(st);
+      }
+    }
+  }
+
+  function createSoulMasterMesh(kind, look) {
+    look = look || {};
+    var uni = look.uniform;
+    var plat = uni ? {
+      cloth: 0xf4f0e6,
+      accent: 0xd4af37,
+      uniform: uni,
+      emissive: 0xfff6d8,
+      emissiveInt: 0.16
+    } : {};
     var group;
     if (kind === 'dragon') {
-      group = createHumanoidBase({
+      group = createHumanoidBase(Object.assign({
         cloth: 0xc9a227, accent: 0xffe066, hair: 0x3a2208, aura: 0xffd700
-      });
+      }, plat));
       var claw = new THREE.Mesh(new THREE.ConeGeometry(0.16, 1.15, 5), tintMat(0xfff2a0, 0xffaa00, 0.7));
       claw.rotation.x = 1.15;
       claw.position.set(0.92, 1.55, 0.55);
@@ -650,9 +724,9 @@
       claw2.rotation.y = 0.25;
       group.add(claw2);
     } else if (kind === 'assassin') {
-      group = createHumanoidBase({
+      group = createHumanoidBase(Object.assign({
         cloth: 0x1a1028, accent: 0x442266, hair: 0x0a0610, hairStyle: 'tail', aura: 0x8866ff
-      });
+      }, plat));
       var blade = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.1, 1.7), tintMat(0x8866ff, 0x4422aa, 0.65));
       blade.position.set(0.86, 1.7, 0.7);
       group.add(blade);
@@ -660,17 +734,17 @@
       blade2.position.set(-0.86, 1.7, 0.55);
       group.add(blade2);
     } else if (kind === 'phoenix') {
-      group = createHumanoidBase({
+      group = createHumanoidBase(Object.assign({
         cloth: 0xaa2200, accent: 0xffaa33, hair: 0x4a0a00, hairStyle: 'long', aura: 0xff4400
-      });
+      }, plat));
       var fan = new THREE.Mesh(new THREE.ConeGeometry(0.55, 0.12, 8), tintMat(0xff6622, 0xff2200, 0.7));
       fan.rotation.x = 1.2;
       fan.position.set(0.9, 1.72, 0.35);
       group.add(fan);
     } else if (kind === 'ice') {
-      group = createHumanoidBase({
+      group = createHumanoidBase(Object.assign({
         cloth: 0x88ccee, accent: 0xccffff, hair: 0xddeeff, hairStyle: 'long', skin: 0xf0d8c8, aura: 0x66eeff
-      });
+      }, plat));
       var staff = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.06, 2.2, 6), tintMat(0x88eeff, 0x2288ff, 0.5));
       staff.position.set(0.82, 2.15, 0.2);
       group.add(staff);
@@ -678,23 +752,23 @@
       bud.position.set(0.82, 3.3, 0.2);
       group.add(bud);
     } else if (kind === 'mammoth') {
-      group = createHumanoidBase({
+      group = createHumanoidBase(Object.assign({
         cloth: 0x8a6a22, accent: 0xd4a017, hair: 0x2a1a08, aura: 0xd4a017
-      });
+      }, plat));
       var gaunt = new THREE.Mesh(new THREE.BoxGeometry(0.38, 0.38, 0.5), tintMat(0xc9a227, 0xaa7700, 0.25));
       gaunt.position.set(0.86, 1.62, 0.18);
       group.add(gaunt);
     } else if (kind === 'lamp') {
-      group = createHumanoidBase({
+      group = createHumanoidBase(Object.assign({
         cloth: 0x6644aa, accent: 0xffcc66, hair: 0x221133, hairStyle: 'long', aura: 0xffaa33
-      });
+      }, plat));
       var lamp = new THREE.Mesh(new THREE.SphereGeometry(0.28, 10, 10), tintMat(0xffaa33, 0xff6600, 0.95));
       lamp.position.set(-0.78, 1.85, 0.22);
       group.add(lamp);
     } else if (kind === 'bird') {
-      group = createHumanoidBase({
+      group = createHumanoidBase(Object.assign({
         cloth: 0x228844, accent: 0x88ffaa, hair: 0xf5e6c8, hairStyle: 'long', aura: 0x66ff99
-      });
+      }, plat));
       var wand = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.06, 1.8, 6), tintMat(0x66ff99, 0x22aa44, 0.45));
       wand.position.set(0.82, 2.05, 0.18);
       group.add(wand);
@@ -702,7 +776,7 @@
       gem.position.set(0.82, 3.0, 0.18);
       group.add(gem);
     } else {
-      group = createHumanoidBase({ cloth: 0x4a4038, accent: 0x6a5a4a });
+      group = createHumanoidBase(Object.assign({ cloth: 0x4a4038, accent: 0x6a5a4a }, plat));
     }
     return group;
   }

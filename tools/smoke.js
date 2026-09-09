@@ -124,6 +124,41 @@ win.Roster.PLAYER_TEAM.members.forEach(function (m) {
 var clonedEnemy = win.Roster.cloneTeam(win.Roster.ENEMY_TEAMS[0]);
 assert.ok(clonedEnemy.members[0].skills.indexOf('trueBody') >= 0, 'enemy saints also get 武魂真身');
 
+assert.strictEqual(win.Roster.PLAYER_TEAM.name, '圣龙神辉战队');
+assert.ok(win.Roster.PLAYER_TEAM.slogan.indexOf('圣龙出世') >= 0);
+assert.strictEqual(win.Roster.PLAYER_TEAM.members[0].uniform, 'male');
+assert.strictEqual(win.Roster.PLAYER_TEAM.members[2].uniform, 'female');
+assert.ok(SKILLS_DATA.fusionTwin && SKILLS_DATA.fusionPhoenix);
+
+gameStub.playerTeam = win.Roster.cloneTeam(win.Roster.PLAYER_TEAM);
+gameStub.findMember = function (team, id) {
+  if (!team) return null;
+  for (var i = 0; i < team.members.length; i++) {
+    if (team.members[i].id === id) return team.members[i];
+  }
+  return null;
+};
+player.characterId = 'chen';
+player.avatarMode = false;
+player.mp = 1200;
+player.cooldowns = {};
+assert.strictEqual(skills.castSkill('fusionTwin'), true, 'fusionTwin with 墨影 on roster');
+assert.ok(skills.projectiles.length >= 9, 'nine dragon-man clones');
+
+player.mp = 1200;
+player.cooldowns = {};
+gameStub.playerTeam.members.forEach(function (m) {
+  if (m.id === 'yanhuang') m.eliminated = true;
+});
+assert.strictEqual(skills.castSkill('fusionPhoenix'), false, 'fusionPhoenix needs 焱凰 in team');
+
+player.mp = 1200;
+player.cooldowns = {};
+gameStub.playerTeam.members.forEach(function (m) {
+  if (m.id === 'yanhuang') m.eliminated = false;
+});
+assert.strictEqual(skills.castSkill('fusionPhoenix'), true, 'fusionPhoenix with 焱凰 on roster');
+
 console.log('smoke ok');
 console.log('skills', Object.keys(SKILLS_DATA).length);
 console.log('playerTitle', player.title);

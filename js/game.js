@@ -117,7 +117,8 @@
       characterId: opts.characterId,
       kit: opts.kit,
       ringText: opts.ringText,
-      role: opts.role
+      role: opts.role,
+      uniform: opts.uniform
     });
     this.dinos.push(entity);
     if (this.r3d) this.r3d.createEntityMesh(entity);
@@ -140,7 +141,8 @@
       characterId: member.id,
       kit: member.kit || 'member',
       ringText: member.rings,
-      role: member.role || member.title
+      role: member.role || member.title,
+      uniform: member.uniform || ''
     });
     e.maxHp = member.maxHp;
     e.maxMp = member.maxMp;
@@ -180,6 +182,9 @@
     this.currentEnemyId = foe.id;
 
     this.addMessage('第 ' + this.roundIndex + ' 局 1v1：' + mine.name + ' VS ' + foe.name, 3.2);
+    if (mine.id === 'chen' && this.playerTeam && this.playerTeam.slogan) {
+      this.addMessage(this.playerTeam.slogan, 3.6);
+    }
     this.setState('playing');
     return true;
   };
@@ -429,7 +434,7 @@
     setTimeout(function () {
       if (myLeft <= 0) {
         self.setState('over');
-        self.addMessage('圣龙战队全员战败… 按 R 再战', 4);
+        self.addMessage((self.playerTeam && self.playerTeam.name ? self.playerTeam.name : '圣龙神辉战队') + '全员战败… 按 R 再战', 4);
         return;
       }
       if (enLeft <= 0) {

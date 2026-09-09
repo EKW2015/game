@@ -83,6 +83,26 @@
       cost: 150,
       desc: '魂师释放武魂真身，短暂化作武魂本体。平时保持人形'
     },
+    fusionTwin: {
+      id: 'fusionTwin',
+      name: '武魂融合技·光明影刃·双生主宰',
+      type: 'fusion',
+      cd: 28.0,
+      cost: 180,
+      needAlive: ['chen', 'moying'],
+      partnerHint: '陈凯威与墨影',
+      desc: '光明圣龙×影疾夜刃：九道龙人分身金光黑雾齐斩，光速暗杀流'
+    },
+    fusionPhoenix: {
+      id: 'fusionPhoenix',
+      name: '武魂融合技·太阳神凰·末日审判',
+      type: 'fusion',
+      cd: 32.0,
+      cost: 220,
+      needAlive: ['chen', 'yanhuang'],
+      partnerHint: '陈凯威与焱凰',
+      desc: '光明圣龙×天火凤凰：千米金火凤凰坠地，光火轰蒸发敌阵'
+    },
 
     // === 2. 七大自创魂技 ===
     custom1: {
@@ -202,6 +222,22 @@
 
     var skill = SKILLS_DATA[skillId];
     if (!skill) return false;
+
+    if (skill.needAlive && skill.needAlive.length) {
+      var partnerOk = false;
+      var partnerNames = [];
+      for (var n = 0; n < skill.needAlive.length; n++) {
+        var pid = skill.needAlive[n];
+        if (player.characterId === pid) continue;
+        var mem = this.game.findMember ? this.game.findMember(this.game.playerTeam, pid) : null;
+        if (mem) partnerNames.push(mem.name);
+        if (mem && !mem.eliminated) partnerOk = true;
+      }
+      if (!partnerOk) {
+        this.game.addMessage('【' + skill.name + '】需要' + (skill.partnerHint || partnerNames.join('、')) + '仍在队伍中！', 1.8);
+        return false;
+      }
+    }
 
     // 冷却判断
     if (player.cooldowns[skillId] > 0) {
@@ -653,6 +689,51 @@
         this.lifeDomainTimer = 16;
         this.game.addMessage('【生命礼赞领域】展开！伤势极速自动愈合！', 2.8);
         break;
+
+      case 'fusionTwin':
+        Sfx.avatar();
+        Sfx.claw();
+        var twinX = target ? target.x : p.x + Math.cos(p.angle) * 90;
+        var twinY = target ? target.y : p.y + Math.sin(p.angle) * 90;
+        this.game.addParticles(twinX, twinY, '#ffe066', 40);
+        this.game.addParticles(twinX, twinY, '#221133', 40);
+        for (var cl = 0; cl < 9; cl++) {
+          var cAng = (Math.PI * 2 * cl) / 9;
+          var inward = cAng + Math.PI;
+          this.projectiles.push({
+            type: 'cloneSlash',
+            x: twinX + Math.cos(cAng) * 78,
+            y: 9,
+            z: twinY + Math.sin(cAng) * 78,
+            vx: Math.cos(inward) * 520,
+            vy: Math.sin(inward) * 520,
+            angle: inward,
+            damage: p.getEffectiveAttack() * 1.55,
+            life: 1.15,
+            tint: cl % 2 === 0 ? 'gold' : 'shadow',
+            owner: p
+          });
+        }
+        this.game.addMessage('九道龙人分身！金光与黑雾无从分辨！', 2.4);
+        break;
+
+      case 'fusionPhoenix':
+        Sfx.judgment();
+        Sfx.avatar();
+        var px = target ? target.x : p.x + Math.cos(p.angle) * 120;
+        var py = target ? target.y : p.y + Math.sin(p.angle) * 120;
+        this.projectiles.push({
+          type: 'sunPhoenix',
+          x: px,
+          y: 170,
+          z: py,
+          vyGround: -260,
+          life: 1.35,
+          damage: p.getEffectiveAttack() * 11,
+          owner: p
+        });
+        this.game.addMessage('太阳神凰降临！光火轰蒸发敌阵！', 2.6);
+        break;
     }
   };
 
@@ -739,17 +820,19 @@
         p.z += Math.sin(p.angle) * p.speed * dt;
       }
       // 光耀审判天降巨剑
-      else if (p.type === 'judgment') {
+      else if (p.type === 'judgment' || p.type === 'sunPhoenix') {
         p.y += p.vyGround * dt;
         if (p.y <= 0) {
           p.y = 0;
-          p.life = 0; // 落地爆炸
+          p.life = 0;
           Sfx.hit();
-          this.game.addParticles(p.x, p.z, '#ffffff', 40);
+          this.game.addParticles(p.x, p.z, p.type === 'sunPhoenix' ? '#ff6622' : '#ffffff', p.type === 'sunPhoenix' ? 80 : 40);
+          var boomR = p.type === 'sunPhoenix' ? 240 : 90;
           for (var j = 0; j < enemies.length; j++) {
             var distJ = U.dist(p.x, p.z, enemies[j].x, enemies[j].y);
-            if (distJ < 90) {
+            if (distJ < boomR) {
               enemies[j].takeDamage(p.damage, p.owner);
+              if (p.type === 'sunPhoenix') enemies[j].stunned = Math.max(enemies[j].stunned, 2.4);
             }
           }
         }

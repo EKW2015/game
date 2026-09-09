@@ -72,7 +72,8 @@
       Digit5: 'ring5', Digit6: 'ring6', Digit7: 'ring7',
       KeyQ: 'custom1', KeyE: 'custom2', KeyZ: 'custom3', KeyX: 'custom4',
       KeyC: 'custom5', KeyV: 'custom6', KeyB: 'custom7',
-      KeyF: 'boneL', KeyG: 'boneR', KeyT: 'domain'
+      KeyF: 'boneL', KeyG: 'boneR', KeyT: 'domain',
+      KeyU: 'fusionTwin', KeyI: 'fusionPhoenix'
     };
     var p = g.player;
     if (!p || p.kit === 'full' || p.characterId === 'chen') return full;
@@ -83,6 +84,14 @@
     var ni = 0;
     (mem.skills || []).forEach(function (sid) {
       if (sid === 'trueBody' || sid === 'ring7') return;
+      if (sid === 'fusionTwin') {
+        map.KeyU = sid;
+        return;
+      }
+      if (sid === 'fusionPhoenix') {
+        map.KeyI = sid;
+        return;
+      }
       if (sid === 'iceDomain' || sid === 'lifeDomain' || sid === 'domain') {
         map.KeyT = sid;
       }
@@ -123,7 +132,7 @@
     if (!mem) return;
     var combat = [];
     (mem.skills || []).forEach(function (sid) {
-      if (sid !== 'trueBody' && sid !== 'ring7') combat.push(sid);
+      if (sid !== 'trueBody' && sid !== 'ring7' && sid !== 'fusionTwin' && sid !== 'fusionPhoenix') combat.push(sid);
     });
     var keys = ['1', '2', '3'];
     combat.forEach(function (sid, i) {
@@ -147,6 +156,24 @@
       '<span class="s-name">' + trueData.name + '</span>' +
       '<span class="s-cost">魂力 ' + trueData.cost + '</span>';
     memberSkillGrid.appendChild(trueBtn);
+    if ((mem.skills || []).indexOf('fusionTwin') >= 0) {
+      var ft = global.SKILLS_DATA.fusionTwin || { name: '光明影刃·双生主宰', cost: 180 };
+      var ftBtn = doc.createElement('button');
+      ftBtn.type = 'button';
+      ftBtn.className = 'skill-btn ring-yellow';
+      ftBtn.setAttribute('data-skill', 'fusionTwin');
+      ftBtn.innerHTML = '<span class="s-key">[U] 融合技</span><span class="s-name">' + ft.name + '</span><span class="s-cost">魂力 ' + ft.cost + '</span>';
+      memberSkillGrid.appendChild(ftBtn);
+    }
+    if ((mem.skills || []).indexOf('fusionPhoenix') >= 0) {
+      var fp = global.SKILLS_DATA.fusionPhoenix || { name: '太阳神凰·末日审判', cost: 220 };
+      var fpBtn = doc.createElement('button');
+      fpBtn.type = 'button';
+      fpBtn.className = 'skill-btn ring-red';
+      fpBtn.setAttribute('data-skill', 'fusionPhoenix');
+      fpBtn.innerHTML = '<span class="s-key">[I] 融合技</span><span class="s-name">' + fp.name + '</span><span class="s-cost">魂力 ' + fp.cost + '</span>';
+      memberSkillGrid.appendChild(fpBtn);
+    }
   }
 
   function bindControls() {
@@ -176,7 +203,9 @@
       KeyB: 'custom7',
       KeyF: 'boneL',
       KeyG: 'boneR',
-      KeyT: 'domain'
+      KeyT: 'domain',
+      KeyU: 'fusionTwin',
+      KeyI: 'fusionPhoenix'
     };
 
     doc.addEventListener('keydown', function (event) {

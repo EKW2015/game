@@ -68,6 +68,7 @@
       group.userData.tail = null;
       group.userData.jaw = null;
       group.userData.goldenShield = null;
+      group.userData.streamers = null;
       return;
     }
     group.userData.legs = form.userData.legs;
@@ -75,6 +76,7 @@
     group.userData.tail = form.userData.tail;
     group.userData.jaw = form.userData.jaw;
     group.userData.goldenShield = form.userData.goldenShield;
+    group.userData.streamers = form.userData.streamers;
   };
 
   Renderer3D.prototype.createEntityMesh = function (entity) {
@@ -87,7 +89,7 @@
       group.userData.trueForm = wild;
       this.bindFormAnim(group, wild);
     } else {
-      var human = DinoModel.createSoulMasterMesh(kind);
+      var human = DinoModel.createSoulMasterMesh(kind, { uniform: entity.uniform });
       var beast = DinoModel.createTrueFormMesh(kind);
       human.name = 'humanForm';
       beast.name = 'trueForm';
@@ -193,6 +195,14 @@
     if (group.userData.jaw) {
       group.userData.jaw.rotation.x = bite * 0.4;
     }
+
+    if (group.userData.streamers && group.userData.streamers.length) {
+      var stt = Date.now() * 0.004;
+      for (var s = 0; s < group.userData.streamers.length; s++) {
+        group.userData.streamers[s].rotation.y = stt + s * 0.7;
+        group.userData.streamers[s].position.y = 0.52 + Math.sin(stt * 2 + s) * 0.08;
+      }
+    }
   };
 
   // 技能法术弹道与特殊视觉对象同步（审判巨剑、太阳神光激光柱、御剑术飞剑、护盾、龙针等）
@@ -292,6 +302,45 @@
           );
           shield.rotation.x = Math.PI / 2;
           group.add(shield);
+        } else if (p.type === 'cloneSlash') {
+          var cloneCol = p.tint === 'shadow' ? 0x221133 : 0xffe066;
+          var cloneEm = p.tint === 'shadow' ? 0x442266 : 0xffaa00;
+          var cloneBody = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.28, 0.34, 1.6, 6),
+            new THREE.MeshStandardMaterial({
+              color: cloneCol,
+              emissive: cloneEm,
+              emissiveIntensity: 0.85,
+              transparent: true,
+              opacity: 0.82
+            })
+          );
+          group.add(cloneBody);
+          var cloneBlade = new THREE.Mesh(
+            new THREE.BoxGeometry(0.12, 0.08, 1.8),
+            new THREE.MeshBasicMaterial({ color: cloneCol })
+          );
+          cloneBlade.position.z = 0.9;
+          group.add(cloneBlade);
+        } else if (p.type === 'sunPhoenix') {
+          var fireM = new THREE.MeshStandardMaterial({
+            color: 0xff6622,
+            emissive: 0xffaa00,
+            emissiveIntensity: 1.1,
+            transparent: true,
+            opacity: 0.9
+          });
+          var phoenixBody = new THREE.Mesh(new THREE.SphereGeometry(4.2, 10, 8), fireM);
+          phoenixBody.scale.set(1, 0.7, 1.6);
+          group.add(phoenixBody);
+          var pWingL = new THREE.Mesh(new THREE.ConeGeometry(2.4, 12, 6), fireM);
+          pWingL.rotation.z = 1.1;
+          pWingL.position.set(-6, 0, 0);
+          group.add(pWingL);
+          var pWingR = pWingL.clone();
+          pWingR.rotation.z = -1.1;
+          pWingR.position.x = 6;
+          group.add(pWingR);
         } else {
           // 默认光球/龙羽
           var sphere = new THREE.Mesh(

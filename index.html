@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="description" content="3D 斗罗大陆：武魂光明圣龙，七大魂技、自创魂技、九万年魂骨技与圣龙主迹领域！" />
     <meta name="theme-color" content="#0b1118" />
-    <title>3D 斗罗大陆：圣龙战队大赛</title>
+    <title>3D 斗罗大陆：圣龙神辉战队大赛</title>
     <style>html,body{background:#0b1118!important;min-height:100vh;margin:0}</style>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='14' font-size='14'>🐉</text></svg>" />
     <link rel="stylesheet" href="css/style.css" />
@@ -19,7 +19,7 @@
 
     <main class="page">
       <header class="page__header">
-        <h1 class="page__title">3D 斗罗大陆 · 圣龙战队大赛 <span class="badge-3d">1v1 团队赛</span></h1>
+        <h1 class="page__title">3D 斗罗大陆 · 圣龙神辉战队 <span class="badge-3d">1v1 团队赛</span></h1>
         <div class="page__tools">
           <button id="btn-sound" class="tool" type="button" aria-pressed="false">音效：开</button>
           <button id="btn-pause" class="tool" type="button">暂停</button>
@@ -49,7 +49,7 @@
             <div class="hud__buffs" id="hud-buffs">魂环：黄 紫 紫 黑 黑 黑 红</div>
           </div>
           <div class="hud__remain">
-            <div>比赛: <strong id="hud-match">圣龙战队 VS —</strong></div>
+            <div>比赛: <strong id="hud-match">圣龙神辉战队 VS —</strong></div>
             <div>比分: 我方 <strong id="hud-my-left">7</strong> · 敌方 <strong id="hud-en-left">7</strong></div>
             <div>连胜队伍: <strong id="hud-team-wins">0</strong></div>
             <div id="hud-domain-status" style="color:#ffd700;margin-top:4px">领域：待命</div>
@@ -61,10 +61,11 @@
 
         <!-- 游戏初始界面 -->
         <div class="overlay" id="overlay-ready" data-action="start">
-          <p class="overlay__title">全大陆魂师大赛 · 圣龙战队</p>
-          <p class="overlay__hint">队长陈凯威（光明圣龙）带领七人小队，按斗罗大陆赛制 1v1 连战其他队伍。</p>
-          <p class="overlay__hint">每局结束后可以换人。败者退场，先让对方全员倒下即赢下团队赛，然后继续打下一队。</p>
-          <p class="overlay__hint">WASD 移动 · 空格攻击 · 1/2/T 放魂技 · 按 7 释放武魂真身才会化作魂兽（平时是魂师人形）</p>
+          <p class="overlay__title">全大陆魂师大赛 · 圣龙神辉战队</p>
+          <p class="overlay__hint">「圣龙出世，震碎全场！凯威带队，势不可挡！」</p>
+          <p class="overlay__hint">光明圣龙的神圣光辉 · 白金主宰风队服 · 优雅高贵，极具正义感。</p>
+          <p class="overlay__hint">队长陈凯威带领七人小队，按斗罗大陆赛制 1v1 连战其他队伍。平时是魂师人形，按 7 才释放武魂真身化兽。</p>
+          <p class="overlay__hint">WASD 移动 · 空格攻击 · 1/2/T 魂技 · 7 真身 · U 光明影刃融合技 · I 太阳神凰融合技</p>
           <button class="overlay__button" type="button" data-action="start">进入选人 · 开始比赛</button>
         </div>
 
@@ -200,6 +201,21 @@
             <span class="s-cost">魂力 140</span>
           </button>
         </div>
+        <div class="skill-category-title" style="margin-top:8px">
+          <span>✨ 武魂融合技（队友仍在队伍中才可释放）</span>
+        </div>
+        <div class="skill-grid">
+          <button class="skill-btn ring-yellow" data-skill="fusionTwin" title="陈凯威×墨影：九道龙人分身，金光与黑雾齐斩">
+            <span class="s-key">[U] 融合技</span>
+            <span class="s-name">光明影刃·双生主宰</span>
+            <span class="s-cost">魂力 180</span>
+          </button>
+          <button class="skill-btn ring-red" data-skill="fusionPhoenix" title="陈凯威×焱凰：千米金火凤凰坠地蒸发敌阵">
+            <span class="s-key">[I] 融合技</span>
+            <span class="s-name">太阳神凰·末日审判</span>
+            <span class="s-cost">魂力 220</span>
+          </button>
+        </div>
       </section>
 
       <!-- 移动端虚拟按键 -->
@@ -221,9 +237,10 @@
       <section class="legend">
         <h2 class="legend__title">斗罗大陆团队赛怎么玩</h2>
         <ul class="legend__list">
-          <li><strong>赛制：</strong>圣龙战队 7 人 vs 对手 7 人，每局 1v1。败者退场，每局结束可换人。</li>
+          <li><strong>赛制：</strong>圣龙神辉战队 7 人 vs 对手 7 人，每局 1v1。败者退场，每局结束可换人。</li>
+          <li><strong>队服：</strong>白金主宰风。男款白金长袍金龙纹与圣龙徽章（陈凯威、墨影、石破天）；女款白金战裙光明流光（冷凝霜、沈琉璃、白依依、焱凰）。</li>
           <li><strong>队员：</strong>陈凯威（光明圣龙）、墨影（刺客）、焱凰（凤凰）、冷凝霜（冰控）、石破天（猛犸坦克）、沈琉璃（充电宝）、白依依（治疗）。</li>
-          <li><strong>操作：</strong>WASD 移动，空格普攻。队员用 <kbd>1</kbd> <kbd>2</kbd> <kbd>T</kbd>；队长陈凯威可用全部魂技。</li>
+          <li><strong>操作：</strong>WASD 移动，空格普攻。队员用 <kbd>1</kbd> <kbd>2</kbd> <kbd>T</kbd>、<kbd>7</kbd> 真身；队长另有全部魂技。<kbd>U</kbd> 光明影刃融合技，<kbd>I</kbd> 太阳神凰融合技。</li>
           <li><strong>连战：</strong>打赢一支队伍后全员复活，立刻对阵下一支学院队。</li>
         </ul>
       </section>

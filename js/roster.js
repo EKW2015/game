@@ -1,5 +1,5 @@
 /**
- * 圣龙战队七人名单 + 对手学院队伍（斗罗大陆团队赛 1v1）
+ * 圣龙神辉战队七人名单 + 对手学院队伍（斗罗大陆团队赛 1v1）
  */
 (function (global) {
   'use strict';
@@ -9,8 +9,9 @@
 
   var PLAYER_TEAM = {
     id: 'shenglong',
-    name: '圣龙战队',
-    motto: '队长陈凯威 · 光明圣龙核心输出',
+    name: '圣龙神辉战队',
+    motto: '光明圣龙的神圣光辉 · 优雅高贵，极具正义感',
+    slogan: '圣龙出世，震碎全场！凯威带队，势不可挡！',
     members: [
       {
         id: 'chen',
@@ -23,8 +24,9 @@
         domain: '十万年·圣龙主迹领域',
         role: '全队核心输出',
         hp: 3500, mp: 1200, attack: 250, defense: 170, level: 78,
-        skills: ['ring1', 'ring2', 'ring3', 'ring4', 'ring5', 'ring6', 'ring7', 'domain'],
-        kit: 'full'
+        skills: ['ring1', 'ring2', 'ring3', 'ring4', 'ring5', 'ring6', 'ring7', 'domain', 'fusionTwin', 'fusionPhoenix'],
+        kit: 'full',
+        uniform: 'male'
       },
       {
         id: 'moying',
@@ -37,8 +39,9 @@
         domain: '',
         role: '暗影刺客',
         hp: 2600, mp: 900, attack: 230, defense: 90, level: 76,
-        skills: ['shadowStrike', 'bladeStorm', 'trueBody'],
-        kit: 'member'
+        skills: ['shadowStrike', 'bladeStorm', 'trueBody', 'fusionTwin'],
+        kit: 'member',
+        uniform: 'male'
       },
       {
         id: 'yanhuang',
@@ -51,8 +54,9 @@
         domain: '',
         role: '远程大范围爆发',
         hp: 2400, mp: 1100, attack: 220, defense: 85, level: 75,
-        skills: ['phoenixMeteor', 'fireCage', 'trueBody'],
-        kit: 'member'
+        skills: ['phoenixMeteor', 'fireCage', 'trueBody', 'fusionPhoenix'],
+        kit: 'member',
+        uniform: 'female'
       },
       {
         id: 'lengningshuang',
@@ -66,7 +70,8 @@
         role: '掌控全局节奏',
         hp: 2300, mp: 1200, attack: 150, defense: 95, level: 75,
         skills: ['absoluteZero', 'iceVines', 'iceDomain', 'trueBody'],
-        kit: 'member'
+        kit: 'member',
+        uniform: 'female'
       },
       {
         id: 'shipotian',
@@ -80,7 +85,8 @@
         role: '前排大肉盾',
         hp: 5200, mp: 800, attack: 160, defense: 260, level: 77,
         skills: ['mammothStomp', 'goldShield', 'trueBody'],
-        kit: 'member'
+        kit: 'member',
+        uniform: 'male'
       },
       {
         id: 'shenliuli',
@@ -94,7 +100,8 @@
         role: '全队充电宝',
         hp: 2100, mp: 1400, attack: 90, defense: 80, level: 74,
         skills: ['speedAmp', 'mpSurge', 'trueBody'],
-        kit: 'member'
+        kit: 'member',
+        uniform: 'female'
       },
       {
         id: 'baiyiyi',
@@ -108,7 +115,8 @@
         role: '超级医疗兵',
         hp: 2800, mp: 1300, attack: 80, defense: 100, level: 75,
         skills: ['emeraldWave', 'purify', 'lifeDomain', 'trueBody'],
-        kit: 'member'
+        kit: 'member',
+        uniform: 'female'
       }
     ]
   };
@@ -179,6 +187,7 @@
         return s;
       })(),
       kit: m.kit || 'member',
+      uniform: m.uniform || '',
       eliminated: false
     };
   }
@@ -188,6 +197,7 @@
       id: team.id,
       name: team.name,
       motto: team.motto || '',
+      slogan: team.slogan || '',
       members: team.members.map(cloneMember)
     };
   }
