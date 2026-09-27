@@ -6,6 +6,7 @@
 
   var overlays = {
     ready: doc.getElementById('overlay-ready'),
+    pick: doc.getElementById('overlay-pick'),
     over: doc.getElementById('overlay-over'),
     paused: doc.getElementById('overlay-paused'),
     error: doc.getElementById('overlay-error')
@@ -17,17 +18,43 @@
   var touchControls = doc.getElementById('touch-controls');
   var toast = doc.getElementById('toast');
 
-  var hudStage = doc.getElementById('hud-stage');
-  var hudMass = doc.getElementById('hud-mass');
-  var hudKills = doc.getElementById('hud-kills');
-  var hudBest = doc.getElementById('hud-best');
+  var hudTitle = doc.getElementById('hud-title');
+  var hudSoul = doc.getElementById('hud-soul');
+  var hudLevel = doc.getElementById('hud-level');
+  var hudHp = doc.getElementById('hud-hp');
+  var hudHpBar = doc.getElementById('hud-hp-bar');
+  var hudMp = doc.getElementById('hud-mp');
+  var hudMpBar = doc.getElementById('hud-mp-bar');
+  var hudBuffs = doc.getElementById('hud-buffs');
+  var hudDomainStatus = doc.getElementById('hud-domain-status');
+  var hudMatch = doc.getElementById('hud-match');
+  var hudMyLeft = doc.getElementById('hud-my-left');
+  var hudEnLeft = doc.getElementById('hud-en-left');
+  var hudTeamWins = doc.getElementById('hud-team-wins');
+  var hudFoeName = doc.getElementById('hud-foe-name');
+  var hudFoeHp = doc.getElementById('hud-foe-hp');
+  var hudFoeHpBar = doc.getElementById('hud-foe-hp-bar');
+  var kitFull = doc.getElementById('kit-full');
+  var kitMember = doc.getElementById('kit-member');
+  var memberSkillGrid = doc.getElementById('member-skill-grid');
+  var pickGrid = doc.getElementById('pick-grid');
+  var pickTitle = doc.getElementById('pick-title');
+  var pickSub = doc.getElementById('pick-sub');
+  var pickFight = doc.getElementById('pick-fight');
   var bootScreen = doc.getElementById('boot-screen');
   var bootMsg = doc.getElementById('boot-msg');
+  var bootEnter = doc.getElementById('boot-enter');
+  var startMatchBtn = doc.getElementById('btn-start-match');
+  var stagePlay = doc.getElementById('stage-play');
 
   var game = null;
 
   function hideBoot() {
     if (bootScreen) bootScreen.style.display = 'none';
+  }
+
+  function showBootEnter() {
+    if (bootEnter) bootEnter.style.display = 'inline-block';
   }
 
   function showBootError(msg) {
@@ -44,9 +71,158 @@
     });
   }
 
+  function syncPlayChrome(state) {
+    if (doc.body) doc.body.classList.toggle('is-playing', state === 'playing');
+    if (stagePlay) stagePlay.classList.toggle('is-on', state === 'playing');
+    if (pauseButton) {
+      pauseButton.textContent = state === 'paused' ? '继续' : '暂停';
+      pauseButton.disabled = state === 'ready' || state === 'pick' || state === 'over';
+    }
+    if (startMatchBtn) {
+      startMatchBtn.style.display = (state === 'playing' || state === 'paused') ? 'none' : '';
+      startMatchBtn.textContent = state === 'pick' ? '立刻开战' : '▶ 开始比赛';
+    }
+  }
+
+  function beginPlay(memberId) {
+    hideBoot();
+    if (!game) return false;
+    if (game.state === 'playing' || game.state === 'paused') return true;
+    if (game.state === 'over') game.reset();
+    var id = memberId || (game.preferredFighterId && game.preferredFighterId()) || 'chen';
+    if (game.startRound(id)) return true;
+    renderPick(game);
+    showOverlay('pick');
+    if (game.state !== 'pick') game.setState('pick');
+    return false;
+  }
+
   function formatStats(g) {
+    var my = g.aliveMembers(g.playerTeam).length;
+    var en = g.aliveMembers(g.enemyTeam).length;
+    return '对阵 ' + g.enemyTeam.name + ' · 我方剩余 ' + my + ' · 敌方剩余 ' + en + ' · 连胜 ' + g.teamWins + ' 场';
+  }
+
+  function skillMapFor(g) {
+    var full = {
+      Digit1: 'ring1', Digit2: 'ring2', Digit3: 'ring3', Digit4: 'ring4',
+      Digit5: 'ring5', Digit6: 'ring6', Digit7: 'ring7',
+      KeyQ: 'custom1', KeyE: 'custom2', KeyZ: 'custom3', KeyX: 'custom4',
+      KeyC: 'custom5', KeyV: 'custom6', KeyB: 'custom7',
+      KeyF: 'boneL', KeyG: 'boneR', KeyT: 'domain',
+      KeyU: 'fusionTwin', KeyI: 'fusionPhoenix'
+    };
     var p = g.player;
-    return '阶段 ' + global.Utils.stageName(p.mass) + ' · 击杀 ' + p.kills + ' · 体型 ' + Math.round(p.mass);
+    if (!p || p.kit === 'full' || p.characterId === 'chen') return full;
+    var mem = g.findMember(g.playerTeam, p.characterId);
+    var map = { Digit7: 'trueBody' };
+    if (!mem) return map;
+    var numKeys = ['Digit1', 'Digit2', 'Digit3'];
+    var ni = 0;
+    (mem.skills || []).forEach(function (sid) {
+      if (sid === 'trueBody' || sid === 'ring7') return;
+      if (sid === 'fusionTwin') {
+        map.KeyU = sid;
+        return;
+      }
+      if (sid === 'fusionPhoenix') {
+        map.KeyI = sid;
+        return;
+      }
+      if (sid === 'iceDomain' || sid === 'lifeDomain' || sid === 'domain') {
+        map.KeyT = sid;
+      }
+      if (numKeys[ni]) {
+        map[numKeys[ni]] = sid;
+        ni += 1;
+      }
+    });
+    return map;
+  }
+
+  function renderPick(g) {
+    if (!pickGrid) return;
+    var enemy = g.aliveMembers(g.enemyTeam)[0];
+    pickTitle.textContent = '第 ' + (g.roundIndex + 1) + ' 局 · 选择出战';
+    pickSub.textContent = '对阵【' + g.enemyTeam.name + '】下一名：' + (enemy ? enemy.name + '（' + enemy.soul + '）' : '无') +
+      '　我方剩余 ' + g.aliveMembers(g.playerTeam).length + ' / 敌方剩余 ' + g.aliveMembers(g.enemyTeam).length;
+    var nextId = g.preferredFighterId ? g.preferredFighterId() : 'chen';
+    var nextMem = nextId ? g.findMember(g.playerTeam, nextId) : null;
+    if (pickFight) {
+      pickFight.textContent = (nextMem ? nextMem.name : '陈凯威') + '立刻出战';
+    }
+    pickGrid.innerHTML = '';
+    g.playerTeam.members.forEach(function (m) {
+      var btn = doc.createElement('button');
+      btn.type = 'button';
+      btn.className = 'pick-card' + (m.eliminated ? ' is-out' : '');
+      btn.disabled = !!m.eliminated;
+      btn.setAttribute('data-pick', m.id);
+      btn.innerHTML = '<div class="pc-name">' + m.name + (m.eliminated ? ' · 已退场' : '') + '</div>' +
+        '<div class="pc-meta">' + m.title + '<br>武魂：' + m.soul + '<br>生命 ' + Math.round(m.hp) + '/' + m.maxHp +
+        '<br>' + (m.role || '') + '</div>';
+      if (!m.eliminated) {
+        btn.addEventListener('pointerdown', function (event) {
+          event.preventDefault();
+          event.stopPropagation();
+          beginPlay(m.id);
+        });
+      }
+      pickGrid.appendChild(btn);
+    });
+  }
+
+  function renderMemberSkills(g) {
+    if (!memberSkillGrid) return;
+    var p = g.player;
+    memberSkillGrid.innerHTML = '';
+    if (!p || p.kit === 'full' || p.characterId === 'chen') return;
+    var mem = g.findMember(g.playerTeam, p.characterId);
+    if (!mem) return;
+    var combat = [];
+    (mem.skills || []).forEach(function (sid) {
+      if (sid !== 'trueBody' && sid !== 'ring7' && sid !== 'fusionTwin' && sid !== 'fusionPhoenix') combat.push(sid);
+    });
+    var keys = ['1', '2', '3'];
+    combat.forEach(function (sid, i) {
+      var data = global.SKILLS_DATA[sid] || { name: sid, cost: 0 };
+      var isDomain = sid === 'iceDomain' || sid === 'lifeDomain' || sid === 'domain';
+      var btn = doc.createElement('button');
+      btn.type = 'button';
+      btn.className = 'skill-btn';
+      btn.setAttribute('data-skill', sid);
+      btn.innerHTML = '<span class="s-key">[' + (isDomain ? 'T' : keys[i]) + '] ' + (isDomain ? '领域' : '魂技') + '</span>' +
+        '<span class="s-name">' + data.name + '</span>' +
+        '<span class="s-cost">魂力 ' + data.cost + '</span>';
+      memberSkillGrid.appendChild(btn);
+    });
+    var trueData = global.SKILLS_DATA.trueBody || { name: '武魂真身', cost: 150 };
+    var trueBtn = doc.createElement('button');
+    trueBtn.type = 'button';
+    trueBtn.className = 'skill-btn ring-red';
+    trueBtn.setAttribute('data-skill', 'trueBody');
+    trueBtn.innerHTML = '<span class="s-key">[7] 武魂真身</span>' +
+      '<span class="s-name">' + trueData.name + '</span>' +
+      '<span class="s-cost">魂力 ' + trueData.cost + '</span>';
+    memberSkillGrid.appendChild(trueBtn);
+    if ((mem.skills || []).indexOf('fusionTwin') >= 0) {
+      var ft = global.SKILLS_DATA.fusionTwin || { name: '光明影刃·双生主宰', cost: 180 };
+      var ftBtn = doc.createElement('button');
+      ftBtn.type = 'button';
+      ftBtn.className = 'skill-btn ring-yellow';
+      ftBtn.setAttribute('data-skill', 'fusionTwin');
+      ftBtn.innerHTML = '<span class="s-key">[U] 融合技</span><span class="s-name">' + ft.name + '</span><span class="s-cost">魂力 ' + ft.cost + '</span>';
+      memberSkillGrid.appendChild(ftBtn);
+    }
+    if ((mem.skills || []).indexOf('fusionPhoenix') >= 0) {
+      var fp = global.SKILLS_DATA.fusionPhoenix || { name: '太阳神凰·末日审判', cost: 220 };
+      var fpBtn = doc.createElement('button');
+      fpBtn.type = 'button';
+      fpBtn.className = 'skill-btn ring-red';
+      fpBtn.setAttribute('data-skill', 'fusionPhoenix');
+      fpBtn.innerHTML = '<span class="s-key">[I] 融合技</span><span class="s-name">' + fp.name + '</span><span class="s-cost">魂力 ' + fp.cost + '</span>';
+      memberSkillGrid.appendChild(fpBtn);
+    }
   }
 
   function bindControls() {
@@ -57,6 +233,29 @@
       ArrowRight: 'right', KeyD: 'right'
     };
     var BITE_KEYS = { Space: 1, KeyJ: 1 };
+
+    // 技能按键映射表
+    var SKILL_KEY_MAP = {
+      Digit1: 'ring1',
+      Digit2: 'ring2',
+      Digit3: 'ring3',
+      Digit4: 'ring4',
+      Digit5: 'ring5',
+      Digit6: 'ring6',
+      Digit7: 'ring7',
+      KeyQ: 'custom1',
+      KeyE: 'custom2',
+      KeyZ: 'custom3',
+      KeyX: 'custom4',
+      KeyC: 'custom5',
+      KeyV: 'custom6',
+      KeyB: 'custom7',
+      KeyF: 'boneL',
+      KeyG: 'boneR',
+      KeyT: 'domain',
+      KeyU: 'fusionTwin',
+      KeyI: 'fusionPhoenix'
+    };
 
     doc.addEventListener('keydown', function (event) {
       if (!game || event.metaKey || event.ctrlKey || event.altKey) return;
@@ -70,6 +269,21 @@
       if (BITE_KEYS[code]) {
         event.preventDefault();
         if (!event.repeat) game.press('bite');
+        return;
+      }
+
+      var liveMap = skillMapFor(game);
+      if (liveMap[code] || SKILL_KEY_MAP[code]) {
+        event.preventDefault();
+        if (game.state === 'playing') {
+          game.skills.castSkill(liveMap[code] || SKILL_KEY_MAP[code]);
+        }
+        return;
+      }
+
+      if (code === 'Enter') {
+        event.preventDefault();
+        beginPlay();
         return;
       }
       if (code === 'KeyP' || code === 'Escape') {
@@ -88,31 +302,90 @@
       else if (BITE_KEYS[event.code]) game.release('bite');
     });
 
-    Array.prototype.forEach.call(touchControls.querySelectorAll('[data-hold]'), function (button) {
+    // 技能按钮 / 选人 / 开战
+    doc.addEventListener('pointerdown', function (event) {
+      if (event.target.closest('#boot-enter, #boot-screen')) {
+        hideBoot();
+      }
+      var actionEl = event.target.closest('[data-action]');
+      if (actionEl && actionEl.getAttribute('data-action') === 'reload') {
+        global.location.reload();
+        return;
+      }
+      if (!game) return;
+      var pickBtn = event.target.closest('[data-pick]');
+      if (pickBtn && !pickBtn.disabled && (game.state === 'pick' || game.state === 'ready')) {
+        event.preventDefault();
+        beginPlay(pickBtn.getAttribute('data-pick'));
+        return;
+      }
+      var skillBtn = event.target.closest('[data-skill]');
+      if (skillBtn) {
+        var skillId = skillBtn.getAttribute('data-skill');
+        if (game.state === 'ready' || game.state === 'pick' || game.state === 'over') {
+          beginPlay();
+          return;
+        }
+        if (game.state === 'playing') game.skills.castSkill(skillId);
+        return;
+      }
+
+      var target = event.target.closest('[data-action]');
+      if (!target) return;
+      var action = target.getAttribute('data-action');
+      if (action === 'start' || action === 'fight') {
+        event.preventDefault();
+        beginPlay();
+      } else if (action === 'restart') {
+        event.preventDefault();
+        game.restart();
+      } else if (action === 'resume') game.togglePause();
+      else if (action === 'reload') global.location.reload();
+    });
+
+    Array.prototype.forEach.call(doc.querySelectorAll('[data-hold]') || [], function (button) {
       var action = button.getAttribute('data-hold');
       button.addEventListener('pointerdown', function (event) {
         if (!game) return;
         event.preventDefault();
-        button.setPointerCapture(event.pointerId);
+        event.stopPropagation();
+        try { button.setPointerCapture(event.pointerId); } catch (e) {}
         game.press(action);
-        if (game.state === 'ready') game.setState('playing');
       });
       button.addEventListener('pointerup', function () { if (game) game.release(action); });
       button.addEventListener('pointercancel', function () { if (game) game.release(action); });
     });
 
-    doc.addEventListener('click', function (event) {
-      if (!game) return;
-      var target = event.target.closest('[data-action]');
-      if (!target) return;
-      var action = target.getAttribute('data-action');
-      if (action === 'start') game.setState('playing');
-      else if (action === 'restart') game.restart();
-      else if (action === 'resume') game.togglePause();
-    });
+    if (canvas) {
+      canvas.style.touchAction = 'none';
+      canvas.addEventListener('pointerdown', function (event) {
+        if (!game) return;
+        if (game.state === 'ready' || game.state === 'pick' || game.state === 'over') {
+          beginPlay();
+        }
+        if (game.state === 'playing') {
+          event.preventDefault();
+          game.setMoveTargetFromClient(event.clientX, event.clientY);
+          canvas.setPointerCapture(event.pointerId);
+        }
+      });
+      canvas.addEventListener('pointermove', function (event) {
+        if (!game || game.state !== 'playing') return;
+        if ((event.buttons & 1) === 0 && event.pointerType !== 'touch') return;
+        game.setMoveTargetFromClient(event.clientX, event.clientY);
+      });
+    }
 
-    soundButton.addEventListener('click', toggleSound);
-    pauseButton.addEventListener('click', function () { if (game) game.togglePause(); });
+    if (soundButton) soundButton.addEventListener('click', toggleSound);
+    if (pauseButton) pauseButton.addEventListener('click', function () { if (game) game.togglePause(); });
+    if (startMatchBtn) {
+      startMatchBtn.addEventListener('pointerdown', function (event) {
+        event.preventDefault();
+        event.stopPropagation();
+        hideBoot();
+        beginPlay();
+      });
+    }
 
     var resizeTimer = 0;
     global.addEventListener('resize', function () {
@@ -131,16 +404,105 @@
     soundButton.setAttribute('aria-pressed', String(muted));
   }
 
+  function updateHUD(g) {
+    if (hudMatch && g.enemyTeam) {
+      hudMatch.textContent = g.playerTeam.name + ' VS ' + g.enemyTeam.name;
+      hudMyLeft.textContent = g.aliveMembers(g.playerTeam).length;
+      hudEnLeft.textContent = g.aliveMembers(g.enemyTeam).length;
+      hudTeamWins.textContent = g.teamWins;
+    }
+
+    var p = g.player;
+    if (!p) {
+      if (g.messages.length > 0) {
+        toast.textContent = g.messages[0].text;
+        toast.style.opacity = '1';
+      }
+      return;
+    }
+
+    if (hudSoul) hudSoul.textContent = p.martialSoul;
+    hudTitle.textContent = p.name;
+    hudLevel.textContent = p.level + ' 级';
+    hudHp.textContent = Math.round(p.hp) + '/' + p.maxHp;
+    hudHpBar.style.width = Math.max(0, Math.min(100, (p.hp / p.maxHp) * 100)) + '%';
+    hudMp.textContent = Math.round(p.mp) + '/' + p.maxMp;
+    hudMpBar.style.width = Math.max(0, Math.min(100, (p.mp / p.maxMp) * 100)) + '%';
+
+    var foe = g.opponent;
+    if (hudFoeName) {
+      if (foe && foe.alive) {
+        hudFoeName.textContent = foe.name + '（' + (foe.martialSoul || '') + '）';
+        if (hudFoeHp) hudFoeHp.textContent = Math.round(foe.hp) + '/' + foe.maxHp;
+        if (hudFoeHpBar) hudFoeHpBar.style.width = Math.max(0, Math.min(100, (foe.hp / foe.maxHp) * 100)) + '%';
+      } else {
+        hudFoeName.textContent = '已倒下';
+        if (hudFoeHp) hudFoeHp.textContent = '0';
+        if (hudFoeHpBar) hudFoeHpBar.style.width = '0%';
+      }
+    }
+
+    var isFull = p.kit === 'full' || p.characterId === 'chen';
+    if (kitFull) kitFull.classList.toggle('overlay--hidden', !isFull && g.state === 'playing');
+    if (kitMember) kitMember.classList.toggle('overlay--hidden', isFull || g.state !== 'playing');
+
+    var buffs = [];
+    if (p.avatarMode) buffs.push('🐉 真身');
+    if (p.goldBodyActive) buffs.push('🛡️ 金身');
+    if (p.isFlying) buffs.push('🪽 加速/飞行');
+    if (p.shieldActive) buffs.push('☀️ 护盾');
+    if (p.domainBlessing) buffs.push('✨ 圣龙祝福');
+    hudBuffs.innerHTML = buffs.length > 0 ? ('增益：' + buffs.join(' | ')) : (p.ringText || '');
+
+    if (g.skills.domainActive) {
+      hudDomainStatus.innerHTML = '<span style="color:#ffd700;font-weight:bold">领域：金色世界 (' + Math.ceil(g.skills.domainTimer) + 's)</span>';
+    } else if (g.skills.iceDomainTimer > 0) {
+      hudDomainStatus.textContent = '领域：玄冰领域 (' + Math.ceil(g.skills.iceDomainTimer) + 's)';
+    } else if (g.skills.lifeDomainTimer > 0) {
+      hudDomainStatus.textContent = '领域：生命礼赞 (' + Math.ceil(g.skills.lifeDomainTimer) + 's)';
+    } else {
+      hudDomainStatus.textContent = '领域：待命';
+    }
+
+    var allSkillBtns = doc.querySelectorAll('[data-skill]');
+    for (var i = 0; i < allSkillBtns.length; i++) {
+      var btn = allSkillBtns[i];
+      var sId = btn.getAttribute('data-skill');
+      var cd = p.cooldowns[sId];
+      var costEl = btn.querySelector('.s-cost');
+      if (costEl) {
+        if (cd > 0) {
+          costEl.textContent = '冷却中 ' + cd.toFixed(1) + 's';
+          costEl.style.color = '#ff6666';
+        } else {
+          var sData = global.SKILLS_DATA[sId];
+          var cost = sData ? sData.cost : 0;
+          if (p.avatarMode && sData && sData.type === 'ring' && sId !== 'ring7' && sId !== 'trueBody') cost = 0;
+          costEl.textContent = '魂力 ' + cost;
+          costEl.style.color = '#66ccff';
+        }
+      }
+    }
+
+    if (g.messages.length > 0) {
+      toast.textContent = g.messages[0].text;
+      toast.style.opacity = '1';
+    } else {
+      toast.style.opacity = '0';
+    }
+  }
+
   function startGame() {
     if (typeof THREE === 'undefined') {
-      showBootError('3D 引擎加载失败<br><br>请重新下载 play.html（约700KB）<br>用 Chrome 浏览器双击打开<br><br>❌ 不要直接在 GitHub 网页里打开');
-      if (errorMsg) errorMsg.textContent = '3D 引擎没加载。请下载 play.html 用 Chrome 打开。';
+      showBootError('3D 引擎加载失败<br><br>请用 <b>Chrome</b> 双击打开 <b>play.html</b><br>不要用微信，也不要打开 GitHub 源码页');
+      if (errorMsg) errorMsg.textContent = '3D 引擎没加载，请用 Chrome 打开 play.html';
       showOverlay('error');
+      hideBoot();
       return;
     }
 
     try {
-      if (bootMsg) bootMsg.textContent = '正在创建 3D 世界…';
+      if (bootMsg) bootMsg.textContent = '正在觉醒光明圣龙，凝聚七大魂环…';
       game = new global.Game(canvas, {
         onState: function (state, g) {
           if (state === 'over') {
@@ -150,44 +512,53 @@
             showOverlay('paused');
           } else if (state === 'ready') {
             showOverlay('ready');
+          } else if (state === 'pick') {
+            renderPick(g);
+            showOverlay('pick');
           } else {
+            renderMemberSkills(g);
             showOverlay(null);
           }
-          pauseButton.textContent = state === 'paused' ? '继续' : '暂停';
-          pauseButton.disabled = state === 'ready';
+          syncPlayChrome(state);
         },
         onHud: function (g) {
-          var p = g.player;
-          if (!p) return;
-          hudStage.textContent = global.Utils.stageName(p.mass);
-          hudMass.textContent = Math.round(p.mass);
-          hudKills.textContent = p.kills;
-          hudBest.textContent = g.highKills;
-
-          if (g.messages.length > 0) {
-            toast.textContent = g.messages[0].text;
-            toast.style.opacity = '1';
-          } else {
-            toast.style.opacity = '0';
-          }
+          updateHUD(g);
         }
       });
 
-      showOverlay('ready');
-      pauseButton.disabled = true;
+      if (!game.startRound('chen')) {
+        showOverlay('pick');
+        renderPick(game);
+        if (game.state !== 'pick') game.setState('pick');
+      }
+      syncPlayChrome(game.state);
       hideBoot();
       global.requestAnimationFrame(function () {
         game.resize();
-        // 打开即玩，无需再点按钮
-        game.setState('playing');
       });
     } catch (err) {
       console.error(err);
-      showBootError('3D 启动失败：' + (err.message || 'WebGL 不可用') + '<br><br>请换 <b>Chrome 浏览器</b> 打开');
-      if (errorMsg) errorMsg.textContent = err.message || 'WebGL 不可用，请用 Chrome 浏览器';
+      showBootError('3D 启动失败：' + (err.message || 'WebGL 不可用') + '<br><br>请用 <b>Chrome</b> 打开 <b>play.html</b>');
+      if (errorMsg) errorMsg.textContent = err.message || 'WebGL 不可用，请用 Chrome 打开 play.html';
       showOverlay('error');
+      hideBoot();
+      showBootEnter();
     }
   }
+
+  if (bootEnter) {
+    bootEnter.addEventListener('click', function (event) {
+      event.preventDefault();
+      event.stopPropagation();
+      hideBoot();
+    });
+  }
+  global.setTimeout(function () {
+    if (bootScreen && bootScreen.style.display !== 'none') {
+      showBootEnter();
+      if (bootMsg) bootMsg.innerHTML = '若画面一直停住：请用 Chrome 双击仓库里的 <b>play.html</b>，不要用微信。';
+    }
+  }, 5000);
 
   bindControls();
   startGame();
