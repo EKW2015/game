@@ -6,7 +6,7 @@
 https://safe-wherever-favorite-browsers.trycloudflare.com/
 
 **备用（约 3 天）：**  
-https://litter.catbox.moe/ftdmub.html
+https://litter.catbox.moe/090vcc.html
 
 打开后会立刻开战（陈凯威上场）。点地面走路，WASD 移动，空格或右下角「攻击」。
 

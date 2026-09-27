@@ -13,7 +13,7 @@
 
   var Roster = global.Roster;
 
-  var GRACE_TIME = 0.35;
+  var GRACE_TIME = 0.85;
 
   function Game(canvas, hooks) {
     this.canvas = canvas;

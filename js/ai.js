@@ -27,7 +27,7 @@
     var i;
     var sid;
 
-    if (!dino.avatarMode && hpRatio < 0.78) {
+    if (!dino.avatarMode && hpRatio < 0.48) {
       if (skillReady(dino, 'trueBody')) return 'trueBody';
       if (skillReady(dino, 'ring7')) return 'ring7';
     }
@@ -82,7 +82,7 @@
         tx += Math.cos(side) * (dino._strafe || 0);
         ty += Math.sin(side) * (dino._strafe || 0);
       }
-      dino.moveToward(tx, ty, distToPlayer > biteRange ? 1.12 : 0.95, dt);
+      dino.moveToward(tx, ty, distToPlayer > biteRange ? 0.92 : 0.72, dt);
 
       if (distToPlayer < biteRange && dino.tryBite()) {
         return { action: 'bite', target: player };
@@ -94,9 +94,9 @@
         var sid = pickSkill(dino, mem, distToPlayer, biteRange);
         if (sid) {
           ctx.skills.castSkill(sid, dino, { silentFail: true });
-          dino.aiTimer = 0.42;
+          dino.aiTimer = 0.95;
         } else {
-          dino.aiTimer = 0.08;
+          dino.aiTimer = 0.22;
         }
       }
       return { action: 'chase', target: player };

@@ -88,7 +88,8 @@ player.goldBodyActive = false;
 player.hp = 3500;
 player.mp = 1200;
 
-assert.ok(win.Roster.ENEMY_TEAMS[0].members[0].attack >= 280, 'first opponent hits harder');
+assert.ok(win.Roster.ENEMY_TEAMS[0].members[0].attack < 250, 'first opponent is beatable');
+assert.ok(win.Roster.ENEMY_TEAMS[0].members[0].hp < win.Roster.PLAYER_TEAM.members[0].hp, 'first opponent has less HP than 陈凯威');
 dummy.mp = 1000;
 dummy.cooldowns = {};
 dummy.avatarMode = false;
@@ -209,7 +210,7 @@ dummy.heavyDebuff = 0;
 dummy.domainDebuff = false;
 dummy.avatarMode = false;
 dummy.isFlying = false;
-assert.ok(dummy.getSpeed() >= 170, 'enemy chase speed is competitive');
+assert.ok(dummy.getSpeed() >= 140 && dummy.getSpeed() < player.getSpeed(), 'enemy chase is slower than the player');
 
 console.log('smoke ok');
 console.log('skills', Object.keys(SKILLS_DATA).length);

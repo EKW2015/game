@@ -68,7 +68,7 @@
   }
 
   SoulEntity.prototype.getSpeed = function () {
-    var base = this.isPlayer ? 186 : 178;
+    var base = this.isPlayer ? 186 : 152;
     if (this.avatarMode) base *= 1.6;
     if (this.isFlying) base *= 1.8;
     if (this.heavyDebuff > 0) base *= 0.35; // 太阳重力拳：身体瞬间变沉重
@@ -157,19 +157,19 @@
 
     // 魂力被动自然恢复
     if (this.alive && this.mp < this.maxMp) {
-      var regen = this.isPlayer ? 12 : 22;
+      var regen = this.isPlayer ? 12 : 8;
       if (this.hasBadge && this.domainBlessing) regen += 45;
       this.mp = Math.min(this.maxMp, this.mp + regen * dt);
     }
     if (this.alive && this.hp < this.maxHp) {
-      var hpRegen = this.isPlayer ? 5 : 9;
+      var hpRegen = this.isPlayer ? 5 : 2;
       this.hp = Math.min(this.maxHp, this.hp + hpRegen * dt);
     }
   };
 
   SoulEntity.prototype.tryBite = function () {
     if (this.biteCooldown > 0 || this.stunned > 0) return false;
-    this.biteCooldown = 0.35;
+    this.biteCooldown = this.isPlayer ? 0.35 : 0.58;
     this.biteAnim = 0.18;
     return true;
   };
@@ -179,7 +179,7 @@
   };
 
   SoulEntity.prototype.biteDamage = function () {
-    return this.getEffectiveAttack() * 0.8;
+    return this.getEffectiveAttack() * (this.isPlayer ? 0.8 : 0.52);
   };
 
   SoulEntity.prototype.takeDamage = function (amount, from) {
@@ -192,7 +192,7 @@
     }
 
     if (this.avatarMode) {
-      amount *= this.isPlayer ? 0.42 : 0.50;
+      amount *= this.isPlayer ? 0.42 : 0.72;
     }
 
     // 光盾吸收伤害
