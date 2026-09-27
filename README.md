@@ -1,12 +1,16 @@
 # 🐉 3D 斗罗大陆：圣龙神辉战队
 
-## 直接玩（用 Chrome 打开）
+## 直接玩（必须用电脑 Chrome 打开）
 
-https://litter.catbox.moe/baatnp.html
+**现在立刻玩：**  
+https://safe-wherever-favorite-browsers.trycloudflare.com/
+
+**备用（约 3 天）：**  
+https://litter.catbox.moe/ftdmub.html
 
 打开后会立刻开战（陈凯威上场）。点地面走路，WASD 移动，空格或右下角「攻击」。
 
-**不要用微信。不要点 GitHub 源码页。** 这个在线链接大约 3 天有效。
+**不要用微信。不要点 GitHub 源码页。** GitHub 会把游戏当成文本，Chrome 打不开。
 
 链接失效时：用 Chrome 打开仓库里的 `play.html`（双击，或右键 → 打开方式 → Google Chrome）。Windows 也可双击 `打开游戏.bat`。
 
