@@ -1,16 +1,18 @@
 # 🐉 3D 斗罗大陆：圣龙神辉战队
 
-## 直接玩（用 Chrome 打开下面这个链接）
+## 直接玩（用 Chrome 打开）
 
-https://litter.catbox.moe/ihprj9.html
+https://litter.catbox.moe/baatnp.html
 
-打开后会立刻开战（陈凯威上场）。点地面走路，WASD 移动，空格或右下角「攻击」键出手。
+打开后会立刻开战（陈凯威上场）。点地面走路，WASD 移动，空格或右下角「攻击」。
 
-不要用微信。不要点 GitHub 源码页。
+**不要用微信。不要点 GitHub 源码页。** 这个在线链接大约 3 天有效。
 
-如果链接失效，再下载这个文件，用 Chrome 双击打开：  
+链接失效时：用 Chrome 打开仓库里的 `play.html`（双击，或右键 → 打开方式 → Google Chrome）。Windows 也可双击 `打开游戏.bat`。
+
+从 GitHub 下载：打开  
 https://github.com/EKW2015/game/blob/cursor/douluo-3d-game-33ae/play.html  
-（点右上角 Download raw file，约 800KB）
+点右上角 **Download raw file**，下完用 Chrome 打开，不要点 Open。
 
 ---
 
